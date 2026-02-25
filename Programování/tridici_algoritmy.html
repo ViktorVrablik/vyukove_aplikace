@@ -100,10 +100,16 @@
         .control-group { display: flex; align-items: center; gap: 8px; font-size: 14px; }
         label { color: var(--text-muted); font-weight: 500; }
         
-        input[type="range"] { accent-color: var(--text-muted); cursor: pointer; width: 100px; }
+        input[type="range"] { accent-color: var(--text-muted); cursor: pointer;}
+
         input[type="number"] { 
             background: var(--bg); border: 1px solid var(--border); color: var(--text); 
             padding: 4px 8px; width: 60px; border-radius: 4px; font-family: inherit;
+        }
+
+        input[type="range"] {
+            transform: rotateY(180deg);
+
         }
 
         .buttons { display: flex; gap: 8px; margin-left: auto; }
@@ -417,8 +423,8 @@ procedure selectionSort(A):
 for i from 0 to n-1:
     min = i
     for j from i+1 to n:
-    if A[j] < A[min]:
-        min = j
+        if A[j] < A[min]:
+            min = j
     swap(A[i], A[min])
 </pre>
             </div>
@@ -433,13 +439,13 @@ for i from 0 to n-1:
                 <div class="card-desc" style="margin-bottom: 15px;">Bere prvek z neseřazené části a vkládá ho na správné místo v seřazené části.</div>
 <pre>
 procedure insertionSort(A):
-for i from 1 to n-1:
-    key = A[i]
-    j = i - 1
-    while j >= 0 and A[j] > key:
-    A[j+1] = A[j]
-    j = j - 1
-    A[j+1] = key
+    for i from 1 to n-1:
+        key = A[i]
+        j = i - 1
+        while j >= 0 and A[j] > key:
+            A[j+1] = A[j]
+            j = j - 1
+        A[j+1] = key
 </pre>
             </div>
         </div>
@@ -583,7 +589,8 @@ return merge(L, R)
         const btnStop = document.getElementById('btn-stop');
         const btnGen = document.getElementById('btn-gen');
         const controlPanel = document.getElementById('controlsPanel');
-       
+        
+        console.log(document.getElementById('globalSpeed').value);
 
         const isBattle = activeTab === 'battle';
 
@@ -654,7 +661,7 @@ return merge(L, R)
     }
 
     async function sleep() {
-        const ms = parseInt(document.getElementById('globalSpeed').value);
+        const ms = parseInt(500-document.getElementById('globalSpeed').value);
         if (abortController && abortController.signal.aborted) throw new Error("ABORT");
 
         while (isPaused) {
