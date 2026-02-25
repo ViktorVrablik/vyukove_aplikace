@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jednotky v Informatice | Master Class</title>
+    <style>
+        /* --- DESIGN TEMPLATE (HACKER STYLE) --- */
+        :root {
+            --bg: #0d1117;          
+            --surface: #161b22;     
+            --border: #30363d;      
+            --text: #c9d1d9;        
+            --text-muted: #8b949e;  
+            --accent: #58a6ff;      
+            --data: #3fb950;        
+            --warning: #d29922;     
+            --danger: #f85149;      
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 { color: var(--text); font-weight: normal; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;}
+        h1 { text-align: center; border: none; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); }
+        h3 { font-size: 16px; color: var(--accent); margin-top: 40px; font-weight: bold; border-bottom: none; text-transform: uppercase;}
+        
+        a {color: var(--text)}
+        
+        /* Navigace */
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 5px;}
+        .tab-btn {
+            padding: 8px 16px; font-size: 14px; border: 1px solid transparent; font-family: inherit;
+            background-color: transparent; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+        }
+        .tab-btn:hover { color: var(--text); border: 1px solid var(--border); }
+        .tab-btn.active { border: 1px solid var(--border); border-bottom: none; background: var(--surface); color: var(--accent); }
+        
+        /* Panely */
+        .panel {
+            background: var(--surface); padding: 25px; border: 1px solid var(--border);
+            display: none; animation: fadeIn 0.2s;
+        }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Tlačítka */
+        .btn { 
+            padding: 8px 15px; background: transparent; color: var(--accent); 
+            border: 1px solid var(--accent); cursor: pointer; font-size: 14px; font-family: inherit; transition: 0.2s;
+            margin-right: 10px; margin-bottom: 10px;
+        }
+        .btn:hover { background: var(--accent); color: var(--bg); }
+        .btn.active-format { background: var(--accent); color: var(--bg); font-weight: bold; }
+
+        /* Boxy */
+        .info-box { 
+            background: rgba(88, 166, 255, 0.1); border-left: 3px solid var(--accent); 
+            padding: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text); 
+        }
+
+        .alert-box {
+            background: rgba(210, 153, 34, 0.1); border-left: 3px solid var(--warning);
+            padding: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text);
+        }
+
+        .comparison-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+        .comparison-table th, .comparison-table td { border: 1px solid var(--border); padding: 10px; text-align: left; }
+        .comparison-table th { background: #010409; color: var(--text-muted); }
+
+        /* --- RESPONSIVE FLOW CHART --- */
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: #010409;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .flow-unit {
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: center;
+            font-size: 1.1em;
+            z-index: 2;
+        }
+
+        .flow-arrows {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 10px;
+            position: relative;
+        }
+
+        .arrow-text {
+            font-size: 11px;
+            display: block;
+            text-align: center;
+            white-space: nowrap;
+            padding: 2px 0;
+        }
+
+        .arrow-green { color: var(--data); }
+        .arrow-orange { color: var(--warning); }
+
+        /* Šipky pro Desktop (Default) */
+        .desktop-arrow { display: block; width: 100%; border-bottom: 1px dashed var(--border); }
+        .mobile-arrow { display: none; }
+
+        /* --- MOBILE LAYOUT (Stacking) --- */
+        @media (max-width: 700px) {
+            .flow-container {
+                flex-direction: column; /* Pod sebe */
+                gap: 0;
+            }
+
+            .flow-unit {
+                width: 80%; /* Široké bloky */
+            }
+
+            .flow-arrows {
+                flex-direction: row; /* Šipky vedle sebe (jedna dolů, jedna nahoru) */
+                justify-content: space-between;
+                width: 60%;
+                height: 60px; /* Výška mezery mezi boxy */
+                padding: 0;
+            }
+
+            .desktop-arrow { display: none; } /* Skrýt vodorovné */
+            .mobile-arrow { 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+            }
+        }
+
+        /* --- GAME STYLES --- */
+        .game-controls { margin-bottom: 20px; text-align: center; }
+        .game-board { display: flex; gap: 20px; justify-content: space-between; position: relative; flex-wrap: wrap; }
+        .game-col { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 250px; }
+
+        .game-item {
+            padding: 15px; border: 1px solid var(--border); background: var(--bg);
+            cursor: pointer; transition: 0.2s; text-align: center; font-weight: bold; font-size: 18px;
+            user-select: none; position: relative;
+        }
+        .game-item:hover { border-color: var(--text-muted); }
+        .game-item.selected { border-color: var(--accent); background: rgba(88, 166, 255, 0.1); box-shadow: 0 0 10px rgba(88,166,255,0.2); }
+        .game-item.matched { border-color: var(--data); color: var(--data); opacity: 0.3; pointer-events: none; text-decoration: line-through; }
+        .game-item.wrong { animation: shake 0.4s; border-color: var(--danger); color: var(--danger); }
+
+        .result-overlay { display: none; text-align: center; padding: 20px; border: 1px solid var(--data); background: rgba(63, 185, 80, 0.1); color: var(--data); margin-top: 20px; }
+        .label { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 5px; text-transform: uppercase;}
+
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+
+        footer { text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px dotted var(--border); color: var(--text-muted); font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <h1>[ PŘEVODY_JEDNOTEK ]</h1>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('theory', this)">> _TEORIE</button>
+        <button class="tab-btn" onclick="showTab('game', this)">>_ PROCVIČENÍ </button>
+    </div>
+
+    <div id="theory" class="panel active">
+        
+        <h2>1. Vizuální schéma převodů</h2>
+        <div class="alert-box">
+            <strong>Jak číst diagram:</strong><br>
+            <span style="color:var(--data)">Zelená šipka</span> = Jdu na menší jednotku (číslo roste) = <strong>Násobím</strong>.<br>
+            <span style="color:var(--warning)">Oranžová šipka</span> = Jdu na větší jednotku (číslo se zmenšuje) = <strong>Dělím</strong>.
+        </div>
+
+        <p class="label">A) Soustava SI (Decimální) - Koeficient 1000</p>
+        <div class="flow-container">
+            <div class="flow-unit">TB</div>
+            
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1000 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1000</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1000</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1000</div>
+            </div>
+
+            <div class="flow-unit">GB</div>
+
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1000 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1000</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1000</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1000</div>
+            </div>
+
+            <div class="flow-unit">MB</div>
+
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1000 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1000</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1000</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1000</div>
+            </div>
+
+            <div class="flow-unit">kB</div>
+
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1000 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1000</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1000</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1000</div>
+            </div>
+
+            <div class="flow-unit">B</div>
+        </div>
+
+        <p class="label">B) Soustava IEC (Binární) - Koeficient 1024</p>
+        <div class="flow-container">
+            <div class="flow-unit" style="border-color: var(--warning); color: var(--warning);">TiB</div>
+            
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1024 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1024</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1024</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1024</div>
+            </div>
+
+            <div class="flow-unit" style="border-color: var(--warning); color: var(--warning);">GiB</div>
+
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1024 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1024</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1024</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1024</div>
+            </div>
+
+            <div class="flow-unit" style="border-color: var(--warning); color: var(--warning);">MiB</div>
+
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1024 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1024</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1024</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1024</div>
+            </div>
+
+            <div class="flow-unit" style="border-color: var(--warning); color: var(--warning);">KiB</div>
+
+            <div class="flow-arrows">
+                <div class="desktop-arrow arrow-green"><span class="arrow-text">x 1024 ➔</span></div>
+                <div class="desktop-arrow arrow-orange"><span class="arrow-text">⬅ / 1024</span></div>
+                <div class="mobile-arrow arrow-green">⬇ x1024</div>
+                <div class="mobile-arrow arrow-orange">⬆ /1024</div>
+            </div>
+
+            <div class="flow-unit" style="border-color: var(--warning); color: var(--warning);">B</div>
+        </div>
+
+        <h3>2. Proč je v tom zmatek? (SI vs. IEC)</h3>
+        
+        <p>V informatice narážíme na konflikt dvou světů: lidského (desítkového) a počítačového (dvojkového).</p>
+
+        <div style="overflow-x:auto;">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Vlastnost</th>
+                        <th>Soustava SI (International System)</th>
+                        <th>Soustava IEC (Binární)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Základ</strong></td>
+                        <td>10 (Decimální)</td>
+                        <td>2 (Binární)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Násobek</strong></td>
+                        <td><strong>1 000</strong> (10<sup>3</sup>)</td>
+                        <td><strong>1 024</strong> (2<sup>10</sup>)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Jednotky</strong></td>
+                        <td>kB, MB, GB, TB</td>
+                        <td>KiB, MiB, GiB, TiB</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Kdo to používá?</strong></td>
+                        <td>Výrobci disků, sítě, fyzika.</td>
+                        <td>Operační paměť (RAM), Windows.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>3. Příklady z praxe</h3>
+
+        <div class="info-box">
+            <strong>PŘÍPAD 1: Záhada ztraceného místa na disku</strong><br>
+            Koupíte si pevný disk s nálepkou <strong>1 TB</strong>.<br>
+            Výrobce počítá v SI: <code>1 000 000 000 000 Bajtů</code>.<br>
+            Připojíte ho do Windows. Windows počítá binárně (dělí 1024), ale zobrazuje jednotky "GB".<br>
+            <br>
+            Výpočet Windows:<br>
+            <code>1 000 000 000 000 / 1024 / 1024 / 1024 ≈ 931 GiB</code><br>
+            <br>
+            Proto ve "Tento Počítač" vidíte jen <strong>931 GB</strong>. Disk není rozbitý, jen se střetly dvě soustavy.
+        </div>
+
+        <h3>4. Typické velikosti souborů (Řádový odhad)</h3>
+        <p>Abyste věděli, co se vejde na flashku nebo do e-mailu, musíte mít představu o řádech.</p>
+
+        <div style="overflow-x:auto;">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Typ souboru</th>
+                        <th>Běžná jednotka</th>
+                        <th>Přibližná velikost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>📄 <strong>Čistý text</strong> (.txt)</td>
+                        <td style="color:var(--data)">B až kB</td>
+                        <td>1 - 10 kB</td>
+                    </tr>
+                    <tr>
+                        <td>📑 <strong>Dokument / PDF</strong> (.pdf, .docx)</td>
+                        <td style="color:var(--data)">kB (až MB)</td>
+                        <td>100 - 5000 kB</td>
+                    </tr>
+                    <tr>
+                        <td>📷 <strong>Fotografie</strong> (z mobilu)</td>
+                        <td style="color:var(--accent)">MB</td>
+                        <td>2 - 8 MB</td>
+                    </tr>
+                    <tr>
+                        <td>🎵 <strong>Písnička</strong> (MP3)</td>
+                        <td style="color:var(--accent)">MB</td>
+                        <td>3 - 10 MB</td>
+                    </tr>
+                    <tr>
+                        <td>💿 <strong>Film</strong> (Full HD kvalita)</td>
+                        <td style="color:var(--warning)">GB</td>
+                        <td>2 - 15 GB</td>
+                    </tr>
+                    <tr>
+                        <td>🎮 <strong>Moderní Hra</strong> (PC/Konzole)</td>
+                        <td style="color:var(--warning)">GB</td>
+                        <td>50 - 500 GB</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="alert-box">
+            <strong>Pamatuj:</strong> E-mailem obvykle pošleš maximálně <strong>20 - 25 MB</strong>. Na film (GB) už potřebuješ Úschovnu nebo Cloud.
+        </div>
+
+    </div>
+
+    <div id="game" class="panel">
+        <h2>Trénink převodů (Soustava SI: k=1000)</h2>
+        <p class="label">Pozor: Všechna čísla mají stejný základ (např. 25, 2.5, 0.25). Musíš se soustředit na řády!</p>
+        
+        <div class="game-controls">
+            <button class="btn" onclick="startGame(1)">[ LEVEL 1: Celá čísla ]</button>
+            <button class="btn" onclick="startGame(2)">[ LEVEL 2: Desetinná čísla ]</button>
+            <button class="btn" onclick="startGame(3)">[ LEVEL 3: Smíšené řády ]</button>
+        </div>
+
+        <div id="gameArea" style="display:none;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <span class="label">ZADÁNÍ</span>
+                <span class="label">VÝSLEDEK</span>
+            </div>
+            
+            <div class="game-board">
+                <div class="game-col" id="colLeft"></div>
+                <div class="game-col" id="colRight"></div>
+            </div>
+
+            <div id="resultMsg" class="result-overlay">
+                <h3>VÝBORNĚ! VŠE SPRÁVNĚ.</h3>
+                <p>Systém SI úspěšně aplikován.</p>
+                <button class="btn" onclick="resetUI()">Další test</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Vytvořeno pomocí <b>Gemini AI</b> | 
+        <strong>Ing. Viktor Vráblík</strong> | 
+        Web: <a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> | 
+        <b>2026</b>
+    </footer>
+
+    <script>
+        // --- KONFIGURACE ---
+        const UNITS = ['B', 'kB', 'MB', 'GB', 'TB'];
+        
+        // --- POMOCNÉ FUNKCE ---
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        
+        function formatNum(num) {
+            // Ošetření float chyb a formátování mezer
+            let fixed = parseFloat(num.toPrecision(12)); 
+            return fixed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        // --- GENERÁTOR S PODOBNÝMI KOEFICIENTY ---
+        function generateSimilarPairs(level, count) {
+            const pairs = [];
+            const usedAnswers = new Set();
+            const usedQuestions = new Set();
+            
+            // 1. ZÁKLADNÍ ČÍSLO PRO KOLO (např. 2, 2.5, 4.096)
+            let baseNum;
+            if (level === 1) baseNum = [1, 2, 4, 5, 8][getRandomInt(0, 4)];
+            else if (level === 2) baseNum = [1.2, 1.5, 2.5, 5.5, 3.2][getRandomInt(0, 4)];
+            else baseNum = [1.25, 0.5, 2.4, 6.4][getRandomInt(0, 3)];
+
+            let safety = 0;
+            while(pairs.length < count && safety < 100) {
+                safety++;
+
+                // 2. OTÁZKA
+                let exponentQ = getRandomInt(-1, 3); // Posun řádu čísla
+                let qVal = baseNum * Math.pow(10, exponentQ);
+                let qIndex = getRandomInt(0, UNITS.length - 1);
+                
+                // 3. ODPOVĚĎ (Posun jednotky)
+                let jump = (Math.random() > 0.5) ? 1 : -1;
+                
+                // Ochrana okrajů pole
+                if (qIndex === 0) jump = 1; 
+                if (qIndex === UNITS.length - 1) jump = -1;
+                
+                // Level 3 povolí skok o 2 jednotky
+                if (level === 3 && Math.random() > 0.7) {
+                    jump = (jump === 1 && qIndex < UNITS.length - 2) ? 2 : (jump === -1 && qIndex > 1 ? -2 : jump);
+                }
+
+                let aIndex = qIndex + jump;
+                
+                // 4. VÝPOČET (SI = 1000)
+                let factor = Math.pow(1000, -jump); 
+                let aVal = qVal * factor;
+
+                let qStr = `${formatNum(qVal)} ${UNITS[qIndex]}`;
+                let aStr = `${formatNum(aVal)} ${UNITS[aIndex]}`;
+
+                // 5. UNIKÁTNOST
+                if (!usedQuestions.has(qStr) && !usedAnswers.has(aStr)) {
+                    pairs.push({ q: qStr, a: aStr, id: pairs.length });
+                    usedQuestions.add(qStr);
+                    usedAnswers.add(aStr);
+                }
+            }
+            return pairs;
+        }
+
+        // --- UI LOGIKA ---
+        function showTab(tabId, btn) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(btn) btn.classList.add('active');
+        }
+
+        // --- HERNÍ LOGIKA ---
+        let selectedLeft = null;
+        let selectedRight = null;
+        let pairsCount = 0;
+        let matchedCount = 0;
+
+        function startGame(level) {
+            const data = generateSimilarPairs(level, 5);
+            
+            pairsCount = data.length;
+            matchedCount = 0;
+            selectedLeft = null;
+            selectedRight = null;
+
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('resultMsg').style.display = 'none';
+            document.querySelectorAll('.game-controls .btn').forEach(b => b.classList.remove('active-format'));
+            event.target.classList.add('active-format');
+
+            const leftCol = document.getElementById('colLeft');
+            const rightCol = document.getElementById('colRight');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+
+            // Render
+            data.forEach(item => {
+                let div = document.createElement('div');
+                div.className = 'game-item';
+                div.innerText = item.q;
+                div.dataset.id = item.id;
+                div.onclick = () => selectItem(div, 'left');
+                leftCol.appendChild(div);
+            });
+
+            // Shuffle Right
+            const shuffledData = [...data].sort(() => Math.random() - 0.5);
+            shuffledData.forEach(item => {
+                let div = document.createElement('div');
+                div.className = 'game-item';
+                div.innerText = item.a;
+                div.dataset.id = item.id;
+                div.onclick = () => selectItem(div, 'right');
+                rightCol.appendChild(div);
+            });
+        }
+
+        function selectItem(element, side) {
+            if (element.classList.contains('matched')) return;
+
+            if (side === 'left') {
+                if (selectedLeft) selectedLeft.classList.remove('selected');
+                selectedLeft = element;
+            } else {
+                if (selectedRight) selectedRight.classList.remove('selected');
+                selectedRight = element;
+            }
+            element.classList.add('selected');
+
+            if (selectedLeft && selectedRight) checkMatch();
+        }
+
+        function checkMatch() {
+            const idLeft = selectedLeft.dataset.id;
+            const idRight = selectedRight.dataset.id;
+
+            if (idLeft === idRight) {
+                selectedLeft.classList.add('matched');
+                selectedRight.classList.add('matched');
+                selectedLeft.classList.remove('selected');
+                selectedRight.classList.remove('selected');
+                selectedLeft = null; selectedRight = null;
+                matchedCount++;
+                if (matchedCount === pairsCount) setTimeout(() => { document.getElementById('resultMsg').style.display = 'block'; }, 500);
+            } else {
+                selectedLeft.classList.add('wrong');
+                selectedRight.classList.add('wrong');
+                const tL = selectedLeft, tR = selectedRight;
+                setTimeout(() => { tL.classList.remove('wrong', 'selected'); tR.classList.remove('wrong', 'selected'); }, 500);
+                selectedLeft = null; selectedRight = null;
+            }
+        }
+
+        function resetUI() {
+            document.getElementById('gameArea').style.display = 'none';
+            document.querySelectorAll('.game-controls .btn').forEach(b => b.classList.remove('active-format'));
+        }
+    </script>
+</body>
+</html>
+<!--
+    <footer>
+        Vytvořeno pomocí <b>Gemini AI</b> | 
+        <strong>Ing. Viktor Vráblík</strong> | 
+        Web: <a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> | 
+        <b>2026</b>
+    </footer>
+-->
