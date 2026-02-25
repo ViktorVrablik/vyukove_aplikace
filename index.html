@@ -3,172 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Výukové Aplikace - Rozcestník</title>
+    <title>Výukové Aplikace - Notion Cards</title>
     <style>
-        /* ... Váš původní styl ... */
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --text-muted: #8b949e;
-            --accent: #58a6ff;
-            --data: #3fb950;
-            --warning: #d29922;
-            --danger: #f85149;
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --border: #e9e9e7;
+            --text: #37352f;
+            --text-muted: #787774;
+            --accent: #2383e2;
+            --hover-bg: #f7f7f5;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+
+            /* Notion Tag Colors */
+            --tag-math-bg: #faebdd; --tag-math-text: #854c1d;
+            --tag-physics-bg: #e1f0ef; --tag-physics-text: #245e5a;
+            --tag-cs-bg: #fdecc8; --tag-cs-text: #89632a;
         }
+
         body {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            max-width: 950px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
+            padding: 40px 24px;
+            line-height: 1.5;
         }
-        h1, h2, h3 { color: var(--text); font-weight: normal; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;}
-        h1 { text-align: center; border: none; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); }
-        
-        a {color: var(--text)}
-        
-        /* Navigace */
-        .tabs { display: flex; gap: 5px; margin-bottom: 30px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 5px;}
-        .tab-btn {
-            padding: 8px 16px; font-size: 14px; border: 1px solid transparent; font-family: inherit;
-            background-color: transparent; color: var(--text-muted); cursor: pointer; transition: 0.2s;
-        }
-        .tab-btn:hover { color: var(--text); border: 1px solid var(--border); }
-        .tab-btn.active { border: 1px solid var(--border); border-bottom: none; background: var(--surface); color: var(--accent); }
 
-        /* Mřížka pro karty */
-        .project-grid {
+        header { margin-bottom: 40px; }
+        h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+        .subtitle { color: var(--text-muted); font-size: 16px; }
+
+        a {
+            color:var(--text);
+        }
+
+        /* Filtry */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .filter-btn {
+            padding: 4px 12px;
+            font-size: 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+
+        .filter-btn:hover { background: var(--hover-bg); color: var(--text); }
+        .filter-btn.active { background: var(--hover-bg); color: var(--text); font-weight: 600; }
+
+        /* Mřížka karet */
+        .card-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            animation: fadeIn 0.3s;
+            gap: 16px;
         }
 
-        /* Styl karty */
+        /* Karta */
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 20px;
+            border-radius: 8px;
+            padding: 16px;
+            text-decoration: none;
+            color: inherit;
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-        .card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-        }
-        .card-tag {
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--data);
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
-        .card h3 {
-            margin: 0 0 10px 0;
-            border: none;
-            padding: 0;
-            color: var(--accent);
-            font-size: 18px;
-        }
-        .card p {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-            flex-grow: 1;
-        }
-        .card .btn {
-            margin: 0;
-            text-align: center;
-            display: block;
-            text-decoration: none;
-        }
-        
-        .btn {
-            background-color: var(--accent);
-            padding: 5px;
-            border-radius: 5px;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
+        .card:hover {
+            background: var(--hover-bg);
+            box-shadow: var(--card-shadow);
+        }
+
+        .tag-container { margin-bottom: 12px; }
+        .tag {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-math { background: var(--tag-math-bg); color: var(--tag-math-text); }
+        .tag-physics { background: var(--tag-physics-bg); color: var(--tag-physics-text); }
+        .tag-cs { background: var(--tag-cs-bg); color: var(--tag-cs-text); }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            flex-grow: 1;
+        }
+
+        /* Footer */
         footer {
-            text-align: center; margin-top: 40px; padding-top: 20px;
-            border-top: 1px dotted var(--border); color: var(--text-muted); font-size: 13px;
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .footer_line {
+            margin-bottom: 10px;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
 
-    <h1>[ VÝUKOVÉ APLIKACE ]</h1>
+<header>
+    <h1>Výukové aplikace</h1>
+    <p class="subtitle">Přehled interaktivních nástrojů pro studium.</p>
+</header>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="filterProjects('all')">_VŠECHNY APLIKACE</button>
-        <button class="tab-btn" onclick="filterProjects('inf')">_INFORMATIKA</button>
-        <button class="tab-btn" onclick="filterProjects('prog')">_PROGRAMOVÁNÍ</button>
+<nav class="filter-bar">
+    <button class="filter-btn active" onclick="filter('all')">Vše</button>
+    <button class="filter-btn" onclick="filter('math')">Matematika</button>
+    <button class="filter-btn" onclick="filter('physics')">Fyzika</button>
+    <button class="filter-btn" onclick="filter('cs')">Informatika</button>
+</nav>
+
+<main class="card-grid" id="grid">
+
+    <a href="#" class="card" data-cat="math">
+        <div class="tag-container"><span class="tag tag-math">Matematika</span></div>
+        <div class="card-title">Geometrie_v1</div>
+        <div class="card-desc">Konstrukce těles a interaktivní výpočty objemů.</div>
+    </a>
+
+    <a href="#" class="card" data-cat="physics">
+        <div class="tag-container"><span class="tag tag-physics">Fyzika</span></div>
+        <div class="card-title">Kinematika Lab</div>
+        <div class="card-desc">Simulace pohybů v tíhovém poli Země s grafy.</div>
+    </a>
+
+    <a href="#" class="card" data-cat="cs">
+        <div class="tag-container"><span class="tag tag-cs">Informatika</span></div>
+        <div class="card-title">Binary Master</div>
+        <div class="card-desc">Rychlý trénink binární aritmetiky a bitových operací.</div>
+    </a>
+
+    <a href="#" class="card" data-cat="cs">
+        <div class="tag-container"><span class="tag tag-cs">Informatika</span></div>
+        <div class="card-title">Logic Gates</div>
+        <div class="card-desc">Návrh a testování logických hradel v reálném čase.</div>
+    </a>
+
+    <a href="#" class="card" data-cat="math">
+        <div class="tag-container"><span class="tag tag-math">Matematika</span></div>
+        <div class="card-title">Analytická Funkce</div>
+        <div class="card-desc">Vizualizace průběhů funkcí a hledání extrémů.</div>
+    </a>
+
+</main>
+
+<footer>
+    <div class="footer_line">
+        <span><strong>Ing. Viktor Vráblík</strong></span>
+        <span><a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> </span>
+        <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank">bit.ly/vyukoveMaterialy</a></span>
     </div>
 
-    <div class="project-grid" id="projectGrid">
-        
-        <div class="card" data-category="inf">
-            <span class="card-tag">#infromatika</span>
-            <h3>Převody jednotek</h3>
-            <p>Teoretický úvod do násobných jednotek a interaktivní aplikace pro procvičení převodu jednotek</p>
-            <a href="Informatika/prevody_jednotek.html" class="btn">_SPUSTIT</a>
-        </div>
-
-        <div class="card" data-category="inf">
-            <span class="card-tag">#infromatika</span>
-            <h3>Kódování dat</h3>
-            <p>Interaktivní aplikace pro vysvětlení principu kódování základních datových typů</p>
-            <a href="/Informatika/kodovani_dat.html" class="btn">_SPUSTIT</a>
-        </div>
-
-        <div class="card" data-category="cs">
-            <span class="card-tag">#computer_science</span>
-            <h3>Binary_Master</h3>
-            <p>Procvičování převodů mezi číselnými soustavami (Bin, Dec, Hex).</p>
-            <a href="#" class="btn">SPUSTIT_APP</a>
-        </div>
-
-        <div class="card" data-category="cs">
-            <span class="card-tag">#computer_science</span>
-            <h3>Logic_Gates_Sim</h3>
-            <p>Návrh a simulace logických obvodů pomocí hradel AND, OR, NOT.</p>
-            <a href="#" class="btn">SPUSTIT_APP</a>
-        </div>
-
+    <div class="footer_line">
+        <span>Vytvořeno pomocí <b>Gemini AI</b></span>
     </div>
+</footer>
 
-    <footer>
-        Vytvořeno pomocí <b>Gemini AI</b> | 
-        <strong>Ing. Viktor Vráblík</strong> | 
-        Web: <a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> | Výukové materiály: <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank">bit.ly/vyukoveMaterialy</a> |
-        <b>2026</b>
-    </footer>
+<script>
+    function filter(category) {
+        // Přepnutí aktivního tlačítka
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.toLowerCase().includes(category) || (category === 'all' && btn.innerText === 'Vše'));
+        });
 
-    <script>
-        function filterProjects(category) {
-            // Aktualizace aktivního tlačítka
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            // Filtrace karet
-            const cards = document.querySelectorAll('.card');
-            cards.forEach(card => {
-                if (category === 'all' || card.getAttribute('data-category') === category) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-    </script>
+        // Filtrace karet
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            if (category === 'all' || card.getAttribute('data-cat') === category) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
