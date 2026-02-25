@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Algo Simulator (Notion Style)</title>
+    <style>
+        /* --- NOTION DESIGN TEMPLATE --- */
+        :root {
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --border: #e9e9e7;
+            --text: #37352f;
+            --text-muted: #787774;
+            --accent: #2383e2;
+            --hover-bg: #f7f7f5;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+
+            /* Notion Tag Colors */
+            --tag-math-bg: #faebdd; --tag-math-text: #854c1d;
+            --tag-physics-bg: #e1f0ef; --tag-physics-text: #245e5a;
+            --tag-cs-bg: #fdecc8; --tag-cs-text: #89632a;
+            
+            /* Visualizer Colors (Notion friendly) */
+            --bar-default: #e4e4e1;
+            --bar-accent: #2383e2; /* Blue */
+            --bar-compare: #d9730d; /* Orange */
+            --bar-swap: #e03e3e; /* Red */
+            --bar-sorted: #0f7b6c; /* Green */
+            --bar-pivot: #6940a5; /* Purple */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* --- HEADER --- */
+        header { margin-bottom: 30px; }
+        h1 { 
+            font-size: 40px; 
+            font-weight: 700; 
+            margin-bottom: 8px; 
+            letter-spacing: -0.01em; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .subtitle { color: var(--text-muted); font-size: 16px; margin-top: 0; }
+
+        a { color: var(--text); }
+        h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; margin-top: 0; }
+        h4 { font-size: 16px; font-weight: 600; margin-bottom: 5px; margin-top: 15px;}
+
+        /* --- FILTERS / NAVIGATION --- */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            white-space: nowrap;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover { background: var(--hover-bg); color: var(--text); }
+        .filter-btn.active { background: var(--hover-bg); color: var(--text); font-weight: 600; }
+        .filter-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- CONTROLS BAR --- */
+        .controls-bar {
+            background: var(--hover-bg);
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .control-group { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        label { color: var(--text-muted); font-weight: 500; }
+        
+        input[type="range"] { accent-color: var(--text-muted); cursor: pointer; width: 100px; }
+        input[type="number"] { 
+            background: var(--bg); border: 1px solid var(--border); color: var(--text); 
+            padding: 4px 8px; width: 60px; border-radius: 4px; font-family: inherit;
+        }
+
+        .buttons { display: flex; gap: 8px; margin-left: auto; }
+
+        .btn {
+            padding: 6px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn:hover:not(:disabled) { background: var(--hover-bg); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        
+        .btn-run { background: var(--text); color: var(--bg); border-color: var(--text); }
+        .btn-run:hover:not(:disabled) { background: #2f2e2a; }
+
+        /* --- CONTENT PANELS --- */
+        .tab-content { display: none; animation: fadeIn 0.2s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- GRID & CARDS (Theory Tab) --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+        .card:hover { box-shadow: var(--card-shadow); }
+
+        .tag-container { margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap;}
+        .tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 500; }
+        .tag-math { background: var(--tag-math-bg); color: var(--tag-math-text); }
+        .tag-physics { background: var(--tag-physics-bg); color: var(--tag-physics-text); }
+        .tag-cs { background: var(--tag-cs-bg); color: var(--tag-cs-text); }
+        
+        .tag-gray { background: #f1f1ef; color: #787774; }
+        .tag-green { background: #e7f3f1; color: #0f7b6c; }
+        .tag-red { background: #fbe4e4; color: #c42b1c; }
+        .tag-yellow { background: #fbf3db; color: #9f6b00; }
+
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+        .card-desc { font-size: 14px; color: var(--text-muted); flex-grow: 1; }
+
+        /* Tables */
+        .notion-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+        .notion-table th, .notion-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+        .notion-table th { background: var(--hover-bg); font-weight: 500; color: var(--text-muted); }
+
+        /* Math helpers */
+        .math-i { font-style: italic; font-family: "Times New Roman", Times, serif; }
+        sup { font-size: 0.7em; }
+
+        /* --- ALGO VISUALIZER --- */
+        .algo-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
+
+        .visualizer-box {
+            background: var(--hover-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            height: 400px;
+            display: flex;
+            align-items: flex-end;
+            padding: 16px;
+            gap: 2px;
+            position: relative;
+        }
+
+        .bar { flex: 1; background: var(--bar-accent); transition: height 0.1s ease, background 0.1s ease; border-radius: 2px 2px 0 0; }
+        .bar.compare { background: var(--bar-compare); }
+        .bar.swap { background: var(--bar-swap); }
+        .bar.sorted { background: var(--bar-sorted); }
+        .bar.pivot { background: var(--bar-pivot); }
+
+        .code-box {
+            background: var(--hover-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            color: var(--text);
+            max-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        pre { 
+            margin: 0; 
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            overflow-x: auto;
+            color: #eb5757; /* Notion code text color */
+        }
+        
+        .stats-overlay {
+            position: absolute; top: 16px; left: 16px;
+            background: var(--bg); padding: 4px 8px;
+            border: 1px solid var(--border); border-radius: 4px;
+            font-size: 12px; z-index: 10;
+            color: var(--text-muted);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .stats-overlay span { color: var(--text); font-weight: 600; margin-left: 4px; }
+        .stats-separator { margin: 0 6px; color: var(--border); }
+
+        /* --- BATTLE MODE --- */
+        .battle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .battle-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+        .battle-card h3 { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between;}
+        .battle-viz { height: 120px; display: flex; align-items: flex-end; gap: 1px; background: var(--hover-bg); padding: 4px; border-radius: 4px;}
+        .stats-text { font-size: 12px; color: var(--text-muted); margin-top: 8px;}
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 800px) {
+            .algo-layout { grid-template-columns: 1fr; }
+            .visualizer-box { height: 300px; }
+            .controls-bar { flex-direction: column; align-items: stretch; }
+            .buttons { justify-content: space-between; margin-left: 0; }
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 80px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .footer_line {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧮 Algoritmy Třídění</h1>
+        <p class="subtitle">Interaktivní vizualizace a porovnání výkonu.</p>
+    </header>
+
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="openTab('theory')">📄 Teorie</button>
+        <button class="filter-btn" onclick="openTab('bubble')">Bubble Sort</button>
+        <button class="filter-btn" onclick="openTab('select')">Selection Sort</button>
+        <button class="filter-btn" onclick="openTab('insert')">Insertion Sort</button>
+        <button class="filter-btn" onclick="openTab('quick')">Quick Sort</button>
+        <button class="filter-btn" onclick="openTab('merge')">Merge Sort</button>
+        <button class="filter-btn" onclick="openTab('battle')">⚔️ Porovnání</button>
+    </div>
+
+    <div class="controls-bar">
+        <div class="control-group">
+            <label>Prvků</label>
+            <input type="number" id="globalSize" value="50" min="10" max="100">
+        </div>
+        <div class="control-group">
+            <label>Rychlost</label>
+            <input type="range" id="globalSpeed" min="1" max="500" value="50" style="direction: rtl">
+        </div>
+        
+        <div class="buttons">
+            <button class="btn" id="btn-gen" onclick="generateNewArrays()">⟳ Reset</button>
+            <button class="btn" id="btn-step" onclick="triggerStep()" disabled>➜ Krok</button>
+            <button class="btn" id="btn-pause" onclick="togglePause()" disabled>⏸ Pauza</button>
+            <button class="btn btn-run" id="btn-run" onclick="runCurrentTab()">▶ Spustit</button>
+            <button class="btn" id="btn-stop" onclick="stopExecution()" disabled style="color: var(--bar-swap); border-color: #fbe4e4;">⏹ Stop</button>
+        </div>
+    </div>
+
+    <div id="theory" class="tab-content active">
+        <div class="card-grid">
+            
+            <div class="card">
+                <div class="tag-container">
+                    <span class="tag tag-cs">Složitost</span>
+                    <span class="tag tag-math">Big O</span>
+                </div>
+                <div class="card-title">Základy Big O Notace</div>
+                <div class="card-desc">
+                    <p>Popisuje horní mez časové nebo paměťové náročnosti. Určuje, jak roste potřebný čas při zvětšení vstupních dat.</p>
+                    <ul style="padding-left: 20px; margin-bottom: 0;">
+                        <li><strong>O(1)</strong> - Konstantní (přístup k poli)</li>
+                        <li><strong>O(n)</strong> - Lineární (průchod polem)</li>
+                        <li><strong>O(n log n)</strong> - Standard (Quick/Merge)</li>
+                        <li><strong>O(n<sup>2</sup>)</strong> - Kvadratická (Bubble Sort)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="tag-container">
+                    <span class="tag tag-gray">Time</span>
+                    <span class="tag tag-gray">Space</span>
+                </div>
+                <div class="card-title">Čas vs. Prostor</div>
+                <div class="card-desc">
+                    <p><strong>Časová složitost:</strong> Počet porovnání a prohození. Měří se Worst Case (O) a Best Case (&Omega;).</p>
+                    <p><strong>Prostorová složitost:</strong> Potřeba paměti navíc. <em>In-Place</em> algoritmy jako Bubble nebo Select mají O(1). <em>Merge Sort</em> potřebuje nová pole, takže má O(n).</p>
+                </div>
+            </div>
+
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="tag-container">
+                    <span class="tag tag-physics">Tabulka</span>
+                </div>
+                <div class="card-title">Velký přehled algoritmů</div>
+                <div class="card-desc">
+                    <table class="notion-table">
+                        <thead>
+                            <tr>
+                                <th>Algoritmus</th>
+                                <th>Best Case (&Omega;)</th>
+                                <th>Average Case (&Theta;)</th>
+                                <th>Worst Case (O)</th>
+                                <th>Space (Paměť)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Bubble Sort</strong></td>
+                                <td><span class="tag tag-green">&Omega;(n)</span></td>
+                                <td><span class="tag tag-red">&Theta;(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-red">O(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-green">O(1)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Selection Sort</strong></td>
+                                <td><span class="tag tag-red">&Omega;(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-red">&Theta;(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-red">O(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-green">O(1)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Insertion Sort</strong></td>
+                                <td><span class="tag tag-green">&Omega;(n)</span></td>
+                                <td><span class="tag tag-red">&Theta;(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-red">O(n<sup>2</sup>)</span></td>
+                                <td><span class="tag tag-green">O(1)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quick Sort</strong></td>
+                                <td><span class="tag tag-green">&Omega;(n log n)</span></td>
+                                <td><span class="tag tag-green">&Theta;(n log n)</span></td>
+                                <td><span class="tag tag-yellow">O(n<sup>2</sup>) *</span></td>
+                                <td><span class="tag tag-yellow">O(log n)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Merge Sort</strong></td>
+                                <td><span class="tag tag-green">&Omega;(n log n)</span></td>
+                                <td><span class="tag tag-green">&Theta;(n log n)</span></td>
+                                <td><span class="tag tag-green">O(n log n)</span></td>
+                                <td><span class="tag tag-red">O(n)</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="bubble" class="tab-content">
+        <div class="algo-layout">
+            <div class="visualizer-box" id="viz-bubble"></div>
+            <div class="code-box">
+                <div class="card-title">Bubble Sort</div>
+                <div class="card-desc" style="margin-bottom: 15px;">Opakovaně prochází seznam, porovnává sousední prvky a prohazuje je. Největší prvky "bublají" na konec.</div>
+                    <pre>
+                    procedure bubbleSort(A):
+                    n = length(A)
+                    for i from 0 to n-1:
+                        for j from 0 to n-i-1:
+                        if A[j] > A[j+1]:
+                            swap(A[j], A[j+1])
+                    </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="select" class="tab-content">
+        <div class="algo-layout">
+            <div class="visualizer-box" id="viz-select"></div>
+            <div class="code-box">
+                <div class="card-title">Selection Sort</div>
+                <div class="card-desc" style="margin-bottom: 15px;">V každém kroku najde minimum v neseřazené části a prohodí ho na konec seřazené.</div>
+                    <pre>
+                    procedure selectionSort(A):
+                    for i from 0 to n-1:
+                        min = i
+                        for j from i+1 to n:
+                        if A[j] < A[min]:
+                            min = j
+                        swap(A[i], A[min])
+                    </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="insert" class="tab-content">
+        <div class="algo-layout">
+            <div class="visualizer-box" id="viz-insert"></div>
+            <div class="code-box">
+                <div class="card-title">Insertion Sort</div>
+                <div class="card-desc" style="margin-bottom: 15px;">Bere prvek z neseřazené části a vkládá ho na správné místo v seřazené části.</div>
+                    <pre>
+                    procedure insertionSort(A):
+                    for i from 1 to n-1:
+                        key = A[i]
+                        j = i - 1
+                        while j >= 0 and A[j] > key:
+                        A[j+1] = A[j]
+                        j = j - 1
+                        A[j+1] = key
+                    </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="quick" class="tab-content">
+        <div class="algo-layout">
+            <div class="visualizer-box" id="viz-quick"></div>
+            <div class="code-box">
+                <div class="card-title">Quick Sort</div>
+                <div class="card-desc" style="margin-bottom: 15px;">Divide & Conquer. Vybere "pivot", rozdělí pole na menší a větší než pivot, a pak rekurzivně řadí.</div>
+                    <pre>
+                    procedure quickSort(A, low, high):
+                    if low < high:
+                        pi = partition(A, low, high)
+                        quickSort(A, low, pi-1)
+                        quickSort(A, pi+1, high)
+                    </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="merge" class="tab-content">
+        <div class="algo-layout">
+            <div class="visualizer-box" id="viz-merge"></div>
+            <div class="code-box">
+                <div class="card-title">Merge Sort</div>
+                <div class="card-desc" style="margin-bottom: 15px;">Divide & Conquer. Rekurzivně dělí pole na poloviny a pak je slévá (merge) zpět seřazené.</div>
+                    <pre>
+                    procedure mergeSort(A):
+                    if length(A) <= 1: return A
+                    mid = length(A) / 2
+                    L = mergeSort(A[0..mid])
+                    R = mergeSort(A[mid..end])
+                    return merge(L, R)
+                    </pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="battle" class="tab-content">
+        <div class="battle-grid">
+            <div class="battle-card">
+                <h3>Bubble Sort <span class="stats-text" id="stats-battle-bubble">0 cmp</span></h3>
+                <div class="battle-viz" id="viz-battle-bubble"></div>
+            </div>
+            <div class="battle-card">
+                <h3>Selection Sort <span class="stats-text" id="stats-battle-select">0 cmp</span></h3>
+                <div class="battle-viz" id="viz-battle-select"></div>
+            </div>
+            <div class="battle-card">
+                <h3>Insertion Sort <span class="stats-text" id="stats-battle-insert">0 cmp</span></h3>
+                <div class="battle-viz" id="viz-battle-insert"></div>
+            </div>
+            <div class="battle-card">
+                <h3>Quick Sort <span class="stats-text" id="stats-battle-quick">0 cmp</span></h3>
+                <div class="battle-viz" id="viz-battle-quick"></div>
+            </div>
+            <div class="battle-card">
+                <h3>Merge Sort <span class="stats-text" id="stats-battle-merge">0 cmp</span></h3>
+                <div class="battle-viz" id="viz-battle-merge"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer_line">
+            <span>Vytvořeno jako Notion-style interaktivní widget.</span>
+            <span>Verze 4.0</span>
+        </div>
+    </footer>
+
+</div>
+
+<script>
+    // --- GLOBAL STATE ---
+    let globalArray = [];
+    let isRunning = false;
+    let isPaused = false;
+    let abortController = null; 
+    let stepResolver = null;    
+    let activeTab = 'theory';
+
+    const algos = ['bubble', 'select', 'insert', 'quick', 'merge'];
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+        generateNewArrays();
+        updateButtonState();
+    };
+
+    function generateNewArrays() {
+        if (isRunning) return;
+        let size = parseInt(document.getElementById('globalSize').value);
+        if (size > 100) { size = 100; document.getElementById('globalSize').value = 100; }
+        if (size < 5) { size = 5; }
+
+        globalArray = Array.from({ length: size }, () => Math.floor(Math.random() * 95) + 5);
+        
+        algos.forEach(name => {
+            render(`viz-${name}`, globalArray);
+            render(`viz-battle-${name}`, globalArray);
+            const battleStat = document.getElementById(`stats-battle-${name}`);
+            if(battleStat) battleStat.innerText = "0 cmp";
+        });
+    }
+
+    // --- TAB SYSTEM ---
+    function openTab(tabId) {
+        if (isRunning) {
+            if(!confirm("Běží simulace. Chcete ji ukončit a přepnout záložku?")) return;
+            stopExecution();
+        }
+        
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.filter-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        activeTab = tabId;
+
+        const btns = document.querySelectorAll('.filter-btn');
+        btns.forEach(btn => {
+            if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active');
+        });
+
+        if (algos.includes(tabId)) {
+            render(`viz-${tabId}`, globalArray);
+        }
+        updateButtonState();
+    }
+
+    // --- CONTROL LOGIC ---
+    function updateButtonState() {
+        const btnRun = document.getElementById('btn-run');
+        const btnPause = document.getElementById('btn-pause');
+        const btnStep = document.getElementById('btn-step');
+        const btnStop = document.getElementById('btn-stop');
+        const btnGen = document.getElementById('btn-gen');
+
+        const isBattle = activeTab === 'battle';
+
+        if (activeTab === 'theory') {
+            btnRun.disabled = true;
+            btnRun.innerText = "Vyberte algoritmus";
+        } else {
+            btnRun.disabled = isRunning;
+            btnRun.innerText = "▶ Spustit";
+        }
+
+        btnGen.disabled = isRunning;
+        btnStop.disabled = !isRunning;
+
+        if (isBattle) {
+            btnPause.disabled = true;
+            btnStep.disabled = true;
+            btnPause.innerHTML = "⏸ Pauza";
+        } else {
+            btnPause.disabled = !isRunning;
+            btnStep.disabled = !isPaused || !isRunning;
+            
+            if(isPaused) {
+                btnPause.innerHTML = "▶ Pokračovat";
+            } else {
+                btnPause.innerHTML = "⏸ Pauza";
+            }
+        }
+    }
+
+    function runCurrentTab() {
+        if (activeTab === 'theory') return;
+        isRunning = true;
+        isPaused = false;
+        abortController = new AbortController();
+        updateButtonState();
+
+        if (activeTab === 'battle') { runBattle(); } 
+        else { runSingle(activeTab); }
+    }
+
+    function togglePause() {
+        if (!isRunning || activeTab === 'battle') return;
+        isPaused = !isPaused;
+        if (!isPaused && stepResolver) {
+            stepResolver();
+            stepResolver = null;
+        }
+        updateButtonState();
+    }
+
+    function triggerStep() {
+        if (activeTab === 'battle') return;
+        if (isPaused && stepResolver) {
+            stepResolver(); 
+        }
+    }
+
+    function stopExecution() {
+        if (abortController) abortController.abort();
+        isRunning = false;
+        isPaused = false;
+        stepResolver = null;
+        setTimeout(() => { generateNewArrays(); updateButtonState(); }, 100);
+    }
+
+    async function sleep() {
+        const ms = parseInt(document.getElementById('globalSpeed').value);
+        if (abortController && abortController.signal.aborted) throw new Error("ABORT");
+
+        while (isPaused) {
+            await new Promise(resolve => stepResolver = resolve);
+            if (abortController && abortController.signal.aborted) throw new Error("ABORT");
+            return; 
+        }
+        await new Promise(resolve => setTimeout(resolve, ms));
+        if (abortController && abortController.signal.aborted) throw new Error("ABORT");
+    }
+
+    // --- VISUALIZATION ---
+    function render(containerId, arr, colorIndices = {}, stats = null) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        container.innerHTML = ''; 
+        
+        if (stats) {
+            let statHtml = `Porovnání: <span>${stats.comp}</span> <span class="stats-separator">|</span> Prohození: <span>${stats.swaps}</span>`;
+            let overlay = document.createElement('div');
+            overlay.className = 'stats-overlay';
+            overlay.innerHTML = statHtml;
+            container.appendChild(overlay);
+            
+            if(containerId.includes('battle')) {
+                const statText = document.getElementById(`stats-${containerId.replace('viz-', '')}`);
+                if(statText) statText.innerHTML = `${stats.comp} cmp`;
+            }
+        }
+
+        arr.forEach((val, idx) => {
+            const bar = document.createElement('div');
+            bar.classList.add('bar');
+            bar.style.height = `${val}%`;
+            
+            if (colorIndices.compare && colorIndices.compare.includes(idx)) bar.classList.add('compare');
+            if (colorIndices.swap && colorIndices.swap.includes(idx)) bar.classList.add('swap');
+            if (colorIndices.sorted && colorIndices.sorted.includes(idx)) bar.classList.add('sorted');
+            if (colorIndices.pivot === idx) bar.classList.add('pivot');
+            
+            container.appendChild(bar);
+        });
+    }
+
+    // --- ALGORITHMS ---
+    async function runSingle(name) {
+        let arr = [...globalArray];
+        try {
+            switch(name) {
+                case 'bubble': await bubbleSort(arr, 'viz-bubble'); break;
+                case 'select': await selectionSort(arr, 'viz-select'); break;
+                case 'insert': await insertionSort(arr, 'viz-insert'); break;
+                case 'quick': await quickSort(arr, 'viz-quick'); break;
+                case 'merge': await mergeSort(arr, 'viz-merge'); break;
+            }
+        } catch(e) { if(e.message !== "ABORT") console.error(e); }
+        if (isRunning) { isRunning = false; updateButtonState(); }
+    }
+
+    async function runBattle() {
+        try {
+            const p1 = bubbleSort([...globalArray], 'viz-battle-bubble');
+            const p2 = selectionSort([...globalArray], 'viz-battle-select');
+            const p3 = insertionSort([...globalArray], 'viz-battle-insert');
+            const p4 = quickSort([...globalArray], 'viz-battle-quick');
+            const p5 = mergeSort([...globalArray], 'viz-battle-merge');
+            await Promise.all([p1, p2, p3, p4, p5]);
+        } catch(e) { if(e.message !== "ABORT") console.error(e); }
+        if (isRunning) { isRunning = false; updateButtonState(); }
+    }
+
+    // Implementations (Bubble, Select, Insert, Quick, Merge) - Unchanged Logic
+    async function bubbleSort(arr, containerId) {
+        let stats = { comp: 0, swaps: 0 }; let n = arr.length; let sorted = [];
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n - i - 1; j++) {
+                stats.comp++; render(containerId, arr, { compare: [j, j+1], sorted: sorted }, stats); await sleep();
+                if (arr[j] > arr[j + 1]) {
+                    stats.swaps++; [arr[j], arr[j+1]] = [arr[j+1], arr[j]];
+                    render(containerId, arr, { swap: [j, j+1], sorted: sorted }, stats); await sleep();
+                }
+            }
+            sorted.push(n - i - 1);
+        }
+        render(containerId, arr, { sorted: Array.from({length:n}, (_,i)=>i) }, stats);
+    }
+
+    async function selectionSort(arr, containerId) {
+        let stats = { comp: 0, swaps: 0 }; let n = arr.length; let sorted = [];
+        for (let i = 0; i < n; i++) {
+            let minIdx = i;
+            for (let j = i + 1; j < n; j++) {
+                stats.comp++; render(containerId, arr, { compare: [j, minIdx], sorted: sorted, pivot: i }, stats); await sleep();
+                if (arr[j] < arr[minIdx]) minIdx = j;
+            }
+            if (minIdx !== i) {
+                stats.swaps++; [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+                render(containerId, arr, { swap: [i, minIdx], sorted: sorted }, stats); await sleep();
+            }
+            sorted.push(i);
+        }
+        render(containerId, arr, { sorted: Array.from({length:n}, (_,i)=>i) }, stats);
+    }
+
+    async function insertionSort(arr, containerId) {
+        let stats = { comp: 0, swaps: 0 }; let n = arr.length;
+        for (let i = 1; i < n; i++) {
+            let key = arr[i]; let j = i - 1;
+            render(containerId, arr, { pivot: i, sorted: Array.from({length: i}, (_,k)=>k) }, stats); await sleep();
+            while (j >= 0) {
+                stats.comp++; render(containerId, arr, { compare: [j], pivot: i, sorted: Array.from({length: i}, (_,k)=>k) }, stats); await sleep();
+                if(arr[j] > key) {
+                    stats.swaps++; arr[j + 1] = arr[j]; j = j - 1;
+                    render(containerId, arr, { swap: [j+1], sorted: Array.from({length: i}, (_,k)=>k) }, stats); await sleep();
+                } else break;
+            }
+            arr[j + 1] = key;
+        }
+        render(containerId, arr, { sorted: Array.from({length:n}, (_,i)=>i) }, stats);
+    }
+
+    async function quickSort(arr, containerId) {
+        let stats = { comp: 0, swaps: 0 };
+        async function partition(low, high) {
+            let pivot = arr[high]; let i = (low - 1);
+            for (let j = low; j <= high - 1; j++) {
+                stats.comp++; render(containerId, arr, { compare: [j], pivot: high, swap: [i] }, stats); await sleep();
+                if (arr[j] < pivot) {
+                    i++; stats.swaps++; [arr[i], arr[j]] = [arr[j], arr[i]];
+                    render(containerId, arr, { swap: [i, j], pivot: high }, stats); await sleep();
+                }
+            }
+            stats.swaps++; [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+            render(containerId, arr, { swap: [i+1, high] }, stats); await sleep();
+            return (i + 1);
+        }
+        async function sort(low, high) {
+            if (low < high) {
+                let pi = await partition(low, high);
+                await sort(low, pi - 1); await sort(pi + 1, high);
+            }
+        }
+        await sort(0, arr.length - 1);
+        render(containerId, arr, { sorted: Array.from({length:arr.length}, (_,i)=>i) }, stats);
+    }
+
+    async function mergeSort(arr, containerId) {
+        let stats = { comp: 0, swaps: 0 };
+        async function merge(l, m, r) {
+            let n1 = m - l + 1; let n2 = r - m;
+            let L = new Array(n1); let R = new Array(n2);
+            for (let i = 0; i < n1; i++) L[i] = arr[l + i];
+            for (let j = 0; j < n2; j++) R[j] = arr[m + 1 + j];
+            let i = 0, j = 0, k = l;
+            while (i < n1 && j < n2) {
+                stats.comp++; stats.swaps++; 
+                render(containerId, arr, { compare: [l+i, m+1+j], pivot: k }, stats); await sleep();
+                if (L[i] <= R[j]) { arr[k] = L[i]; i++; } else { arr[k] = R[j]; j++; }
+                k++; render(containerId, arr, { swap: [k-1] }, stats);
+            }
+            while (i < n1) { stats.swaps++; arr[k] = L[i]; i++; k++; render(containerId, arr, { swap: [k-1] }, stats); await sleep(); }
+            while (j < n2) { stats.swaps++; arr[k] = R[j]; j++; k++; render(containerId, arr, { swap: [k-1] }, stats); await sleep(); }
+        }
+        async function sort(l, r) {
+            if (l >= r) return;
+            let m = l + parseInt((r - l) / 2);
+            await sort(l, m); await sort(m + 1, r); await merge(l, m, r);
+        }
+        await sort(0, arr.length - 1);
+        render(containerId, arr, { sorted: Array.from({length:arr.length}, (_,i)=>i) }, stats);
+    }
+</script>
+</body>
+</html>
