@@ -167,7 +167,7 @@
         .tag-yellow { background: #fbf3db; color: #9f6b00; }
 
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-        .card-desc { font-size: 14px; color: var(--text-muted); flex-grow: 1; }
+        .card-desc { font-size: 14px; color: var(--text-muted); }
 
         /* Tables */
         .notion-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
@@ -242,6 +242,8 @@
             .visualizer-box { height: 300px; }
             .controls-bar { flex-direction: column; align-items: stretch; }
             .buttons { justify-content: space-between; margin-left: 0; }
+            .footer_line {flex-direction: column;}
+            .filter-bar {flex-direction: column;}
         }
 
         /* Footer */
@@ -275,7 +277,7 @@
         <button class="filter-btn" onclick="openTab('battle')">⚔️ Porovnání</button>
     </div>
 
-    <div class="controls-bar">
+    <div class="controls-bar" id="controlsPanel">
         <div class="control-group">
             <label>Prvků</label>
             <input type="number" id="globalSize" value="50" min="10" max="100">
@@ -392,14 +394,14 @@
             <div class="code-box">
                 <div class="card-title">Bubble Sort</div>
                 <div class="card-desc" style="margin-bottom: 15px;">Opakovaně prochází seznam, porovnává sousední prvky a prohazuje je. Největší prvky "bublají" na konec.</div>
-                    <pre>
-                    procedure bubbleSort(A):
-                    n = length(A)
-                    for i from 0 to n-1:
-                        for j from 0 to n-i-1:
-                        if A[j] > A[j+1]:
-                            swap(A[j], A[j+1])
-                    </pre>
+<pre>
+procedure bubbleSort(A):
+n = length(A)
+for i from 0 to n-1:
+    for j from 0 to n-i-1:
+    if A[j] > A[j+1]:
+        swap(A[j], A[j+1])
+</pre>
             </div>
         </div>
     </div>
@@ -410,15 +412,15 @@
             <div class="code-box">
                 <div class="card-title">Selection Sort</div>
                 <div class="card-desc" style="margin-bottom: 15px;">V každém kroku najde minimum v neseřazené části a prohodí ho na konec seřazené.</div>
-                    <pre>
-                    procedure selectionSort(A):
-                    for i from 0 to n-1:
-                        min = i
-                        for j from i+1 to n:
-                        if A[j] < A[min]:
-                            min = j
-                        swap(A[i], A[min])
-                    </pre>
+<pre>
+procedure selectionSort(A):
+for i from 0 to n-1:
+    min = i
+    for j from i+1 to n:
+    if A[j] < A[min]:
+        min = j
+    swap(A[i], A[min])
+</pre>
             </div>
         </div>
     </div>
@@ -429,16 +431,16 @@
             <div class="code-box">
                 <div class="card-title">Insertion Sort</div>
                 <div class="card-desc" style="margin-bottom: 15px;">Bere prvek z neseřazené části a vkládá ho na správné místo v seřazené části.</div>
-                    <pre>
-                    procedure insertionSort(A):
-                    for i from 1 to n-1:
-                        key = A[i]
-                        j = i - 1
-                        while j >= 0 and A[j] > key:
-                        A[j+1] = A[j]
-                        j = j - 1
-                        A[j+1] = key
-                    </pre>
+<pre>
+procedure insertionSort(A):
+for i from 1 to n-1:
+    key = A[i]
+    j = i - 1
+    while j >= 0 and A[j] > key:
+    A[j+1] = A[j]
+    j = j - 1
+    A[j+1] = key
+</pre>
             </div>
         </div>
     </div>
@@ -449,13 +451,13 @@
             <div class="code-box">
                 <div class="card-title">Quick Sort</div>
                 <div class="card-desc" style="margin-bottom: 15px;">Divide & Conquer. Vybere "pivot", rozdělí pole na menší a větší než pivot, a pak rekurzivně řadí.</div>
-                    <pre>
-                    procedure quickSort(A, low, high):
-                    if low < high:
-                        pi = partition(A, low, high)
-                        quickSort(A, low, pi-1)
-                        quickSort(A, pi+1, high)
-                    </pre>
+<pre>
+procedure quickSort(A, low, high):
+if low < high:
+    pi = partition(A, low, high)
+    quickSort(A, low, pi-1)
+    quickSort(A, pi+1, high)
+</pre>
             </div>
         </div>
     </div>
@@ -466,14 +468,14 @@
             <div class="code-box">
                 <div class="card-title">Merge Sort</div>
                 <div class="card-desc" style="margin-bottom: 15px;">Divide & Conquer. Rekurzivně dělí pole na poloviny a pak je slévá (merge) zpět seřazené.</div>
-                    <pre>
-                    procedure mergeSort(A):
-                    if length(A) <= 1: return A
-                    mid = length(A) / 2
-                    L = mergeSort(A[0..mid])
-                    R = mergeSort(A[mid..end])
-                    return merge(L, R)
-                    </pre>
+<pre>
+procedure mergeSort(A):
+if length(A) <= 1: return A
+mid = length(A) / 2
+L = mergeSort(A[0..mid])
+R = mergeSort(A[mid..end])
+return merge(L, R)
+</pre>
             </div>
         </div>
     </div>
@@ -502,11 +504,15 @@
             </div>
         </div>
     </div>
-
     <footer>
         <div class="footer_line">
-            <span>Vytvořeno jako Notion-style interaktivní widget.</span>
-            <span>Verze 4.0</span>
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> </span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+
+        <div class="footer_line">
+            <span>Vytvořeno pomocí <b>Gemini AI</b></span>
         </div>
     </footer>
 
@@ -576,15 +582,20 @@
         const btnStep = document.getElementById('btn-step');
         const btnStop = document.getElementById('btn-stop');
         const btnGen = document.getElementById('btn-gen');
+        const controlPanel = document.getElementById('controlsPanel');
+       
 
         const isBattle = activeTab === 'battle';
 
         if (activeTab === 'theory') {
             btnRun.disabled = true;
             btnRun.innerText = "Vyberte algoritmus";
+            controlPanel.style.display = 'none';
         } else {
             btnRun.disabled = isRunning;
             btnRun.innerText = "▶ Spustit";
+            controlPanel.style.display = 'flex';
+
         }
 
         btnGen.disabled = isRunning;
