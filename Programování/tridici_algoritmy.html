@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorting Algo Simulator (Notion Style)</title>
+    <title>Třídící algoritmy</title>
     <style>
         /* --- NOTION DESIGN TEMPLATE --- */
         :root {
@@ -42,7 +42,7 @@
         }
 
         /* --- HEADER --- */
-        header { margin-bottom: 30px; }
+        header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center }
         h1 { 
             font-size: 40px; 
             font-weight: 700; 
@@ -250,6 +250,7 @@
             .buttons { justify-content: space-between; margin-left: 0; }
             .footer_line {flex-direction: column;}
             .filter-bar {flex-direction: column;}
+            header {flex-direction: column-reverse;}
         }
 
         /* Footer */
@@ -267,14 +268,16 @@
     </style>
 </head>
 <body>
-
     <header>
-        <h1>🧮 Algoritmy Třídění</h1>
-        <p class="subtitle">Interaktivní vizualizace a porovnání výkonu.</p>
+        <div>
+            <h1>Třídící algoritmy</h1>
+            <p class="subtitle">Interaktivní vizualizace a porovnání výkonu.</p>
+        </div>
+        <button class="btn" onclick="location.href = '../index.html'">↩ Zpět</button>
     </header>
 
     <div class="filter-bar">
-        <button class="filter-btn active" onclick="openTab('theory')">📄 Teorie</button>
+        <button class="filter-btn active" onclick="openTab('theory')">Teorie</button>
         <button class="filter-btn" onclick="openTab('bubble')">Bubble Sort</button>
         <button class="filter-btn" onclick="openTab('select')">Selection Sort</button>
         <button class="filter-btn" onclick="openTab('insert')">Insertion Sort</button>
@@ -376,7 +379,7 @@
                                 <td><strong>Quick Sort</strong></td>
                                 <td><span class="tag tag-green">&Omega;(n log n)</span></td>
                                 <td><span class="tag tag-green">&Theta;(n log n)</span></td>
-                                <td><span class="tag tag-yellow">O(n<sup>2</sup>) *</span></td>
+                                <td><span class="tag tag-yellow">O(n<sup>2</sup>)</span></td>
                                 <td><span class="tag tag-yellow">O(log n)</span></td>
                             </tr>
                             <tr>
