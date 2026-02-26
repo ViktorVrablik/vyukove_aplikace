@@ -232,6 +232,10 @@
             color: var(--text-muted);
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
+
+        .stats-overlay-battle {
+            position: absolute; top: 0px; right: 16px;
+        }
         .stats-overlay span { color: var(--text); font-weight: 600; margin-left: 4px; }
         .stats-separator { margin: 0 6px; color: var(--border); }
 
@@ -239,8 +243,8 @@
         .battle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
         .battle-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
         .battle-card h3 { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between;}
-        .battle-viz { height: 120px; display: flex; align-items: flex-end; gap: 1px; background: var(--hover-bg); padding: 4px; border-radius: 4px;}
-        .stats-text { font-size: 12px; color: var(--text-muted); margin-top: 8px;}
+        .battle-viz { height: 120px; display: flex; align-items: flex-end; gap: 1px; background: var(--hover-bg); padding: 4px; border-radius: 4px; position: relative;}
+        .stats-text { font-size: 12px; color: var(--text-muted);}
 
         /* --- RESPONSIVE --- */
         @media (max-width: 800px) {
@@ -283,7 +287,7 @@
         <button class="filter-btn" onclick="openTab('insert')">Insertion Sort</button>
         <button class="filter-btn" onclick="openTab('quick')">Quick Sort</button>
         <button class="filter-btn" onclick="openTab('merge')">Merge Sort</button>
-        <button class="filter-btn" onclick="openTab('battle')">⚔️ Porovnání</button>
+        <button class="filter-btn" onclick="openTab('battle')">Porovnání</button>
     </div>
 
     <div class="controls-bar" id="controlsPanel">
@@ -492,23 +496,23 @@ return merge(L, R)
     <div id="battle" class="tab-content">
         <div class="battle-grid">
             <div class="battle-card">
-                <h3>Bubble Sort <span class="stats-text" id="stats-battle-bubble">0 cmp</span></h3>
+                <h3>Bubble Sort <span class="stats-text" id="stats-battle-bubble">0 cmp | 0 swap</span></h3>
                 <div class="battle-viz" id="viz-battle-bubble"></div>
             </div>
             <div class="battle-card">
-                <h3>Selection Sort <span class="stats-text" id="stats-battle-select">0 cmp</span></h3>
+                <h3>Selection Sort <span class="stats-text" id="stats-battle-select">0 cmp | 0 swap</span></h3>
                 <div class="battle-viz" id="viz-battle-select"></div>
             </div>
             <div class="battle-card">
-                <h3>Insertion Sort <span class="stats-text" id="stats-battle-insert">0 cmp</span></h3>
+                <h3>Insertion Sort <span class="stats-text" id="stats-battle-insert">0 cmp | 0 swap</span></h3>
                 <div class="battle-viz" id="viz-battle-insert"></div>
             </div>
             <div class="battle-card">
-                <h3>Quick Sort <span class="stats-text" id="stats-battle-quick">0 cmp</span></h3>
+                <h3>Quick Sort <span class="stats-text" id="stats-battle-quick">0 cmp | 0 swap</span></h3>
                 <div class="battle-viz" id="viz-battle-quick"></div>
             </div>
             <div class="battle-card">
-                <h3>Merge Sort <span class="stats-text" id="stats-battle-merge">0 cmp</span></h3>
+                <h3>Merge Sort <span class="stats-text" id="stats-battle-merge">0 cmp | 0 swap</span></h3>
                 <div class="battle-viz" id="viz-battle-merge"></div>
             </div>
         </div>
@@ -556,14 +560,14 @@ return merge(L, R)
             render(`viz-${name}`, globalArray);
             render(`viz-battle-${name}`, globalArray);
             const battleStat = document.getElementById(`stats-battle-${name}`);
-            if(battleStat) battleStat.innerText = "0 cmp";
+            if(battleStat) battleStat.innerText = "0 porovnání | 0 prohození";
         });
     }
 
     // --- TAB SYSTEM ---
     function openTab(tabId) {
         if (isRunning) {
-            if(!confirm("Běží simulace. Chcete ji ukončit a přepnout záložku?")) return;
+            //if(!confirm("Běží simulace. Chcete ji ukončit a přepnout záložku?")) return;
             stopExecution();
         }
         
@@ -677,38 +681,42 @@ return merge(L, R)
     }
 
     // --- VISUALIZATION ---
-    function render(containerId, arr, colorIndices = {}, stats = null) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        
-        container.innerHTML = ''; 
-        
-        if (stats) {
+function render(containerId, arr, colorIndices = {}, stats = null) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = ''; 
+    
+    if (stats) {
+        // Zkontrolujeme, zda jsme v Battle módu
+        if (containerId.includes('battle')) {
+            // V Battle módu aktualizujeme pouze text v nadpisu (bez overlaye)
+            const statText = document.getElementById(`stats-${containerId.replace('viz-', '')}`);
+            if (statText) statText.innerHTML = `${stats.comp} porovnání | ${stats.swaps} prohození`;
+        } else {
+            // Ve standardním módu vytvoříme overlay štítek
             let statHtml = `Porovnání: <span>${stats.comp}</span> <span class="stats-separator">|</span> Prohození: <span>${stats.swaps}</span>`;
             let overlay = document.createElement('div');
             overlay.className = 'stats-overlay';
             overlay.innerHTML = statHtml;
             container.appendChild(overlay);
-            
-            if(containerId.includes('battle')) {
-                const statText = document.getElementById(`stats-${containerId.replace('viz-', '')}`);
-                if(statText) statText.innerHTML = `${stats.comp} cmp`;
-            }
         }
-
-        arr.forEach((val, idx) => {
-            const bar = document.createElement('div');
-            bar.classList.add('bar');
-            bar.style.height = `${val}%`;
-            
-            if (colorIndices.compare && colorIndices.compare.includes(idx)) bar.classList.add('compare');
-            if (colorIndices.swap && colorIndices.swap.includes(idx)) bar.classList.add('swap');
-            if (colorIndices.sorted && colorIndices.sorted.includes(idx)) bar.classList.add('sorted');
-            if (colorIndices.pivot === idx) bar.classList.add('pivot');
-            
-            container.appendChild(bar);
-        });
     }
+
+    arr.forEach((val, idx) => {
+        // ... zbytek tvého kódu pro vykreslování sloupců ...
+        const bar = document.createElement('div');
+        bar.classList.add('bar');
+        bar.style.height = `${val}%`;
+        
+        if (colorIndices.compare && colorIndices.compare.includes(idx)) bar.classList.add('compare');
+        if (colorIndices.swap && colorIndices.swap.includes(idx)) bar.classList.add('swap');
+        if (colorIndices.sorted && colorIndices.sorted.includes(idx)) bar.classList.add('sorted');
+        if (colorIndices.pivot === idx) bar.classList.add('pivot');
+        
+        container.appendChild(bar);
+    });
+}
 
     // --- ALGORITHMS ---
     async function runSingle(name) {
