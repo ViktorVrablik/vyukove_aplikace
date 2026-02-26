@@ -5,145 +5,202 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vizualizace kódování dat | TechUI</title>
     <style>
+        /* --- NOTION DESIGN TEMPLATE --- */
         :root {
-            --bg: #0d1117;          /* Tmavé pozadí */
-            --surface: #161b22;     /* Pozadí panelů */
-            --border: #30363d;      /* Technické rámečky */
-            --text: #c9d1d9;        /* Hlavní text */
-            --text-muted: #8b949e;  /* Tlumený text */
-            --accent: #58a6ff;      /* Modrá pro interakci */
-            --data: #3fb950;        /* Zelená pro data/kód */
-            --warning: #d29922;     /* Oranžová pro HEX */
-            --danger: #f85149;      /* Červená pro upozornění/znaménko */
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --border: #e9e9e7;
+            --text: #37352f;
+            --text-muted: #787774;
+            --accent: #2383e2;
+            --hover-bg: #f7f7f5;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+            
+            /* Visualizer Colors (Notion friendly) */
+            --bar-default: #e4e4e1;
+            --bar-accent: #2383e2; /* Blue */
+            --bar-compare: #d9730d; /* Orange */
+            --bar-swap: #e03e3e; /* Red */
+            --bar-sorted: #0f7b6c; /* Green */
+            --bar-pivot: #6940a5; /* Purple */
         }
 
         body {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            max-width: 950px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
+            padding: 40px 24px;
+            line-height: 1.5;
+            overflow-x: hidden;
         }
 
-        h1, h2, h3 { color: var(--text); font-weight: normal; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px;}
-        h1 { text-align: center; border: none; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); }
-        
-        /* Navigace */
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 5px;}
-        .tab-btn {
-            padding: 8px 16px; font-size: 14px; border: 1px solid transparent; font-family: inherit;
-            background-color: transparent; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+        /* --- HEADER --- */
+        header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center }
+        h1 { 
+            font-size: 40px; 
+            font-weight: 700; 
+            margin-bottom: 8px; 
+            letter-spacing: -0.01em; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .tab-btn:hover { color: var(--text); border: 1px solid var(--border); }
-        .tab-btn.active { border: 1px solid var(--border); border-bottom: none; background: var(--surface); color: var(--accent); }
-        
-        /* Panely */
-        .panel {
-            background: var(--surface); padding: 25px; border: 1px solid var(--border);
-            display: none; animation: fadeIn 0.2s;
+        .subtitle { color: var(--text-muted); font-size: 16px; margin-top: 0; }
+
+        h2 { font-size: 24px; font-weight: 600; margin-bottom: 15px; margin-top: 30px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+        h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; margin-top: 25px; }
+
+        /* --- FILTERS / NAVIGATION --- */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
         }
-        .panel.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .filter-btn {
+            padding: 6px 12px;
+            font-size: 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            white-space: nowrap;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover { background: var(--hover-bg); color: var(--text); }
+        .filter-btn.active { background: var(--hover-bg); color: var(--text); font-weight: 600; }
+
+        /* --- CONTENT PANELS --- */
+        .tab-content { display: none; animation: fadeIn 0.2s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Vstupy a tlačítka */
         input[type="text"], input[type="number"] { 
-            width: 100%; padding: 10px; font-size: 16px; margin-bottom: 15px; 
+            width: 100%; padding: 8px 12px; font-size: 15px; margin-bottom: 15px; 
             box-sizing: border-box; background: var(--bg); color: var(--text);
-            border: 1px solid var(--border); font-family: inherit; outline: none;
+            border: 1px solid var(--border); border-radius: 6px; font-family: inherit; outline: none;
+            transition: border-color 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
         
-        .btn { 
-            padding: 8px 15px; background: transparent; color: var(--accent); 
-            border: 1px solid var(--accent); cursor: pointer; font-size: 14px; font-family: inherit; transition: 0.2s;
+        .btn {
+            padding: 6px 12px; background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); border-radius: 4px; font-family: inherit; font-size: 14px;
+            font-weight: 500; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            display: inline-flex; align-items: center; gap: 5px;
         }
-        .btn:hover { background: var(--accent); color: var(--bg); }
+        .btn:hover:not(:disabled) { background: var(--hover-bg); }
 
         /* Výstupy dat */
         .code-box {
-            background: #010409; color: var(--data);
-            padding: 15px; border: 1px dashed var(--border); word-wrap: break-word;
-            font-size: 15px; letter-spacing: 2px; margin-bottom: 20px;
+            background: var(--hover-bg); color: #eb5757;
+            padding: 16px; border: 1px solid var(--border); border-radius: 6px; word-wrap: break-word;
+            font-size: 14px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            margin-bottom: 20px;
         }
-        .label { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 5px; text-transform: uppercase;}
+        .label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
         
         .info-box { 
-            background: rgba(88, 166, 255, 0.1); border-left: 3px solid var(--accent); 
-            padding: 10px 15px; margin-bottom: 20px; font-size: 13px; color: var(--text); 
+            background: var(--hover-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); 
+            padding: 16px; margin-bottom: 20px; font-size: 14px; color: var(--text); border-radius: 6px;
         }
 
         /* Mřížka (Obrázek) */
         .grid-container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
-        .grid { display: grid; grid-template-columns: repeat(8, 25px); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+        .grid { display: grid; grid-template-columns: repeat(8, 25px); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
         .pixel { width: 25px; height: 25px; background-color: #ffffff; cursor: crosshair; }
 
         /* Zvuk */
-        canvas { background: #010409; border: 1px solid var(--border); width: 100%; height: 180px; margin-bottom: 10px;}
-        .canvas-row { display: flex; gap: 15px; flex-wrap: wrap;}
-        .canvas-wrap { flex: 1; min-width: 300px; font-size: 13px; color: var(--text-muted); }
+        canvas { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; width: 100%; height: 180px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .canvas-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;}
+        .canvas-wrap { flex: 1; min-width: 300px; }
+        
+        .controls-box {
+            background: var(--hover-bg); padding: 16px; border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; gap: 15px;
+        }
 
         /* Čísla (Plovoucí řádová čárka) */
-        .bit-sign { color: var(--danger); }
-        .bit-exp { color: var(--data); }
-        .bit-mant { color: var(--accent); }
+        .bit-sign { color: var(--bar-swap); font-weight: bold;}
+        .bit-exp { color: var(--bar-sorted); font-weight: bold;}
+        .bit-mant { color: var(--bar-accent); font-weight: bold;}
 
-        /* Patička */
-        footer {
-            text-align: center; margin-top: 40px; padding-top: 20px;
-            border-top: 1px dotted var(--border); color: var(--text-muted); font-size: 12px;
-        }
+        /* Footer */
+        footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
+        .footer_line { display: flex; justify-content: space-between; }
+        @media (max-width: 800px) { .footer_line { flex-direction: column; gap: 10px; } }
         
         /* Posuvníky */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; background: var(--accent); cursor: pointer; margin-top: -6px; border-radius: 0;}
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: var(--border); }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; background: var(--bg); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; margin-top: -6px; border-radius: 50%;}
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: var(--border); border-radius: 2px;}
+
+        @media (max-width: 800px) {
+            header {flex-direction: column-reverse; align-items: flex-start;}
+            footer {flex-direction: column; gap: 10px;}
+        }
+
+        a {
+            color: var(--text)
+        }
     </style>
 </head>
 <body>
-
-    <h1>[ SYS_DATA_VISUALIZER ]</h1>
+     <header>
+        <div>
+            <h1>Vizualizace kódování dat</h1>
+            <p class="subtitle">Interaktivní pohled na binární strukturu informací</p>
+        </div>
+        <button class="btn" onclick="location.href = '../index.html'">↩ Zpět</button>
+    </header>
     
-    <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('textTab', this)">>_ TEXT</button>
-        <button class="tab-btn" onclick="showTab('numTab', this)">>_ ČÍSLA</button>
-        <button class="tab-btn" onclick="showTab('imageTab', this)">>_ OBRÁZEK</button>
-        <button class="tab-btn" onclick="showTab('audioTab', this)">>_ ZVUK</button>
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="showTab('textTab', this)">Text</button>
+        <button class="filter-btn" onclick="showTab('numTab', this)">Čísla</button>
+        <button class="filter-btn" onclick="showTab('imageTab', this)">Obrázek</button>
+        <button class="filter-btn" onclick="showTab('audioTab', this)">Zvuk</button>
     </div>
 
-    <div id="textTab" class="panel active">
+    <div id="textTab" class="tab-content active">
         <h2>Kódování textu: ASCII vs UTF-8</h2>
         <div class="info-box">
-            INF: ASCII (1 byte/znak) = 0-127 (Základní EN abeceda)<br>
-            INF: UTF-8 (1-4 byty/znak) = Dynamická alokace (Diakritika, Emoji)
+            <strong>ASCII (1 byte/znak)</strong> = 0-127 (Základní anglická abeceda a řídící znaky)<br>
+            <strong>UTF-8 (1-4 byty/znak)</strong> = Dynamická alokace (Diakritika, Emoji a mezinárodní znaky)
         </div>
         
-        <span class="label">Vstup_dat:</span>
-        <input type="text" id="textInput" placeholder="Zadej string..." oninput="updateText()" value="Ahoj 😀">
+        <span class="label">Textový Vstup</span>
+        <input type="text" id="textInput" placeholder="Zadej text..." oninput="updateText()" value="Ahoj 😀">
         
-        <span class="label">Binární_výstup (UTF-8):</span>
+        <span class="label">Binární reprezentace (UTF-8)</span>
         <div class="code-box" id="textBinOutput">...</div>
         
-        <span class="label">Hex_výstup:</span>
-        <div class="code-box" id="textHexOutput" style="color: var(--warning);">...</div>
-        <p style="font-size: 13px; color: var(--text-muted);">> Alokováno bajtů v paměti: <span id="byteCount" style="color: var(--text); font-weight: bold;">0</span></p>
+        <span class="label">Hexadecimální reprezentace</span>
+        <div class="code-box" id="textHexOutput" style="color: var(--bar-compare);">...</div>
+        <p style="font-size: 13px; color: var(--text-muted);">Alokováno bajtů v paměti: <strong style="color: var(--text);" id="byteCount">0</strong></p>
     </div>
 
-    <div id="numTab" class="panel">
+    <div id="numTab" class="tab-content">
         <h2>Kódování čísel</h2>
         
-        <h3>[ INT_32 ] Celá čísla</h3>
+        <h3>Celá čísla (32-bit Integer)</h3>
         <p style="font-size: 14px; color: var(--text-muted);">Zadej záporné číslo pro zobrazení reprezentace pomocí dvojkového doplňku.</p>
         <input type="number" id="intInput" value="42" oninput="updateNumbers()">
-        <span class="label">Mem_Dump (32-bit):</span>
+        <span class="label">Memory Dump (32-bit)</span>
         <div class="code-box" id="intBinOutput">...</div>
 
-        <h3>[ FLOAT_32 ] Desetinná čísla (IEEE 754)</h3>
+        <h3>Desetinná čísla (Float 32 - IEEE 754)</h3>
         <p style="font-size: 14px; color: var(--text-muted);">Standard alokuje 32 bitů: Znaménko (1 bit) | Exponent (8 bitů) | Mantisa (23 bitů).</p>
         
         <input type="number" id="floatInput" step="0.1" value="3.14" oninput="updateNumbers()">
-        <span class="label">IEEE_754_Struktura:</span>
+        <span class="label">IEEE 754 Struktura</span>
         <div class="code-box" style="letter-spacing: 1px;">
             <span class="bit-sign" title="Znaménko (Sign)">S</span> 
             <span class="bit-exp" title="Exponent">EEEEEEEE</span> 
@@ -152,53 +209,61 @@
         </div>
     </div>
 
-    <div id="imageTab" class="panel">
+    <div id="imageTab" class="tab-content">
         <h2>Barevný obraz (RGB Matrix)</h2>
         <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-            <span class="label" style="margin: 0;">Výběr_barvy (HEX): </span>
-            <input type="color" id="colorPicker" value="#f85149" style="background: transparent; border: none; cursor: pointer; height: 30px;">
-            <button class="btn" onclick="clearImageGrid()">[ Vyčistit_mřížku ]</button>
+            <div style="display: flex; flex-direction: column;">
+                <span class="label" style="margin-bottom: 4px;">Výběr barvy</span>
+                <input type="color" id="colorPicker" value="#0f7b6c" style="background: transparent; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; height: 32px; width: 60px; padding: 2px;">
+            </div>
+            <button class="btn" style="margin-top: auto; height: 32px;" onclick="clearImageGrid()">Vyčistit mřížku</button>
         </div>
         <div class="grid-container">
             <div class="grid" id="imageGrid"></div>
-            <div class="code-box" id="imageOutput" style="font-size: 12px; flex: 1; letter-spacing: 1px; color: var(--warning);"></div>
+            <div class="code-box" id="imageOutput" style="font-size: 13px; flex: 1; letter-spacing: 1px; color: var(--text-muted);"></div>
         </div>
     </div>
 
-    <div id="audioTab" class="panel">
-        <h2>Zpracování signálu (ADC)</h2>
+    <div id="audioTab" class="tab-content">
+        <h2>Zpracování signálu (A/D Převodník)</h2>
         <div class="canvas-row">
             <div class="canvas-wrap">
-                <span class="label">CH_01: Analogový vstup (Příroda)</span>
+                <span class="label">Analogový vstup (Přírodní signál)</span>
                 <canvas id="inCanvas"></canvas>
             </div>
             <div class="canvas-wrap">
-                <span class="label">CH_02: Digitální výstup (Počítač)</span>
+                <span class="label">Digitální výstup (Kvantovaný počítačem)</span>
                 <canvas id="outCanvas"></canvas>
             </div>
         </div>
-        <div style="background: #010409; padding: 20px; border: 1px solid var(--border); margin-top: 15px;">
-            <div style="margin-bottom: 20px;">
+        <div class="controls-box">
+            <div>
                 <span class="label">Vzorkovací frekvence (Sample Rate): <span id="freqVal" style="color: var(--text);">12</span> Hz</span>
                 <input type="range" id="sampleRate" min="4" max="60" value="12" oninput="drawAudio()">
             </div>
             <div>
-                <span class="label">Bitová hloubka (Bit Depth): <span id="depthVal" style="color: var(--text);">4</span> úrovní</span>
+                <span class="label">Bitová hloubka (Bit Depth / Kvantizace): <span id="depthVal" style="color: var(--text);">4</span> úrovní</span>
                 <input type="range" id="bitDepth" min="2" max="16" value="4" oninput="drawAudio()">
             </div>
         </div>
     </div>
 
     <footer>
-        -- Vytvořeno s pomocí Gemini AI --<br>
-        <strong>[Tvé Jméno a Příjmení]</strong> // 2026
-    </footer>
+        <div class="footer_line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> </span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank">bit.ly/vyukoveMaterialy</a></span>
+        </div>
 
+        <div class="footer_line">
+            <span>Vytvořeno pomocí <b>Gemini AI</b></span>
+        </div>
+    </footer>
     <script>
         // --- NAVIGACE ---
         function showTab(tabId, btn) {
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             btn.classList.add('active');
             if(tabId === 'audioTab') drawAudio();
@@ -292,24 +357,24 @@
 
             ctxin.clearRect(0,0,w,h); ctxout.clearRect(0,0,w,h);
             
-            // Mřížka pozadí
-            ctxin.strokeStyle = '#1f2937'; ctxout.strokeStyle = '#1f2937'; ctxin.lineWidth = 1; ctxout.lineWidth = 1;
+            // Mřížka pozadí (Light Notion styl)
+            ctxin.strokeStyle = '#e9e9e7'; ctxout.strokeStyle = '#e9e9e7'; ctxin.lineWidth = 1; ctxout.lineWidth = 1;
             ctxin.beginPath(); ctxout.beginPath();
             for(let i=0; i<h; i+=20) { ctxin.moveTo(0,i); ctxin.lineTo(w,i); ctxout.moveTo(0,i); ctxout.lineTo(w,i); }
             ctxin.stroke(); ctxout.stroke();
 
-            // Analog (Šedá)
-            ctxin.beginPath(); ctxin.strokeStyle = '#8b949e'; ctxin.lineWidth = 2;
+            // Analog (Tlumená šedá)
+            ctxin.beginPath(); ctxin.strokeStyle = '#787774'; ctxin.lineWidth = 2;
             for(let x=0; x<w; x++) { let y = mid + Math.sin(x*0.04)*(h/2-15); x===0?ctxin.moveTo(x,y):ctxin.lineTo(x,y); }
             ctxin.stroke();
 
-            // Digitál (Zelená)
+            // Digitál (Notion Green)
             const stepX = w/samples, stepY = (h-30)/levels;
-            ctxout.beginPath(); ctxout.strokeStyle = '#3fb950'; ctxout.lineWidth = 2;
+            ctxout.beginPath(); ctxout.strokeStyle = '#0f7b6c'; ctxout.lineWidth = 2;
             for(let x=0; x<w; x+=stepX) {
                 let rY = Math.sin(x*0.04)*(h/2-15);
                 let qY = Math.round(rY/stepY)*stepY;
-                ctxin.beginPath(); ctxin.fillStyle='#f85149'; ctxin.arc(x, mid+qY, 4, 0, Math.PI*2); ctxin.fill(); // Červené body měření
+                ctxin.beginPath(); ctxin.fillStyle='#e03e3e'; ctxin.arc(x, mid+qY, 4, 0, Math.PI*2); ctxin.fill(); // Notion Red body měření
                 ctxout.moveTo(x, mid+qY); ctxout.lineTo(x+stepX, mid+qY);
                 if(x+stepX < w) ctxout.lineTo(x+stepX, mid + Math.round((Math.sin((x+stepX)*0.04)*(h/2-15))/stepY)*stepY);
             }
