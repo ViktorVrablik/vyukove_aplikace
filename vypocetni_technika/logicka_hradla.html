@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logická hradla - Teorie a Simulátor</title>
+    <style>
+        /* --- NOTION DESIGN TEMPLATE --- */
+        :root {
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --border: #e9e9e7;
+            --text: #37352f;
+            --text-muted: #787774;
+            --accent: #2383e2;
+            --hover-bg: #f7f7f5;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+
+            --bar-sorted: #0f7b6c; 
+            --bar-swap: #e03e3e; 
+            
+            --wire-off: #d1d1cf;
+            --wire-on: #e6b905;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* --- HEADER & TYPOGRAPHY --- */
+        header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center }
+        h1 { font-size: 40px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+        .subtitle { color: var(--text-muted); font-size: 16px; margin-top: 0; }
+        a { color: var(--text); }
+        h2 { font-size: 24px; font-weight: 600; margin-bottom: 15px; margin-top: 30px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+        h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; margin-top: 25px; }
+
+        /* --- FILTERS / NAVIGATION --- */
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 30px; padding-bottom: 12px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+        .filter-btn { padding: 6px 12px; font-size: 14px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 4px; white-space: nowrap; transition: 0.2s; font-family: inherit; }
+        .filter-btn:hover { background: var(--hover-bg); color: var(--text); }
+        .filter-btn.active { background: var(--hover-bg); color: var(--text); font-weight: 600; }
+
+        .btn { padding: 6px 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 4px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn:hover { background: var(--hover-bg); }
+
+        /* --- CONTENT PANELS --- */
+        .tab-content { display: none; animation: fadeIn 0.2s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- NOTION STYLED ELEMENTS --- */
+        .notion-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
+        .notion-table th, .notion-table td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+        .notion-table th { background: var(--hover-bg); font-weight: 500; color: var(--text-muted); }
+        .notion-table td.center { text-align: center; font-family: monospace; font-size: 16px; font-weight: bold; }
+
+        .info-box { background: var(--hover-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); padding: 16px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+        .alert-box { background: #fff8e6; border: 1px solid #f2e4c4; border-left: 4px solid #d9730d; padding: 16px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; color: var(--text); }
+        code { font-family: "SFMono-Regular", Consolas, monospace; background: var(--hover-bg); padding: 2px 6px; border-radius: 4px; color: #eb5757; font-size: 0.9em; }
+
+        /* --- DRAG & DROP SIMULATOR --- */
+        .sim-wrapper {
+            display: flex; height: 600px; border: 1px solid var(--border); 
+            border-radius: 8px; background: var(--hover-bg); overflow: hidden; margin-bottom: 20px;
+        }
+
+        .sim-palette {
+            width: 140px; background: var(--bg); border-right: 1px solid var(--border);
+            padding: 16px; display: flex; flex-direction: column; gap: 12px; z-index: 10;
+            overflow-y: auto;
+        }
+        .sim-palette h4 { margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+
+        .palette-item {
+            background: var(--bg); border: 1px solid var(--border); padding: 10px;
+            text-align: center; border-radius: 6px; cursor: grab; font-weight: 600; font-size: 14px;
+            box-shadow: var(--card-shadow); transition: 0.2s; user-select: none;
+        }
+        .palette-item:hover { border-color: var(--accent); }
+
+        .sim-canvas {
+            flex: 1; position: relative; background: #fafafa; overflow: hidden; cursor: crosshair;
+            background-image: radial-gradient(#e0e0e0 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+
+        /* Zpráva v prázdném plátně */
+        .canvas-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 14px; pointer-events: none; opacity: 0.5; text-align: center; }
+
+        /* Uzly na plátně */
+        .node {
+            position: absolute; background: var(--bg); border: 2px solid var(--border);
+            padding: 10px 16px; border-radius: 6px; font-weight: 600; font-size: 16px;
+            text-align: center; box-shadow: var(--card-shadow); cursor: grab; user-select: none;
+            min-width: 60px; z-index: 20; display: flex; align-items: center; justify-content: center;
+        }
+        .node:active { cursor: grabbing; }
+        .node.node-INPUT { cursor: pointer; }
+        .node.val-1 { border-color: var(--wire-on); background: #fffdf2; color: #8a6e00; }
+        .node.val-0 { border-color: var(--wire-off); color: var(--text-muted); }
+
+        /* Žárovka (Výstup) */
+        .node.node-OUTPUT { width: 50px; height: 50px; border-radius: 50%; padding: 0; min-width: 0; font-size: 24px; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+        .node.node-OUTPUT.val-1 { background: #ffe600; border-color: #e6b905; box-shadow: 0 0 20px rgba(255,230,0,0.6); color: #a18100; }
+
+        /* Piny pro propojování */
+        .pin {
+            width: 14px; height: 14px; border-radius: 50%; background: var(--bg);
+            border: 3px solid var(--wire-off); position: absolute; cursor: crosshair; z-index: 25;
+            transition: 0.2s;
+        }
+        .pin:hover, .pin.active { border-color: var(--accent); transform: scale(1.2); }
+        .pin.val-1 { background: var(--wire-on); border-color: #c9a200; }
+        
+        .pin-in { left: -9px; }
+        .pin-out { right: -9px; }
+        .pin-single { top: 50%; transform: translateY(-50%); }
+        .pin-top { top: 25%; transform: translateY(-50%); }
+        .pin-bot { top: 75%; transform: translateY(-50%); }
+
+        /* SVG vrstva pro čáry */
+        #svg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .wire { fill: none; stroke: var(--wire-off); stroke-width: 4; stroke-linecap: round; pointer-events: stroke; cursor: pointer; transition: stroke 0.2s; }
+        .wire:hover { stroke: var(--bar-swap); stroke-width: 6; }
+        .wire.val-1 { stroke: var(--wire-on); }
+        .temp-wire { stroke: var(--accent); stroke-dasharray: 6; opacity: 0.6; }
+
+        /* Controls bar */
+        .controls-bar { background: var(--hover-bg); padding: 12px 16px; border-radius: 6px; margin-bottom: 30px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+        .controls-info { font-size: 13px; color: var(--text-muted); }
+
+        /* --- PUZZLES STYLES --- */
+        .puzzle-card { padding: 20px; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; margin-bottom: 20px; box-shadow: var(--card-shadow); }
+        .puzzle-q { font-size: 18px; font-weight: 600; margin-bottom: 15px; }
+        .puzzle-options { display: flex; gap: 10px; flex-wrap: wrap; }
+        .puzzle-btn { flex: 1; padding: 12px; font-size: 16px; font-weight: 600; border: 2px solid var(--border); background: var(--bg); border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .puzzle-btn:hover { border-color: var(--accent); background: var(--hover-bg); }
+        .puzzle-btn.correct { border-color: var(--bar-sorted); background: #eaf8f5; color: var(--bar-sorted); pointer-events: none; }
+        .puzzle-btn.wrong { border-color: var(--bar-swap); background: #fbe4e4; color: var(--bar-swap); animation: shake 0.4s; }
+        .result-overlay { display: none; text-align: center; padding: 24px; border: 1px solid #b7e0d5; background: #e7f3f1; border-radius: 8px; color: #0f7b6c; margin-top: 24px; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25%, 75% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+
+        /* Footer */
+        footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>Logická hradla</h1>
+            <p class="subtitle">Základy Booleovy algebry, interaktivní simulátor a logické úlohy</p>
+        </div>
+    </header>
+    
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="showTab('theory', this)">Teorie a Pravdivostní tabulky</button>
+        <button class="filter-btn" onclick="showTab('simulator', this)">Simulátor (Pískoviště)</button>
+        <button class="filter-btn" onclick="showTab('puzzles', this)">Logické hádanky</button>
+    </div>
+
+    <div id="theory" class="tab-content active">
+        <h2>1. Co jsou to logická hradla?</h2>
+        <p>Logická hradla jsou základní stavební bloky číslicových obvodů. Zpracovávají binární signály – jedničky (1 = zapnuto) a nuly (0 = vypnuto). Na základě vstupů vrací jeden výstup podle jasných logických pravidel.</p>
+
+        <div class="alert-box">
+            <strong>Klíč k pochopení:</strong> Představte si vstupy jako vypínače na zdi a výstup jako žárovku. Hradlo určuje, jaká kombinace vypínačů žárovku rozsvítí.
+        </div>
+
+        <h2>2. Základní hradla</h2>
+        <div style="overflow-x:auto;">
+            <table class="notion-table">
+                <thead>
+                    <tr>
+                        <th>Hradlo</th>
+                        <th>Popis (Kdy je výsledek 1?)</th>
+                        <th class="center">A</th><th class="center">B</th><th class="center">Výstup</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="4"><strong>AND</strong><br><br><code>A * B</code></td>
+                        <td rowspan="4">Žárovka svítí <strong>POUZE TEHDY</strong>, když jsou zapnuté <strong>VŠECHNY</strong> vstupy.</td>
+                        <td class="center">0</td><td class="center">0</td><td class="center">0</td>
+                    </tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td class="center" style="color:var(--bar-sorted)">1</td></tr>
+                    <tr><td colspan="5" style="background:var(--bg)"></td></tr>
+                    <tr>
+                        <td rowspan="4"><strong>OR</strong><br><br><code>A + B</code></td>
+                        <td rowspan="4">Žárovka svítí, pokud je zapnutý <strong>ALESPOŇ JEDEN</strong> vstup.</td>
+                        <td class="center">0</td><td class="center">0</td><td class="center">0</td>
+                    </tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td class="center" style="color:var(--bar-sorted)">1</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td class="center" style="color:var(--bar-sorted)">1</td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td class="center" style="color:var(--bar-sorted)">1</td></tr>
+                    <tr><td colspan="5" style="background:var(--bg)"></td></tr>
+                    <tr>
+                        <td rowspan="2"><strong>NOT</strong><br><br><code>~A</code></td>
+                        <td rowspan="2">Invertor. Dělá přesný opak toho, co dostane. (Má jen 1 vstup).</td>
+                        <td class="center">0</td><td class="center">-</td><td class="center" style="color:var(--bar-sorted)">1</td>
+                    </tr>
+                    <tr><td class="center">1</td><td class="center">-</td><td class="center">0</td></tr>
+                    <tr><td colspan="5" style="background:var(--bg)"></td></tr>
+                    <tr>
+                        <td rowspan="4"><strong>XOR</strong><br><br><code>A ⊕ B</code></td>
+                        <td rowspan="4">Žárovka svítí, pokud jsou vstupy <strong>RŮZNÉ</strong> (jeden 1, druhý 0).</td>
+                        <td class="center">0</td><td class="center">0</td><td class="center">0</td>
+                    </tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td class="center" style="color:var(--bar-sorted)">1</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td class="center" style="color:var(--bar-sorted)">1</td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td class="center">0</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="simulator" class="tab-content">
+        <h2>Pískoviště obvodů</h2>
+        <p>Postavte si vlastní logický obvod. Přetáhněte prvky z levé nabídky na plátno. Spojujte je kliknutím na výstupní kolečko (vpravo na hradle) a následně na vstupní kolečko (vlevo). </p>
+
+        <div class="sim-wrapper">
+            <div class="sim-palette">
+                <h4>I/O</h4>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'INPUT')">Vypínač (0/1)</div>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'OUTPUT')">Žárovka</div>
+                <h4>Hradla</h4>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'AND')">AND</div>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'OR')">OR</div>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'NOT')">NOT</div>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'XOR')">XOR</div>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'NAND')">NAND</div>
+                <div class="palette-item" draggable="true" ondragstart="dragStart(event, 'NOR')">NOR</div>
+            </div>
+
+            <div class="sim-canvas" id="canvas" ondragover="event.preventDefault()" ondrop="dropNode(event)">
+                <div class="canvas-hint" id="canvas-hint">Přetáhněte sem prvek z levé nabídky.<br><br>Dvojklik na prvek nebo čáru jej smaže.</div>
+                <svg id="svg-layer">
+                    <path id="temp-wire" class="wire temp-wire" d="" style="display: none;"></path>
+                </svg>
+                </div>
+        </div>
+
+        <div class="controls-bar">
+            <button class="btn" onclick="clearCanvas()">Vyčistit plochu</button>
+            <span class="controls-info"><strong>Spojení:</strong> Klikni na výstup (pravý pin) a pak na vstup (levý pin). <strong>Mazání:</strong> Dvojklik.</span>
+        </div>
+    </div>
+
+    <div id="puzzles" class="tab-content">
+        <h2>Logické hádanky</h2>
+        <div id="quiz-container"></div>
+        <div id="resultMsg" class="result-overlay">
+            <h3 style="margin-top:0;">Výborně! Všechny hádanky jsou správně.</h3>
+            <button class="btn" style="margin: 0 auto; background: white;" onclick="resetQuiz()">Zkusit znovu</button>
+        </div>
+    </div>
+
+    <footer>
+        <div><strong>Ing. Viktor Vráblík</strong> | <a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a></div>
+        <div>Vytvořeno pomocí <b>Gemini AI</b></div>
+    </footer>
+
+    <script>
+        // --- ZÁLOŽKY ---
+        function showTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(btn) btn.classList.add('active');
+            if(tabId === 'simulator') renderSimulation(); // Redraw wires due to display:block
+        }
+
+        // --- DRAG & DROP SIMULÁTOR LOGIKA ---
+        const canvas = document.getElementById('canvas');
+        const svgLayer = document.getElementById('svg-layer');
+        const tempWire = document.getElementById('temp-wire');
+        const hint = document.getElementById('canvas-hint');
+
+        let nodes = []; 
+        /* Node struktura: { id: string, type: string, x: number, y: number, el: HTMLElement, val: 0/1/null } */
+        let wires = []; 
+        /* Wire struktura: { id: string, fromNode: string, toNode: string, toPin: 0|1, svgEl: SVGElement, val: 0/1 } */
+        
+        let nextId = 1;
+        let wiringState = null; // { nodeId: string }
+        let draggedNode = null; // HTMLElement pro posouvání po plátně
+        let dragOffset = {x: 0, y: 0};
+
+        // Paleta Drag & Drop
+        function dragStart(e, type) {
+            e.dataTransfer.setData('text/plain', type);
+        }
+
+        function dropNode(e) {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('text/plain');
+            if(!type) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - 30;
+            const y = e.clientY - rect.top - 20;
+
+            createNode(type, x, y);
+        }
+
+        // Vytvoření uzlu
+        function createNode(type, x, y) {
+            hint.style.display = 'none';
+            const id = 'node_' + nextId++;
+            const el = document.createElement('div');
+            el.className = `node node-${type}`;
+            el.id = id;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+
+            let innerHTML = '';
+            
+            // Konfigurace pinů podle typu
+            if (type === 'INPUT') {
+                el.classList.add('val-0');
+                innerHTML = `<span class="label-text">0</span><div class="pin pin-out pin-single" onclick="startWire(event, '${id}')"></div>`;
+                el.onclick = () => toggleInput(id);
+            } else if (type === 'OUTPUT') {
+                innerHTML = `💡<div class="pin pin-in pin-single" onclick="finishWire(event, '${id}', 0)"></div>`;
+            } else if (type === 'NOT') {
+                innerHTML = `<div class="pin pin-in pin-single" onclick="finishWire(event, '${id}', 0)"></div>
+                             ${type}
+                             <div class="pin pin-out pin-single" onclick="startWire(event, '${id}')"></div>`;
+            } else {
+                // 2-vstupová hradla
+                innerHTML = `<div class="pin pin-in pin-top" onclick="finishWire(event, '${id}', 0)"></div>
+                             <div class="pin pin-in pin-bot" onclick="finishWire(event, '${id}', 1)"></div>
+                             ${type}
+                             <div class="pin pin-out pin-single" onclick="startWire(event, '${id}')"></div>`;
+            }
+
+            el.innerHTML = innerHTML;
+            
+            // Drag and drop v rámci plátna
+            el.onmousedown = (e) => {
+                if(e.target.classList.contains('pin')) return; // Nechceme přesouvat při kliku na pin
+                draggedNode = el;
+                dragOffset.x = e.clientX - el.offsetLeft;
+                dragOffset.y = e.clientY - el.offsetTop;
+            };
+
+            // Dvojklik pro smazání
+            el.ondblclick = (e) => {
+                deleteNode(id);
+            };
+
+            canvas.appendChild(el);
+            nodes.push({ id, type, x, y, el, val: (type === 'INPUT' ? 0 : null) });
+            evaluateCircuit();
+        }
+
+        // Přesouvání na plátně
+        document.addEventListener('mousemove', (e) => {
+            if (draggedNode) {
+                const rect = canvas.getBoundingClientRect();
+                let nx = e.clientX - dragOffset.x;
+                let ny = e.clientY - dragOffset.y;
+                draggedNode.style.left = nx + 'px';
+                draggedNode.style.top = ny + 'px';
+                
+                // Update dat
+                let n = nodes.find(x => x.id === draggedNode.id);
+                n.x = nx; n.y = ny;
+                renderSimulation();
+            }
+
+            if (wiringState) {
+                const rect = canvas.getBoundingClientRect();
+                const fromNode = nodes.find(n => n.id === wiringState.nodeId);
+                const pinOut = fromNode.el.querySelector('.pin-out');
+                const pRect = pinOut.getBoundingClientRect();
+                
+                const startX = pRect.left + pRect.width/2 - rect.left;
+                const startY = pRect.top + pRect.height/2 - rect.top;
+                const endX = e.clientX - rect.left;
+                const endY = e.clientY - rect.top;
+                
+                tempWire.style.display = 'block';
+                tempWire.setAttribute('d', getBezierPath(startX, startY, endX, endY));
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            draggedNode = null;
+        });
+
+        // Kreslení čar
+        function getBezierPath(x1, y1, x2, y2) {
+            const offset = Math.max(Math.abs(x2 - x1) * 0.5, 40);
+            return `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 - offset} ${y2}, ${x2} ${y2}`;
+        }
+
+        function startWire(e, nodeId) {
+            e.stopPropagation();
+            // Zruš předchozí rozdělaný spoj
+            if(wiringState) cancelWiring();
+            wiringState = { nodeId };
+            e.target.classList.add('active');
+        }
+
+        function finishWire(e, toNodeId, toPin) {
+            e.stopPropagation();
+            if (!wiringState) return;
+            if (wiringState.nodeId === toNodeId) { cancelWiring(); return; } // Nelze propojit samo do sebe
+
+            // Zkontroluj, zda na tomto vstupu už není čára (pokud ano, smaž ji)
+            const existingWireIndex = wires.findIndex(w => w.toNode === toNodeId && w.toPin === toPin);
+            if(existingWireIndex !== -1) deleteWire(wires[existingWireIndex].id);
+
+            const wireId = 'wire_' + nextId++;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('class', 'wire');
+            path.id = wireId;
+            
+            // Dvojklik pro smazání čáry
+            path.ondblclick = () => deleteWire(wireId);
+
+            svgLayer.appendChild(path);
+
+            wires.push({ id: wireId, fromNode: wiringState.nodeId, toNode: toNodeId, toPin, svgEl: path, val: null });
+            
+            cancelWiring();
+            evaluateCircuit();
+        }
+
+        function cancelWiring() {
+            if(wiringState) {
+                const node = nodes.find(n => n.id === wiringState.nodeId);
+                if(node) node.el.querySelector('.pin-out').classList.remove('active');
+            }
+            wiringState = null;
+            tempWire.style.display = 'none';
+        }
+
+        // Tlačítko Vstup
+        function toggleInput(nodeId) {
+            const n = nodes.find(x => x.id === nodeId);
+            if(n && n.type === 'INPUT') {
+                n.val = n.val === 1 ? 0 : 1;
+                n.el.querySelector('.label-text').innerText = n.val;
+                if(n.val === 1) n.el.classList.replace('val-0', 'val-1');
+                else n.el.classList.replace('val-1', 'val-0');
+                evaluateCircuit();
+            }
+        }
+
+        // Smazání prvků
+        function deleteNode(id) {
+            const nodeIndex = nodes.findIndex(n => n.id === id);
+            if(nodeIndex === -1) return;
+            // Smaž připojené čáry
+            const connectedWires = wires.filter(w => w.fromNode === id || w.toNode === id);
+            connectedWires.forEach(w => deleteWire(w.id));
+            // Smaž uzel z DOM
+            nodes[nodeIndex].el.remove();
+            nodes.splice(nodeIndex, 1);
+            if(nodes.length === 0) hint.style.display = 'block';
+            evaluateCircuit();
+        }
+
+        function deleteWire(id) {
+            const index = wires.findIndex(w => w.id === id);
+            if(index !== -1) {
+                wires[index].svgEl.remove();
+                wires.splice(index, 1);
+                evaluateCircuit();
+            }
+        }
+
+        function clearCanvas() {
+            nodes.forEach(n => n.el.remove());
+            wires.forEach(w => w.svgEl.remove());
+            nodes = []; wires = [];
+            hint.style.display = 'block';
+        }
+
+        // Vyhodnocení obvodu (jednoduchý iterační solver)
+        function logicOperation(type, a, b) {
+            // Null propagate
+            if (a === null) a = 0; 
+            if (b === null) b = 0;
+
+            switch(type) {
+                case 'AND': return (a === 1 && b === 1) ? 1 : 0;
+                case 'OR': return (a === 1 || b === 1) ? 1 : 0;
+                case 'XOR': return (a !== b) ? 1 : 0;
+                case 'NAND': return !(a === 1 && b === 1) ? 1 : 0;
+                case 'NOR': return !(a === 1 || b === 1) ? 1 : 0;
+                case 'NOT': return (a === 0) ? 1 : 0;
+                case 'OUTPUT': return a;
+                default: return 0;
+            }
+        }
+
+        function evaluateCircuit() {
+            // Resetuj hodnoty všeho kromě vstupů
+            nodes.forEach(n => { if(n.type !== 'INPUT') n.val = null; });
+            wires.forEach(w => w.val = null);
+
+            let changed = true;
+            let iterations = 0;
+
+            // Procházej dopředně, dokud se něco mění
+            while (changed && iterations < 100) {
+                changed = false;
+                iterations++;
+
+                nodes.forEach(n => {
+                    if (n.type === 'INPUT' || n.val !== null) return; // Již spočítáno
+
+                    let inputsNeeded = (n.type === 'NOT' || n.type === 'OUTPUT') ? 1 : 2;
+                    let inputVals = [null, null];
+
+                    for(let i=0; i<inputsNeeded; i++) {
+                        const wire = wires.find(w => w.toNode === n.id && w.toPin === i);
+                        if (wire) {
+                            const srcNode = nodes.find(sn => sn.id === wire.fromNode);
+                            if (srcNode && srcNode.val !== null) inputVals[i] = srcNode.val;
+                        } else {
+                            inputVals[i] = 0; // Nepřipojený pin se bere jako 0
+                        }
+                    }
+
+                    // Pokud máme všechny potřebné vstupy, spočítej uzel
+                    if ( (inputsNeeded === 1 && inputVals[0] !== null) || 
+                         (inputsNeeded === 2 && inputVals[0] !== null && inputVals[1] !== null) ) {
+                        n.val = logicOperation(n.type, inputVals[0], inputVals[1]);
+                        changed = true;
+                    }
+                });
+            }
+
+            // Propagace hodnot z uzlů do čar pro vizualizaci
+            wires.forEach(w => {
+                const srcNode = nodes.find(n => n.id === w.fromNode);
+                if(srcNode && srcNode.val !== null) w.val = srcNode.val;
+            });
+
+            renderSimulation();
+        }
+
+        function renderSimulation() {
+            const rect = canvas.getBoundingClientRect();
+            if(rect.width === 0) return; // Skryto v jiné záložce
+
+            // Vykresli čáry
+            wires.forEach(w => {
+                const fromN = nodes.find(n => n.id === w.fromNode);
+                const toN = nodes.find(n => n.id === w.toNode);
+                if(!fromN || !toN) return;
+
+                const pinOut = fromN.el.querySelector('.pin-out');
+                const pinIn = toN.el.querySelectorAll('.pin-in')[w.toPin];
+
+                if(!pinOut || !pinIn) return;
+
+                const pOutRect = pinOut.getBoundingClientRect();
+                const pInRect = pinIn.getBoundingClientRect();
+
+                const x1 = pOutRect.left + pOutRect.width/2 - rect.left;
+                const y1 = pOutRect.top + pOutRect.height/2 - rect.top;
+                const x2 = pInRect.left + pInRect.width/2 - rect.left;
+                const y2 = pInRect.top + pInRect.height/2 - rect.top;
+
+                w.svgEl.setAttribute('d', getBezierPath(x1, y1, x2, y2));
+                
+                // Stylování 1/0 pro čáry a vstupní piny
+                if (w.val === 1) { w.svgEl.classList.add('val-1'); pinIn.classList.add('val-1'); }
+                else { w.svgEl.classList.remove('val-1'); pinIn.classList.remove('val-1'); }
+                
+                // Výstupní piny svítí pokud je hradlo 1
+                if(fromN.val === 1) pinOut.classList.add('val-1');
+                else pinOut.classList.remove('val-1');
+            });
+
+            // Vizualizace výstupu (Žárovka)
+            nodes.forEach(n => {
+                if(n.type === 'OUTPUT') {
+                    if(n.val === 1) n.el.classList.add('val-1');
+                    else n.el.classList.remove('val-1');
+                }
+            });
+        }
+
+        // Oprava resize okna (překreslení čar)
+        window.addEventListener('resize', renderSimulation);
+
+        // --- HÁDANKY LOGIKA ---
+        const quizData = [
+            { q: "1. Vstup A je 1, Vstup B je 0. Výstup je 1. Které hradlo to může být?", options: ["AND", "OR", "NOR"], answer: 1 },
+            { q: "2. Bezpečnostní systém spustí alarm (1) POUZE ve chvíli, kdy jsou porušeny oba senzory současně (Senzor A=1, B=1). Které hradlo použijete?", options: ["XOR", "OR", "AND"], answer: 2 },
+            { q: "3. Představte si obvod: Vstupy A=1 a B=1 jdou do hradla NAND. Co z něj vyjde?", options: ["0", "1", "Nedá se určit"], answer: 0 }
+        ];
+        let currentQuizState = [];
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            currentQuizState = new Array(quizData.length).fill(null);
+            document.getElementById('resultMsg').style.display = 'none';
+
+            quizData.forEach((item, qIndex) => {
+                const card = document.createElement('div'); card.className = 'puzzle-card';
+                card.innerHTML = `<div class="puzzle-q">${item.q}</div>`;
+                const optionsDiv = document.createElement('div'); optionsDiv.className = 'puzzle-options';
+
+                item.options.forEach((opt, optIndex) => {
+                    const btn = document.createElement('button'); btn.className = 'puzzle-btn'; btn.innerText = opt;
+                    btn.onclick = () => handleAnswer(qIndex, optIndex, btn);
+                    optionsDiv.appendChild(btn);
+                });
+                card.appendChild(optionsDiv); container.appendChild(card);
+            });
+        }
+
+        function handleAnswer(qIndex, optIndex, btnElement) {
+            if(currentQuizState[qIndex] !== null) return;
+            if(optIndex === quizData[qIndex].answer) {
+                btnElement.classList.add('correct'); currentQuizState[qIndex] = true;
+                if(currentQuizState.every(val => val === true)) setTimeout(() => document.getElementById('resultMsg').style.display = 'block', 300);
+            } else {
+                btnElement.classList.add('wrong'); setTimeout(() => btnElement.classList.remove('wrong'), 500);
+            }
+        }
+        function resetQuiz() { renderQuiz(); }
+        renderQuiz();
+    </script>
+</body>
+</html>
