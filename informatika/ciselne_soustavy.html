@@ -80,7 +80,21 @@
     .task-header { font-size: 20px; font-weight: 600; text-align: center; margin-bottom: 20px; }
     .task-input-group { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
     .notion-input { padding: 10px 14px; border: 1px solid var(--border); border-radius: 4px; font-size: 16px; font-family: inherit; outline: none; flex: 1; max-width: 250px; text-align: center; font-weight: 500;}
-    .notion-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2); }
+    .notion-input:focus { border-color: var(--text); box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2); }
+
+    /* --- TABLE --- */
+    @media (max-width: 990px) {
+      #desktop_table1 { display: none;}
+      #desktop_table2 { display: none;}
+      #mobile_table1 { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px}
+      #mobile_table2 { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px}
+    }
+
+    @media (min-width: 990px) {
+      #mobile_table1 { display: none;}
+      #mobile_table2 { display: none;}
+    }
+
 
     .feedback { text-align: center; font-weight: 600; margin-bottom: 15px; min-height: 24px; }
     .feedback.success { color: var(--bar-sorted); }
@@ -92,6 +106,7 @@
     footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
     .footer_line { display: flex; justify-content: space-between; }
     @media (max-width: 800px) { .footer_line { flex-direction: column; gap: 10px; } }
+
   </style>
 </head>
 <body>
@@ -105,13 +120,13 @@
 </header>
 
 <div class="filter-bar">
-  <button class="filter-btn active" onclick="showTab('tab-theory', this)">1. Úvod</button>
-  <button class="filter-btn" onclick="showTab('tab-bin-theory', this)">2. DEC ↔ BIN</button>
-  <button class="filter-btn" onclick="showTab('tab-bin-test', this); initTest('bin')">3. Test BIN</button>
-  <button class="filter-btn" onclick="showTab('tab-hex-theory', this)">4. DEC ↔ HEX</button>
-  <button class="filter-btn" onclick="showTab('tab-hex-test', this); initTest('hex')">5. Test HEX</button>
-  <button class="filter-btn" onclick="showTab('tab-binhex-theory', this)">6. BIN ↔ HEX (Nibbly)</button>
-  <button class="filter-btn" onclick="showTab('tab-binhex-test', this); initTest('binhex')">7. Test Nibbly</button>
+  <button class="filter-btn active" onclick="showTab('tab-theory', this)">Teorie</button>
+  <button class="filter-btn" onclick="showTab('tab-bin-theory', this)">10 ↔ 2</button>
+  <button class="filter-btn" onclick="showTab('tab-bin-test', this); initTest('bin')">Příklady 10 ↔ 2</button>
+  <button class="filter-btn" onclick="showTab('tab-hex-theory', this)">10 ↔ 16</button>
+  <button class="filter-btn" onclick="showTab('tab-hex-test', this); initTest('hex')">Příklady 10 ↔ 16</button>
+  <button class="filter-btn" onclick="showTab('tab-binhex-theory', this)">6. 2 ↔ 16</button>
+  <button class="filter-btn" onclick="showTab('tab-binhex-test', this); initTest('binhex')">Příklady2 ↔ 16</button>
 </div>
 
 <div id="tab-theory" class="tab-content active">
@@ -133,7 +148,7 @@
       </tr>
       <tr>
         <td><em>Příklad:</em> Římské číslice (I, V, X, L, C, M). Znak "X" znamená vždy 10, ať je v zápisu XX (20) nebo IX (9).</td>
-        <td><em>Příklad:</em> Naše desítková soustava. Číslice "5" ve zlomku 50 znamená <em>padesát</em>, ale ve 105 znamená jen <em>pět</em>.</td>
+        <td><em>Příklad:</em> Naše desítková soustava. Číslice "5" v čísle 51 znamená <em>padesát</em>, ale ve 105 znamená jen <em>pět</em>.</td>
       </tr>
       <tr>
         <td>Těžko se v nich počítá (zkuste násobit římskými číslicemi).</td>
@@ -183,8 +198,8 @@
   <h2>Procvičování: Dvojková soustava</h2>
 
   <div class="controls-bar" style="justify-content: center;">
-    <button class="btn btn-primary" onclick="generateTask('bin', 'toBase')">Desítková ➔ Dvojková</button>
-    <button class="btn btn-primary" onclick="generateTask('bin', 'toDec')">Dvojková ➔ Desítková</button>
+    <button class="btn" onclick="generateTask('bin', 'toBase')">Desítková ➔ Dvojková</button>
+    <button class="btn" onclick="generateTask('bin', 'toDec')">Dvojková ➔ Desítková</button>
   </div>
 
   <div class="test-container" id="test-bin-ui" style="display:none;">
@@ -228,8 +243,8 @@
   <h2>Procvičování: Šestnáctková soustava</h2>
 
   <div class="controls-bar" style="justify-content: center;">
-    <button class="btn btn-primary" onclick="generateTask('hex', 'toBase')">Desítková ➔ Šestnáctková</button>
-    <button class="btn btn-primary" onclick="generateTask('hex', 'toDec')">Šestnáctková ➔ Desítková</button>
+    <button class="btn" onclick="generateTask('hex', 'toBase')">Desítková ➔ Šestnáctková</button>
+    <button class="btn" onclick="generateTask('hex', 'toDec')">Šestnáctková ➔ Desítková</button>
   </div>
 
   <div class="test-container" id="test-hex-ui" style="display:none;">
@@ -252,34 +267,77 @@
   <p>To v praxi znamená, že přesně <strong>4 bity (tzv. nibble)</strong> dokáží reprezentovat hodnoty od 0 do 15. A to je přesně rozsah jedné číslice v šestnáctkové soustavě! Můžeme tak čísla "překládat" znak po znaku bez nutnosti složitého dělení či násobení přes desítkovou soustavu.</p>
 
 
-
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-    <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
-      <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
-      <tbody>
-      <tr><td>0</td><td>0000</td></tr>
-      <tr><td>1</td><td>0001</td></tr>
-      <tr><td>2</td><td>0010</td></tr>
-      <tr><td>3</td><td>0011</td></tr>
-      <tr><td>4</td><td>0100</td></tr>
-      <tr><td>5</td><td>0101</td></tr>
-      <tr><td>6</td><td>0110</td></tr>
-      <tr><td>7</td><td>0111</td></tr>
-      </tbody>
-    </table>
-    <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
-      <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
-      <tbody>
-      <tr><td>8</td><td>1000</td></tr>
-      <tr><td>9</td><td>1001</td></tr>
-      <tr><td>A</td><td>1010</td></tr>
-      <tr><td>B</td><td>1011</td></tr>
-      <tr><td>C</td><td>1100</td></tr>
-      <tr><td>D</td><td>1101</td></tr>
-      <tr><td>E</td><td>1110</td></tr>
-      <tr><td>F</td><td>1111</td></tr>
-      </tbody>
-    </table>
+  <div style="overflow-x: auto; margin-bottom: 20px; width: 100%;">
+    <table class="notion-table" id="desktop_table1" style="width: 100%; text-align: center; white-space: nowrap;">
+        <tbody>
+        <tr>
+          <th>HEX</th>
+          <td>0</td>
+          <td>1</td>
+          <td>2</td>
+          <td>3</td>
+          <td>4</td>
+          <td>5</td>
+          <td>6</td>
+          <td>7</td>
+          <td>8</td>
+          <td>9</td>
+          <td>A</td>
+          <td>B</td>
+          <td>C</td>
+          <td>D</td>
+          <td>E</td>
+          <td>F</td>
+        </tr>
+        <tr>
+          <th>BIN</th>
+          <td>0000</td>
+          <td>0001</td>
+          <td>0010</td>
+          <td>0011</td>
+          <td>0100</td>
+          <td>0101</td>
+          <td>0110</td>
+          <td>0111</td>
+          <td>1000</td>
+          <td>1001</td>
+          <td>1010</td>
+          <td>1011</td>
+          <td>1100</td>
+          <td>1101</td>
+          <td>1110</td>
+          <td>1111</td>
+        </tr>
+        </tbody>
+      </table>
+    <div id="mobile_table1" >
+      <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
+        <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
+        <tbody>
+        <tr><td>0</td><td>0000</td></tr>
+        <tr><td>1</td><td>0001</td></tr>
+        <tr><td>2</td><td>0010</td></tr>
+        <tr><td>3</td><td>0011</td></tr>
+        <tr><td>4</td><td>0100</td></tr>
+        <tr><td>5</td><td>0101</td></tr>
+        <tr><td>6</td><td>0110</td></tr>
+        <tr><td>7</td><td>0111</td></tr>
+        </tbody>
+      </table>
+      <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
+        <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
+        <tbody>
+        <tr><td>8</td><td>1000</td></tr>
+        <tr><td>9</td><td>1001</td></tr>
+        <tr><td>A</td><td>1010</td></tr>
+        <tr><td>B</td><td>1011</td></tr>
+        <tr><td>C</td><td>1100</td></tr>
+        <tr><td>D</td><td>1101</td></tr>
+        <tr><td>E</td><td>1110</td></tr>
+        <tr><td>F</td><td>1111</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="alert-box">
@@ -304,38 +362,82 @@
 <div id="tab-binhex-test" class="tab-content">
   <h2>Procvičování: Převody pomocí nibblů</h2>
 
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-    <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
-      <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
+  <div style="overflow-x: auto; margin-bottom: 20px; width: 100%;">
+    <table class="notion-table" id="desktop_table2" style="width: 100%; text-align: center; white-space: nowrap;">
       <tbody>
-      <tr><td>0</td><td>0000</td></tr>
-      <tr><td>1</td><td>0001</td></tr>
-      <tr><td>2</td><td>0010</td></tr>
-      <tr><td>3</td><td>0011</td></tr>
-      <tr><td>4</td><td>0100</td></tr>
-      <tr><td>5</td><td>0101</td></tr>
-      <tr><td>6</td><td>0110</td></tr>
-      <tr><td>7</td><td>0111</td></tr>
+      <tr>
+        <th>HEX</th>
+        <td>0</td>
+        <td>1</td>
+        <td>2</td>
+        <td>3</td>
+        <td>4</td>
+        <td>5</td>
+        <td>6</td>
+        <td>7</td>
+        <td>8</td>
+        <td>9</td>
+        <td>A</td>
+        <td>B</td>
+        <td>C</td>
+        <td>D</td>
+        <td>E</td>
+        <td>F</td>
+      </tr>
+      <tr>
+        <th>BIN</th>
+        <td>0000</td>
+        <td>0001</td>
+        <td>0010</td>
+        <td>0011</td>
+        <td>0100</td>
+        <td>0101</td>
+        <td>0110</td>
+        <td>0111</td>
+        <td>1000</td>
+        <td>1001</td>
+        <td>1010</td>
+        <td>1011</td>
+        <td>1100</td>
+        <td>1101</td>
+        <td>1110</td>
+        <td>1111</td>
+      </tr>
       </tbody>
     </table>
-    <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
-      <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
-      <tbody>
-      <tr><td>8</td><td>1000</td></tr>
-      <tr><td>9</td><td>1001</td></tr>
-      <tr><td>A</td><td>1010</td></tr>
-      <tr><td>B</td><td>1011</td></tr>
-      <tr><td>C</td><td>1100</td></tr>
-      <tr><td>D</td><td>1101</td></tr>
-      <tr><td>E</td><td>1110</td></tr>
-      <tr><td>F</td><td>1111</td></tr>
-      </tbody>
-    </table>
+    <div id="mobile_table2">
+      <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
+        <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
+        <tbody>
+        <tr><td>0</td><td>0000</td></tr>
+        <tr><td>1</td><td>0001</td></tr>
+        <tr><td>2</td><td>0010</td></tr>
+        <tr><td>3</td><td>0011</td></tr>
+        <tr><td>4</td><td>0100</td></tr>
+        <tr><td>5</td><td>0101</td></tr>
+        <tr><td>6</td><td>0110</td></tr>
+        <tr><td>7</td><td>0111</td></tr>
+        </tbody>
+      </table>
+      <table class="notion-table" style="flex: 1; min-width: 200px; text-align: center;">
+        <thead><tr><th>HEX</th><th>BIN</th></tr></thead>
+        <tbody>
+        <tr><td>8</td><td>1000</td></tr>
+        <tr><td>9</td><td>1001</td></tr>
+        <tr><td>A</td><td>1010</td></tr>
+        <tr><td>B</td><td>1011</td></tr>
+        <tr><td>C</td><td>1100</td></tr>
+        <tr><td>D</td><td>1101</td></tr>
+        <tr><td>E</td><td>1110</td></tr>
+        <tr><td>F</td><td>1111</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="controls-bar" style="justify-content: center;">
-    <button class="btn btn-primary" onclick="generateTask('binhex', 'toHex')">Dvojková ➔ Šestnáctková</button>
-    <button class="btn btn-primary" onclick="generateTask('binhex', 'toBin')">Šestnáctková ➔ Dvojková</button>
+    <button class="btn" onclick="generateTask('binhex', 'toHex')">Dvojková ➔ Šestnáctková</button>
+    <button class="btn" onclick="generateTask('binhex', 'toBin')">Šestnáctková ➔ Dvojková</button>
   </div>
 
   <div class="test-container" id="test-binhex-ui" style="display:none;">
