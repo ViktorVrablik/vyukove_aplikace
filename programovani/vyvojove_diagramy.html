@@ -390,7 +390,7 @@ function renderBlocks(){
       if(M.r!==null)addC(cpos(b,'right').x,cpos(b,'right').y,'right',M.r);
       if(M.b!==null)addC(cpos(b,'bottom').x,cpos(b,'bottom').y,'bottom',M.b);
       if(isSel&&!conns.some(c=>c.from===b.id)){
-        const bx=b.x+w/2+8,by=b.y-14;
+        const bx=b.x+w/2-15,by=b.y-55;
         const bg=mkS('rect',{x:bx,y:by,width:26,height:26,rx:4,fill:'#fff',stroke:'#2383e2','stroke-width':'1.5'});
         const bt=mkS('text',{x:bx+13,y:by+13,'text-anchor':'middle','dominant-baseline':'middle','font-size':'13',fill:'#2383e2'});
         bt.textContent='⇄';
