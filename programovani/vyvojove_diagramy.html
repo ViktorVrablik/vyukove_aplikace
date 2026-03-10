@@ -380,7 +380,7 @@ function renderBlocks(){
 
     const addC=(x,y,side,lbl)=>{
       const c=mkS('circle',{cx:x,cy:y,r:5,class:'conn-dot'});c.dataset.bid=b.id;c.dataset.side=side;g.appendChild(c);
-      if(lbl){const t=mkS('text',{class:'conn-lbl',x:side==='bottom'?x+14:x,y:side==='bottom'?y:y-13,'text-anchor':'middle'});t.textContent=lbl;g.appendChild(t);}
+      if(lbl){const t=mkS('text',{class:'conn-lbl',x:side==='bottom'?x+25:x,y:side==='bottom'?y:y-13,'text-anchor':'middle'});t.textContent=lbl;g.appendChild(t);}
     };
     if(b.type!=='start'&&b.type!=='comment') addC(cpos(b,'input').x,cpos(b,'input').y,'input',null);
     if(b.type==='condition'){
