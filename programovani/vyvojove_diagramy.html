@@ -52,13 +52,13 @@ svg#cvs{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .conn-dot{fill:#fff;stroke:#c5c5c3;stroke-width:1.5;cursor:crosshair;}
 .conn-dot:hover{fill:var(--accent);stroke:var(--accent);}
 .conn-lbl{font-size:10px;fill:var(--muted);pointer-events:none;dominant-baseline:middle;}
-.arrow{fill:none;stroke:#37352f;stroke-width:1.5;cursor:pointer;}
+.arrow{fill:none;stroke:#d3d3d1;stroke-width:1.5;cursor:pointer;pointer-events:none;}
 .arrow.sel{stroke:var(--accent);stroke-width:2.5;}
-.wp-dot{fill:var(--accent);stroke:#fff;stroke-width:2;cursor:move;}
+.arrow-hit{fill:none;stroke:transparent;stroke-width:12;cursor:pointer;}
+.wp-dot{fill:var(--border);stroke:#fff;stroke-width:2;cursor:move;}
 #selbox{fill:rgba(35,131,226,.05);stroke:var(--accent);stroke-width:1;pointer-events:none;display:none;}
 .tmp-ln{fill:none;stroke:#bbb;stroke-width:1.5;stroke-dasharray:5,4;pointer-events:none;}
 
-/* Overlay input for block editing – sits above the SVG canvas */
 #blk-editor{
   position:absolute;
   display:none;
@@ -181,7 +181,6 @@ a {color: var(--text);}
       <g id="g-blk"></g>
       <rect id="selbox"/>
     </svg>
-    <!-- Overlay HTML input for block text editing -->
     <input type="text" id="blk-editor" autocomplete="off" spellcheck="false"/>
   </div>
   <div id="rp">
@@ -241,7 +240,7 @@ let running=false, debugging=false, dbgState=null;
 let goOn=true, resolveIn=null, execVars={};
 let mw={x:400,y:300}, exId=null, execSpd=500, palType=null;
 let lastClick={id:-1,time:0};
-// Guard: prevents blur→render→blur infinite loop
+let lastConnClick={id:null,time:0};
 let _closingEditor=false;
 
 const cwEl  = document.getElementById('cw');
@@ -255,7 +254,7 @@ const inpEl = document.getElementById('usr-inp');
 const inpLbl= document.getElementById('inp-lbl');
 const vBox  = document.getElementById('vars-box');
 const aBox  = document.getElementById('arrs-box');
-const edEl  = document.getElementById('blk-editor'); // overlay input
+const edEl  = document.getElementById('blk-editor');
 
 const sn = v => snapOn ? Math.round(v/GRID)*GRID : v;
 const mkS = (tag,a={}) => { const e=document.createElementNS('http://www.w3.org/2000/svg',tag); Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v)); return e; };
@@ -278,13 +277,8 @@ function renderGrid(){
   for(let i=0;i*step<=r.height+step;i++) gGrid.appendChild(mkS('line',{x1:0,y1:oy+i*step,x2:r.width,y2:oy+i*step,class:'grid-ln'}));
 }
 
-// ── OVERLAY EDITOR ────────────────────────────────────────────────────────
-// The input lives in #cw as a regular HTML element, positioned absolutely.
-// No foreignObject, no SVG re-rendering during edit.
-
 function positionEditor(b){
   const{w,h}=bdim(b);
-  // Convert world coords → screen coords
   const sx = b.x*zoom + panX;
   const sy = b.y*zoom + panY;
   const sw = w*zoom;
@@ -302,14 +296,8 @@ function openEditor(b){
   edEl.value = b.text;
   positionEditor(b);
   edEl.style.display = 'block';
-  // Render once so the SVG text is hidden and shape shows editing colour
   renderBlocks(); applyT(); ui();
-  
-  // FIX: Odložíme focus na konec event loopu, aby ho prohlížeč hned nesebral
-  setTimeout(() => {
-    edEl.focus();
-    edEl.select();
-  }, 0);
+  setTimeout(() => { edEl.focus(); edEl.select(); }, 0);
 }
 
 function closeEditor(apply){
@@ -334,23 +322,19 @@ edEl.addEventListener('keydown', e=>{
     e.stopPropagation();
     closeEditor(e.key==='Enter');
   }
-  // prevent canvas shortcuts while typing
   e.stopPropagation();
 });
 
 edEl.addEventListener('blur', ()=>{
-  // Only close if we're not already in the process
   if(!_closingEditor && editId!==null) closeEditor(true);
 });
 
-// Reposition overlay on pan/zoom
 function repositionEditorIfOpen(){
   if(editId===null) return;
   const b=blocks.find(b=>b.id===editId);
   if(b) positionEditor(b);
 }
 
-// ── BLOCK RENDERING ───────────────────────────────────────────────────────
 function renderBlocks(){
   gBlk.innerHTML='';
   blocks.forEach(b=>{
@@ -373,7 +357,6 @@ function renderBlocks(){
     }
     g.appendChild(sh);
 
-    // Text element: hide when this block is being edited
     const tx=mkS('text',{x:b.x,y:b.y,class:'blk-txt'});
     tx.textContent = isEditing ? '' : b.text;
     g.appendChild(tx);
@@ -410,7 +393,8 @@ function buildPath(c){
   const wp=(wpts[c.id]||[]).map(p=>({x:sn(p.x),y:sn(p.y)}));
   let d=`M${s.x},${s.y}`;
   const lr=c.fc==='left'||c.fc==='right';
-  if(lr){const ox=c.fc==='left'?s.x-20:s.x+20;d+=` L${ox},${s.y}`;if(wp.length)wp.forEach(p=>d+=` L${p.x},${p.y}`);else if(e.y<s.y){const dy=s.y+60,sx=c.fc==='left'?Math.max(fb.x+bdim(fb).w/2+80,tb.x+bdim(tb).w/2+80):Math.min(fb.x-bdim(fb).w/2-80,tb.x-bdim(tb).w/2-80);d+=` L${ox},${dy} L${sx},${dy} L${sx},${e.y-40} L${e.x},${e.y-40}`;}}
+  if(lr){const ox=c.fc==='left'?s.x-GRID*3:s.x+GRID*3;d+=` L${ox},${s.y}`;if(wp.length)wp.forEach(p=>d+=` L${p.x},${p.y}`);else if(e.y<s.y){const dy=s.y+60,sx=c.fc==='left'?Math.max(fb.x+bdim(fb).w/2+80,tb.x+bdim(tb).w/2+80):Math.min(fb.x-bdim(fb).w/2-80,tb.x-bdim(tb).w/2-80);d+=` L${ox},${dy} L${sx},${dy} L${sx},${e.y-40} L${e.x},${e.y-40}`;}else{d+=` L${ox},${e.y} L${e.x},${e.y}`;}}
+
   else{if(wp.length)wp.forEach(p=>d+=` L${p.x},${p.y}`);else if(e.y<s.y){const dy=s.y+60,sx=s.x<e.x?Math.min(fb.x-bdim(fb).w/2-80,tb.x-bdim(tb).w/2-80):Math.max(fb.x+bdim(fb).w/2+80,tb.x+bdim(tb).w/2+80);d+=` L${s.x},${dy} L${sx},${dy} L${sx},${e.y-40} L${e.x},${e.y-40}`;}}
   return d+` L${e.x},${e.y-7}`;
 }
@@ -420,10 +404,33 @@ function renderConns(){
   conns.forEach(c=>{
     const d=buildPath(c);if(!d)return;
     const sel=selConn===c.id;
+
+    // Visible arrow
     const p=mkS('path',{d,class:'arrow'+(sel?' sel':''),'marker-end':sel?'url(#arr-sel)':'url(#arr)'});
-    p.addEventListener('click',e=>{e.stopPropagation();selConn=c.id;selBlocks.clear();render();});
-    p.addEventListener('dblclick',e=>{e.stopPropagation();if(editConn===c.id){const pt=wc(e.clientX,e.clientY);wpts[c.id]=[...(wpts[c.id]||[]),{x:sn(pt.x),y:sn(pt.y)}];render();}});
     gConn.appendChild(p);
+
+    // Invisible wide hit area on top for easy clicking
+    const hit=mkS('path',{d,class:'arrow-hit'});
+    hit.addEventListener('mousedown',e=>{
+      if(e.button!==0)return;
+      e.stopPropagation();
+      const now=Date.now();
+      const isDouble=lastConnClick.id===c.id&&now-lastConnClick.time<400;
+      lastConnClick={id:c.id,time:now};
+      if(isDouble){
+        save();
+        editConn=c.id;
+        selConn=c.id;selBlocks.clear();
+        const pt=wc(e.clientX,e.clientY);
+        wpts[c.id]=[...(wpts[c.id]||[]),{x:sn(pt.x),y:sn(pt.y)}];
+        render();
+      } else {
+        selConn=c.id;selBlocks.clear();
+        render();
+      }
+    });
+    gConn.appendChild(hit);
+
     if(editConn===c.id)(wpts[c.id]||[]).forEach((wp,i)=>{const d2=mkS('circle',{cx:wp.x,cy:wp.y,r:7,class:'wp-dot'});d2.addEventListener('mousedown',e=>{e.stopPropagation();wpDrag={id:c.id,i};});gConn.appendChild(d2);});
   });
   if(linking&&linkSt){const fb=blocks.find(b=>b.id===linkSt.bid);if(fb){const s=cpos(fb,linkSt.side);gConn.appendChild(mkS('line',{x1:s.x,y1:s.y,x2:mw.x,y2:mw.y,class:'tmp-ln'}));}}
@@ -440,14 +447,12 @@ function onBMD(e,id){
   e.stopPropagation();
   if(running||debugging)return;
 
-  // Double-click → open editor
   const now=Date.now();
   if(lastClick.id===id && now-lastClick.time<400){
     lastClick={id:-1,time:0};
     const b=blocks.find(b=>b.id===id);
     if(b&&b.type!=='start'&&b.type!=='stop'){
       save();
-      // Close any existing editor first (without render, openEditor will render)
       if(editId!==null && editId!==id) closeEditor(true);
       openEditor(b);
       return;
@@ -455,20 +460,19 @@ function onBMD(e,id){
   }
   lastClick={id,time:now};
 
-  // Clicked a different block while editing → commit
   if(editId!==null && editId!==id){ closeEditor(true); }
 
   const b=blocks.find(b=>b.id===id),p=wc(e.clientX,e.clientY);
   save();dragging=id;dOff={x:p.x-b.x,y:p.y-b.y};
   if(e.shiftKey){selBlocks.has(id)?selBlocks.delete(id):selBlocks.add(id);}
-  else if(!selBlocks.has(id)){selBlocks.clear();selBlocks.add(id);}
-  selConn=null;render();
+  else if(!selBlocks.has(id)){selBlocks.clear();selBlocks.add(id);selConn=null;}
+  render();
 }
 
 cwEl.addEventListener('mousedown',e=>{
   if(e.button===2){panning=true;panSt={x:e.clientX-panX,y:e.clientY-panY};cwEl.style.cursor='grabbing';return;}
   if(e.button!==0)return;
-  if(e.target===edEl) return; // let the overlay handle its own clicks
+  if(e.target===edEl) return;
   if(editId!==null){ closeEditor(true); return; }
   if(running||debugging)return;
   const p=wc(e.clientX,e.clientY);boxing=true;boxSt=p;
@@ -496,7 +500,10 @@ cwEl.addEventListener('mouseup',e=>{
   if(dragging!==null){dragging=null;render();return;}
   if(wpDrag){wpDrag=null;return;}
   if(linking){linking=false;linkSt=null;cwEl.style.cursor='default';render();return;}
-  if(boxing){boxing=false;selEl.style.display='none';const p=wc(e.clientX,e.clientY);const mnX=Math.min(boxSt.x,p.x),mxX=Math.max(boxSt.x,p.x),mnY=Math.min(boxSt.y,p.y),mxY=Math.max(boxSt.y,p.y);blocks.forEach(b=>{if(b.x>=mnX&&b.x<=mxX&&b.y>=mnY&&b.y<=mxY)selBlocks.add(b.id);});render();}
+  if(boxing){boxing=false;selEl.style.display='none';const p=wc(e.clientX,e.clientY);const mnX=Math.min(boxSt.x,p.x),mxX=Math.max(boxSt.x,p.x),mnY=Math.min(boxSt.y,p.y),mxY=Math.max(boxSt.y,p.y);blocks.forEach(b=>{if(b.x>=mnX&&b.x<=mxX&&b.y>=mnY&&b.y<=mxY)selBlocks.add(b.id);});
+    // select connections whose both endpoints fall inside the box
+    conns.forEach(c=>{const fb=blocks.find(b=>b.id===c.from),tb=blocks.find(b=>b.id===c.to);if(fb&&tb){const s=cpos(fb,c.fc),en=cpos(tb,'input');if(s.x>=mnX&&s.x<=mxX&&s.y>=mnY&&s.y<=mxY&&en.x>=mnX&&en.x<=mxX&&en.y>=mnY&&en.y<=mxY)selConn=c.id;}});
+    render();}
 });
 cwEl.addEventListener('contextmenu',e=>e.preventDefault());
 cwEl.addEventListener('wheel',e=>{
@@ -603,7 +610,7 @@ function expPNG(){
     const fb=blocks.find(b=>b.id===c.from),tb=blocks.find(b=>b.id===c.to);if(!fb||!tb)return;
     const s=cpos(fb,c.fc),en=cpos(tb,'input');const pts=[{x:s.x-ox,y:s.y-oy}];
     const wp=wpts[c.id]||[],lr=c.fc==='left'||c.fc==='right';
-    if(lr){const lx=c.fc==='left'?s.x-20:s.x+20;pts.push({x:lx-ox,y:s.y-oy});}
+    if(lr){const lx=c.fc==='left'?s.x-GRID*3:s.x+GRID*3;pts.push({x:lx-ox,y:s.y-oy});if(!wp.length)pts.push({x:lx-ox,y:en.y-oy},{x:en.x-ox,y:en.y-oy});}
     if(wp.length)wp.forEach(p=>pts.push({x:p.x-ox,y:p.y-oy}));
     else if(en.y<s.y){const dy=s.y+60,sx2=s.x<en.x?Math.min(fb.x-bdim(fb).w/2-80,tb.x-bdim(tb).w/2-80):Math.max(fb.x+bdim(fb).w/2+80,tb.x+bdim(tb).w/2+80);pts.push({x:s.x-ox,y:dy-oy},{x:sx2-ox,y:dy-oy},{x:sx2-ox,y:en.y-oy-40},{x:en.x-ox,y:en.y-oy-40});}
     pts.push({x:en.x-ox,y:en.y-oy-7});
