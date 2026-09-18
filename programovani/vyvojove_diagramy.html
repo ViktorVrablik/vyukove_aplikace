@@ -3,61 +3,119 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Flowchart Editor</title>
+<title>Editor vývojových diagramů | Výukové aplikace</title>
+<meta name="description" content="Interaktivní editor vývojových diagramů s krokovacím laděním, konzolí, proměnnými a exportem do XML nebo PNG. Určeno pro počítač."/>
+<meta name="author" content="Ing. Viktor Vráblík"/>
+<meta name="color-scheme" content="light dark"/>
+<meta name="theme-color" content="#ffffff"/>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="../assets/tokens.css"/>
+<script>
+  // Nastaví motiv ještě před vykreslením, aby editor neproblikl.
+  (function () {
+    try {
+      var t = localStorage.getItem('va-theme');
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
 <style>
+/* ==========================================================================
+   Editor vývojových diagramů
+   Barvy, typografie a odstupy přebírá ze sdílených tokenů (assets/tokens.css).
+   ========================================================================== */
+
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{width:100%;height:100%;overflow:hidden;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
-  background:#fff;color:#37352f;font-size:14px;}
-:root{--border:#e9e9e7;--muted:#9b9a97;--hover:#f7f7f5;--accent:#2383e2;--accent-bg:#e8f2fc;--green:#0f7b6c;}
+  font-family:var(--font-sans);
+  background:var(--bg);color:var(--text);font-size:var(--fs-sm);}
 #app{display:flex;flex-direction:column;width:100vw;height:100vh;}
-#toolbar{display:flex;align-items:center;gap:2px;padding:0 10px;height:42px;min-height:42px;
-  flex-shrink:0;border-bottom:1px solid var(--border);background:#fff;overflow-x:auto;
+
+/* --- Horní lišta --- */
+#toolbar{display:flex;align-items:center;gap:2px;padding:0 var(--space-2);height:46px;min-height:46px;
+  flex-shrink:0;border-bottom:1px solid var(--border);background:var(--bg);overflow-x:auto;
   -webkit-user-select:none;user-select:none;}
-#toolbar-title{font-size:14px;font-weight:600;padding:0 8px 0 2px;flex-shrink:0;}
-.tsep{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 4px;}
-.tbtn{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:4px;
-  border:none;background:transparent;color:#37352f;font-family:inherit;font-size:13px;
-  font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .12s;}
-.tbtn:hover:not(:disabled){background:var(--hover);}
-.tbtn.active{background:var(--hover);font-weight:600;}
+#toolbar-title{font-size:var(--fs-base);font-weight:600;padding:0 var(--space-2) 0 var(--space-1);flex-shrink:0;}
+.tsep{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 var(--space-1);}
+.tbtn{display:inline-flex;align-items:center;gap:6px;padding:var(--space-1) var(--space-2);
+  min-height:30px;border-radius:var(--radius-md);
+  border:none;background:transparent;color:var(--text);font-family:inherit;font-size:var(--fs-sm);
+  font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none;
+  transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);}
+.tbtn:hover:not(:disabled){background:var(--hover-bg);}
+.tbtn.active{background:var(--hover-bg);font-weight:600;}
 .tbtn:disabled{opacity:.38;cursor:not-allowed;}
+.tbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.tbtn--back{color:var(--text-muted);}
+.tbtn--right{margin-left:auto;}
 select.tbtn{appearance:none;padding-right:20px;cursor:pointer;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%239b9a97'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 6px center;}
+
+.tbtn .icon, .pal-item .icon, .tbtn--back .icon, #hbody .icon {
+  display: inline-block;
+  width: 14px; height: 14px; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.pal-item .icon { color: var(--text-muted); }
+
+/* Ikona přepínače motivu */
+.theme-toggle svg{width:15px;height:15px;}
+.theme-toggle .icon-sun{display:none;}
+.theme-toggle .icon-moon{display:block;}
+:root[data-theme="dark"] .theme-toggle .icon-sun{display:block;}
+:root[data-theme="dark"] .theme-toggle .icon-moon{display:none;}
+
+/* --- Pracovní plocha --- */
 #workspace{display:flex;flex:1;min-height:0;overflow:hidden;}
 #sidebar{width:176px;min-width:176px;flex-shrink:0;border-right:1px solid var(--border);
-  background:#fff;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg);display:flex;flex-direction:column;overflow:hidden;
   -webkit-user-select:none;user-select:none;}
-.sb-head{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);padding:14px 12px 6px;}
-.pal-item{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:3px;
-  margin:1px 6px;cursor:pointer;font-size:13px;color:#37352f;transition:background .1s;}
-.pal-item:hover{background:var(--hover);}
+.sb-head{font-size:var(--fs-xs);font-weight:600;letter-spacing:var(--tracking-wide);text-transform:uppercase;
+  color:var(--text-muted);padding:var(--space-4) var(--space-3) var(--space-1);}
+.pal-item{display:flex;align-items:center;gap:8px;padding:6px var(--space-3);border-radius:var(--radius-sm);
+  margin:1px var(--space-2);cursor:pointer;font-size:var(--fs-sm);color:var(--text);
+  transition:background var(--dur-fast) var(--ease);}
+.pal-item:hover{background:var(--hover-bg);}
 .pal-item.disabled{opacity:.35;cursor:not-allowed;}
-.sb-div{border:none;border-top:1px solid var(--border);margin:8px 12px;}
-#sb-footer{margin-top:auto;border-top:1px solid var(--border);padding:12px;
-  font-size:11px;color:var(--muted);line-height:1.7;}
-#cw{flex:1;position:relative;overflow:hidden;background:#fafaf9;cursor:default;
+.sb-div{border:none;border-top:1px solid var(--border);margin:var(--space-2) var(--space-3);}
+#sb-footer{margin-top:auto;border-top:1px solid var(--border);padding:var(--space-3);
+  font-size:var(--fs-xs);color:var(--text-muted);line-height:1.7;}
+#sb-footer a{color:var(--text-muted);}
+
+/* --- Plátno --- */
+#cw{flex:1;position:relative;overflow:hidden;background:var(--bg-sunken);cursor:default;
   -webkit-user-select:none;user-select:none;}
 svg#cvs{position:absolute;inset:0;width:100%;height:100%;display:block;}
-.grid-ln{stroke:#ebebea;stroke-width:.6;}
-.blk-shape{fill:#fff;stroke:#d3d3d1;stroke-width:1.5;}
-.blk-shape.sel{stroke:var(--accent);stroke-width:2;fill:var(--accent-bg);}
-.blk-shape.exec{fill:#e6f4f1;stroke:var(--green);stroke-width:2;}
+.grid-ln{stroke:var(--border);stroke-width:.6;}
+.blk-shape{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.5;}
+.blk-shape.sel{stroke:var(--accent);stroke-width:2;fill:var(--accent-soft);}
+.blk-shape.exec{fill:var(--c-green-bg);stroke:var(--c-green);stroke-width:2;}
 .blk-shape.editing{stroke:var(--accent);stroke-width:2;}
-.blk-txt{font-size:13px;fill:#37352f;pointer-events:none;dominant-baseline:middle;
-  text-anchor:middle;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
-.conn-dot{fill:#fff;stroke:#c5c5c3;stroke-width:1.5;cursor:crosshair;}
+.blk-txt{font-size:var(--fs-sm);fill:var(--text);pointer-events:none;dominant-baseline:middle;
+  text-anchor:middle;font-family:var(--font-sans);}
+.conn-dot{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.5;cursor:crosshair;}
 .conn-dot:hover{fill:var(--accent);stroke:var(--accent);}
-.conn-lbl{font-size:10px;fill:var(--muted);pointer-events:none;dominant-baseline:middle;}
-.arrow{fill:none;stroke:#d3d3d1;stroke-width:1.5;cursor:pointer;pointer-events:none;}
+.conn-lbl{font-size:10px;fill:var(--text-muted);pointer-events:none;dominant-baseline:middle;}
+.arrow{fill:none;stroke:var(--border-strong);stroke-width:1.5;cursor:pointer;pointer-events:none;}
 .arrow.sel{stroke:var(--accent);stroke-width:2.5;}
 .arrow-hit{fill:none;stroke:transparent;stroke-width:12;cursor:pointer;}
-.wp-dot{fill:var(--border);stroke:#fff;stroke-width:2;cursor:move;}
-#selbox{fill:rgba(35,131,226,.05);stroke:var(--accent);stroke-width:1;pointer-events:none;display:none;}
-.tmp-ln{fill:none;stroke:#bbb;stroke-width:1.5;stroke-dasharray:5,4;pointer-events:none;}
+.wp-dot{fill:var(--border);stroke:var(--surface);stroke-width:2;cursor:move;}
+#selbox{fill:var(--selection);stroke:var(--accent);stroke-width:1;pointer-events:none;display:none;}
+.tmp-ln{fill:none;stroke:var(--text-faint);stroke-width:1.5;stroke-dasharray:5,4;pointer-events:none;}
+
+/* Tlačítko pro prohození větví podmínky */
+.swap-bg{fill:var(--surface);stroke:var(--accent);stroke-width:1.5;}
+.swap-ic{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;
+  stroke-linejoin:round;pointer-events:none;}
+
+/* Hroty šipek se barví podle motivu */
+#arr polygon{fill:var(--text);}
+#arr-sel polygon{fill:var(--accent);}
 
 #blk-editor{
   position:absolute;
@@ -67,9 +125,9 @@ svg#cvs{position:absolute;inset:0;width:100%;height:100%;display:block;}
   background:transparent;
   border:none;
   outline:none;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
-  font-size:13px;
-  color:#37352f;
+  font-family:var(--font-sans);
+  font-size:var(--fs-sm);
+  color:var(--text);
   text-align:center;
   padding:0 6px;
   -webkit-user-select:text;
@@ -78,103 +136,111 @@ svg#cvs{position:absolute;inset:0;width:100%;height:100%;display:block;}
   resize:none;
 }
 
+/* --- Pravý panel --- */
 #rp{width:210px;min-width:210px;flex-shrink:0;border-left:1px solid var(--border);
-  background:#fff;display:flex;flex-direction:column;overflow:hidden;}
-.rp-head{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);padding:10px 12px 5px;flex-shrink:0;}
+  background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
+.rp-head{font-size:var(--fs-xs);font-weight:600;letter-spacing:var(--tracking-wide);text-transform:uppercase;
+  color:var(--text-muted);padding:var(--space-3) var(--space-3) var(--space-1);flex-shrink:0;}
 #con-wrap{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;
   border-bottom:1px solid var(--border);}
-#con-box{flex:1;min-height:0;overflow-y:auto;margin:0 8px 8px;
-  background:#1e1e1e;border-radius:4px;padding:8px;}
-.cl{font-size:11px;font-family:'SFMono-Regular',Consolas,Menlo,monospace;
+#con-box{flex:1;min-height:0;overflow-y:auto;margin:0 var(--space-2) var(--space-2);
+  background:#1e1e1e;border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-2);}
+.cl{font-size:11px;font-family:var(--font-mono);
   line-height:1.65;white-space:pre-wrap;word-break:break-all;}
 .c-out{color:#4ec9b0;}.c-in{color:#9cdcfe;}.c-sys{color:#569cd6;}.c-err{color:#f48771;}
-#inp-row{display:none;flex-direction:column;gap:3px;padding:6px 8px;
+#inp-row{display:none;flex-direction:column;gap:3px;padding:6px var(--space-2);
   border-top:1px solid var(--border);flex-shrink:0;}
-#inp-row label{font-size:11px;color:#d9730d;font-weight:600;}
-#usr-inp{width:100%;padding:4px 7px;border:1px solid var(--border);border-radius:3px;
-  font-size:12px;font-family:monospace;outline:none;
+#inp-row label{font-size:11px;color:var(--c-orange);font-weight:600;}
+#usr-inp{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:12px;font-family:var(--font-mono);outline:none;background:var(--surface);color:var(--text);
   -webkit-user-select:text;user-select:text;}
-#usr-inp:focus{border-color:var(--accent);}
+#usr-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--selection);}
 #vars-wrap{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
-.rp-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 8px 8px;}
+.rp-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 var(--space-2) var(--space-2);}
 .var-row{display:flex;justify-content:space-between;gap:4px;
-  font-size:12px;font-family:monospace;padding:2px 4px;border-bottom:1px solid var(--border);}
+  font-size:12px;font-family:var(--font-mono);padding:2px 4px;border-bottom:1px solid var(--border);}
 .vn{color:var(--accent);font-weight:600;flex-shrink:0;}
-.vv{color:#37352f;word-break:break-all;text-align:right;}
+.vv{color:var(--text);word-break:break-all;text-align:right;}
 .arr-blk{margin-bottom:7px;padding:0 4px;}
-.an{font-size:11px;font-weight:600;color:var(--muted);font-family:monospace;padding-bottom:3px;}
+.an{font-size:11px;font-weight:600;color:var(--text-muted);font-family:var(--font-mono);padding-bottom:3px;}
 .acells{display:flex;flex-wrap:wrap;gap:2px;}
-.acell{background:var(--hover);border:1px solid var(--border);border-radius:2px;
-  padding:1px 4px;font-size:11px;font-family:monospace;}
-.empty{font-size:12px;color:var(--muted);padding:3px 4px;}
+.acell{background:var(--surface-sunken);border:1px solid var(--border);border-radius:2px;
+  padding:1px 4px;font-size:11px;font-family:var(--font-mono);}
+.empty{font-size:12px;color:var(--text-muted);padding:3px 4px;}
 
-#hmodal{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:500;
+/* --- Nápověda --- */
+#hmodal{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:var(--z-modal);
   display:none;align-items:center;justify-content:center;}
 #hmodal.open{display:flex;}
-#hbox{background:#fff;border-radius:6px;box-shadow:0 4px 32px rgba(0,0,0,.15);
+#hbox{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);
   width:min(720px,94vw);max-height:88vh;display:flex;flex-direction:column;}
 #hbox header{display:flex;justify-content:space-between;align-items:center;
-  padding:14px 18px 12px;border-bottom:1px solid var(--border);}
-#hbox header h2{font-size:17px;font-weight:700;}
-#hbody{overflow-y:auto;padding:16px 20px;font-size:13px;line-height:1.7;
+  padding:var(--space-4) var(--space-5) var(--space-3);border-bottom:1px solid var(--border);}
+#hbox header h2{font-size:var(--fs-lg);font-weight:700;letter-spacing:var(--tracking-tight);}
+#hbody{overflow-y:auto;padding:var(--space-4) var(--space-5);font-size:var(--fs-sm);line-height:1.7;
   -webkit-user-select:text;user-select:text;}
-#hbody h3{font-size:14px;font-weight:700;margin:16px 0 6px;
-  border-bottom:1px solid var(--border);padding-bottom:4px;color:#2383e2;}
+#hbody h3{font-size:var(--fs-base);font-weight:700;margin:var(--space-4) 0 var(--space-2);
+  border-bottom:1px solid var(--border);padding-bottom:4px;color:var(--accent);}
 #hbody h3:first-child{margin-top:0;}
-#hbody code{font-family:'SFMono-Regular',Consolas,Menlo,monospace;
-  background:var(--hover);padding:2px 6px;border-radius:3px;color:#eb5757;font-size:.9em;}
-#hbody ul{padding-left:18px;margin-bottom:8px;}
+#hbody .icon{vertical-align:-3px;}
+#hbody code{font-family:var(--font-mono);
+  background:var(--surface-sunken);padding:2px 6px;border-radius:var(--radius-sm);
+  color:var(--code-text);font-size:.9em;}
+#hbody ul{padding-left:18px;margin-bottom:var(--space-2);}
 #hbody li{margin-bottom:4px;}
-.info-blk{background:var(--hover);border-left:3px solid var(--accent);
-  border-radius:3px;padding:10px 12px;margin:8px 0;line-height:1.65;}
-a {color: var(--text);}
+.info-blk{background:var(--surface-sunken);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:var(--radius-md);padding:var(--space-3);margin:var(--space-2) 0;line-height:1.65;}
+a{color:var(--text);}
 </style>
 </head>
 <body>
 <div id="app">
 <div id="toolbar">
-  <span id="toolbar-title">Flowchart</span>
+  <a class="tbtn tbtn--back" href="../index.html" title="Zpět na přehled aplikací"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Přehled</a>
   <div class="tsep"></div>
-  <button class="tbtn" id="btn-run"><svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M2 1l8 4.5L2 10V1z"/></svg>Run</button>
-  <button class="tbtn" id="btn-debug"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="5"/><path d="M7 4v3l2 1.5"/></svg>Debug</button>
-  <button class="tbtn" id="btn-stop" disabled><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect width="10" height="10" rx="1"/></svg>Stop</button>
+  <span id="toolbar-title">Vývojové diagramy</span>
+  <div class="tsep"></div>
+  <button class="tbtn" id="btn-run"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Run</button>
+  <button class="tbtn" id="btn-debug"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>Debug</button>
+  <button class="tbtn" id="btn-stop" disabled><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>Stop</button>
   <select class="tbtn" id="sel-speed">
     <option value="100">Velmi rychlá</option><option value="300">Rychlá</option>
     <option value="500" selected>Normální</option><option value="1000">Pomalá</option>
     <option value="2000">Velmi pomalá</option>
   </select>
   <div class="tsep"></div>
-  <button class="tbtn active" id="btn-grid"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 0v12M8 0v12M0 4h12M0 8h12"/></svg>Grid</button>
-  <button class="tbtn active" id="btn-snap"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/><path d="M7 2V0M7 14v-2M2 7H0M14 7h-2"/></svg>Snap</button>
+  <button class="tbtn active" id="btn-grid"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Grid</button>
+  <button class="tbtn active" id="btn-snap"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>Snap</button>
   <div class="tsep"></div>
-  <button class="tbtn active" id="btn-wheel" title="Zapnout/vypnout scrollování kolečkem myši"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="1" width="6" height="10" rx="3"/><line x1="6" y1="3" x2="6" y2="5"/></svg>Kolečko</button>
-  <button class="tbtn" id="btn-zoomin" title="Přiblížit"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg></button>
-  <button class="tbtn" id="btn-zoomout" title="Oddálit"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="2" y1="6" x2="10" y2="6"/></svg></button>
-  <button class="tbtn" id="btn-fit" title="Zobrazit celý diagram"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 4V1h3M8 1h3v3M1 8v3h3M8 11h3V8"/></svg>Fit</button>
+  <button class="tbtn active" id="btn-wheel" title="Zapnout/vypnout scrollování kolečkem myši"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>Kolečko</button>
+  <button class="tbtn" id="btn-zoomin" title="Přiblížit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg></button>
+  <button class="tbtn" id="btn-zoomout" title="Oddálit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg></button>
+  <button class="tbtn" id="btn-fit" title="Zobrazit celý diagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>Fit</button>
   <div class="tsep"></div>
-  <button class="tbtn" id="btn-del" disabled><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,3 11,3"/><path d="M4 3V2h4v1M2 3l1 8h6l1-8"/></svg>Smazat</button>
-  <button class="tbtn" id="btn-editpath" style="display:none"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 9l2-2 6-6 2 2-6 6-2 2-2-2z"/></svg>Edit Path</button>
-  <button class="tbtn" id="btn-undo" disabled><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 5h6a4 4 0 010 8H4"/><polyline points="4,2 1,5 4,8"/></svg>Zpět</button>
+  <button class="tbtn" id="btn-del" disabled><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>Smazat</button>
+  <button class="tbtn" id="btn-editpath" style="display:none"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>Edit Path</button>
+  <button class="tbtn" id="btn-undo" disabled><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>Zpět</button>
   <div class="tsep"></div>
-  <button class="tbtn" id="btn-help"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M5 5a1.2 1.2 0 012 1c0 1-1.5 1.2-1.5 2"/><circle cx="5.5" cy="9" r=".5" fill="currentColor"/></svg>Nápověda</button>
+  <button class="tbtn tbtn--right theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim"><svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg><svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>Motiv</button>
+  <button class="tbtn" id="btn-help"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>Nápověda</button>
 </div>
 <div id="workspace">
   <div id="sidebar">
     <div class="sb-head">Bloky</div>
-    <div class="pal-item" data-type="start" id="pal-start"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="7" cy="7" rx="6" ry="4"/></svg>Start</div>
-    <div class="pal-item" data-type="stop"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="7" cy="7" rx="6" ry="4"/></svg>Stop</div>
-    <div class="pal-item" data-type="operation"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="4" width="12" height="6" rx="1"/></svg>Operace</div>
-    <div class="pal-item" data-type="condition"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><polygon points="7,1 13,7 7,13 1,7"/></svg>Podmínka</div>
-    <div class="pal-item" data-type="comment"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2,2"><rect x="1" y="4" width="12" height="6" rx="1"/></svg>Komentář</div>
+    <div class="pal-item" data-type="start" id="pal-start"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>Start</div>
+    <div class="pal-item" data-type="stop"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><rect x="9" y="9" width="6" height="6"></rect></svg>Stop</div>
+    <div class="pal-item" data-type="operation"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>Operace</div>
+    <div class="pal-item" data-type="condition"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>Podmínka</div>
+    <div class="pal-item" data-type="comment"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Komentář</div>
     <hr class="sb-div"/>
     <div class="sb-head">Soubor</div>
-    <div class="pal-item" id="pal-export-xml"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 2v7M4 6l3 3 3-3M2 11h10"/></svg>Export XML</div>
-    <div class="pal-item" id="pal-import-xml"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 9V2M4 5l3-3 3 3M2 11h10"/></svg>Import XML<input type="file" id="xml-file" accept=".xml" style="display:none"/></div>
-    <div class="pal-item" id="pal-export-png"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="2" width="12" height="10" rx="1"/><path d="M1 9l3-3 2 2 3-3 4 4"/><circle cx="4.5" cy="5.5" r="1" fill="currentColor" stroke="none"/></svg>Export PNG</div>
-    <div id="sb-footer">Ing. Viktor Vráblík
-      <br> <a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> 
-      <br><span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank">bit.ly/vyukoveMaterialy</a></span>
+    <div class="pal-item" id="pal-export-xml"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Export XML</div>
+    <div class="pal-item" id="pal-import-xml"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import XML<input type="file" id="xml-file" accept=".xml" style="display:none"/></div>
+    <div class="pal-item" id="pal-export-png"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>Export PNG</div>
+    <div id="sb-footer"><strong>Ing. Viktor Vráblík</strong>
+      <br> <a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a> 
+      <br><span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
       <br> <span>Vytvořeno pomocí <b>Gemini AI</b></span>
     </div>
   </div>
@@ -209,7 +275,7 @@ a {color: var(--text);}
 </div>
 <div id="hmodal">
   <div id="hbox">
-    <header><h2>Nápověda k aplikaci Flowchart Editor</h2><button class="tbtn" id="btn-hclose"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l9 9M10 1L1 10"/></svg></button></header>
+    <header><h2>Nápověda k aplikaci Flowchart Editor</h2><button class="tbtn" id="btn-hclose"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></header>
     <div id="hbody">
       <h3>1. Ovládání a Klávesové Zkratky</h3>
       <ul>
@@ -217,7 +283,7 @@ a {color: var(--text);}
         <li><b>Přesun bloku:</b> Stiskněte levé tlačítko myši na bloku a táhněte.</li>
         <li><b>Editovat text:</b> Dvojklik na blok (Operace, Podmínka, Komentář).</li>
         <li><b>Propojení bloků:</b> Táhněte z bodu (kolečka) na okraji jednoho bloku do druhého bloku.</li>
-        <li><b>Změna True/False větví:</b> Označte blok Podmínky a klikněte na tlačítko <code>⇄</code> nad ním.</li>
+        <li><b>Změna True/False větví:</b> Označte blok Podmínky a klikněte na tlačítko <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> nad ním.</li>
         <li><b>Výběr více prvků:</b> Tažením vytvořte výběrový rámeček nebo držením <code>Shift + klik</code>.</li>
         <li><b>Posun plátna (Pan):</b> Pravé tlačítko myši + tažení po plátně.</li>
         <li><b>Přiblížení/Oddálení (Zoom):</b> Kolečko myši nebo tlačítka v horní liště.</li>
@@ -444,9 +510,9 @@ function renderBlocks(){
       if(M.b!==null)addC(cpos(b,'bottom').x,cpos(b,'bottom').y,'bottom',M.b);
       if(isSel&&!conns.some(c=>c.from===b.id)){
         const bx=b.x+w/2-15,by=b.y-55;
-        const bg=mkS('rect',{x:bx,y:by,width:26,height:26,rx:4,fill:'#fff',stroke:'#2383e2','stroke-width':'1.5'});
-        const bt=mkS('text',{x:bx+13,y:by+13,'text-anchor':'middle','dominant-baseline':'middle','font-size':'13',fill:'#2383e2'});
-        bt.textContent='⇄';
+        const bg=mkS('rect',{x:bx,y:by,width:26,height:26,rx:4,class:'swap-bg'});
+        const bt=mkS('g',{class:'swap-ic',transform:`translate(${bx+5},${by+5}) scale(0.6667)`});
+        bt.innerHTML='<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>';
         [bg,bt].forEach(el=>{el.style.cursor='pointer';el.addEventListener('mousedown',e=>{e.stopPropagation();save();cLayouts[b.id]=((cLayouts[b.id]||0)+1)%6;render();});});
         g.appendChild(bg);g.appendChild(bt);
       }
@@ -1164,5 +1230,6 @@ blocks.push({id:1,type:'start',x:400,y:120,text:'Start'});
 render();
 window.addEventListener('resize',render);
 </script>
+<script src="../assets/theme.js"></script>
 </body>
 </html>

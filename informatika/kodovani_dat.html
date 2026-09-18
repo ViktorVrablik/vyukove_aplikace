@@ -2,174 +2,166 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vizualizace kódování dat | TechUI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kódování dat | Výukové aplikace</title>
+    <meta name="description" content="Jak počítač ukládá text, čísla, obraz a zvuk — ASCII a UTF-8, dvojkový doplněk, IEEE 754, RGB matice a A/D převod signálu.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Kódování dat">
+    <meta property="og:description" content="Jak počítač ukládá text, čísla, obraz a zvuk — ASCII a UTF-8, dvojkový doplněk, IEEE 754, RGB matice a A/D převod signálu.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
     <style>
-        /* --- NOTION DESIGN TEMPLATE --- */
-        :root {
-            --bg: #ffffff;
-            --surface: #ffffff;
-            --border: #e9e9e7;
-            --text: #37352f;
-            --text-muted: #787774;
-            --accent: #2383e2;
-            --hover-bg: #f7f7f5;
-            --card-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
-            
-            /* Visualizer Colors (Notion friendly) */
-            --bar-default: #e4e4e1;
-            --bar-accent: #2383e2; /* Blue */
-            --bar-compare: #d9730d; /* Orange */
-            --bar-swap: #e03e3e; /* Red */
-            --bar-sorted: #0f7b6c; /* Green */
-            --bar-pivot: #6940a5; /* Purple */
+        /* --- Specifika stránky --- */
+
+        /* Výpis binárních / hexadecimálních dat */
+        .code-box {
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            color: var(--code-text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            word-break: break-all;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 40px 24px;
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
+        .field { margin-bottom: var(--space-5); }
 
-        /* --- HEADER --- */
-        header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center }
-        h1 { 
-            font-size: 40px; 
-            font-weight: 700; 
-            margin-bottom: 8px; 
-            letter-spacing: -0.01em; 
+        /* Bitová pole IEEE 754 */
+        .bit-sign { color: var(--c-red); font-weight: 700; }
+        .bit-exp  { color: var(--c-green); font-weight: 700; }
+        .bit-mant { color: var(--c-blue); font-weight: 700; }
+
+        /* Pixelová mřížka */
+        .grid-container {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: var(--space-5);
         }
-        .subtitle { color: var(--text-muted); font-size: 16px; margin-top: 0; }
-
-        h2 { font-size: 24px; font-weight: 600; margin-bottom: 15px; margin-top: 30px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
-        h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; margin-top: 25px; }
-
-        /* --- FILTERS / NAVIGATION --- */
-        .filter-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 30px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
+        .pixel-grid {
+            display: grid;
+            grid-template-columns: repeat(8, clamp(22px, 7vw, 30px));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .pixel {
+            aspect-ratio: 1;
+            background: #ffffff;
+            cursor: crosshair;
+            transition: outline-color var(--dur-fast) var(--ease);
+        }
+        .pixel:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .grid-container .code-box {
+            flex: 1 1 260px;
+            margin-bottom: 0;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            white-space: pre;
             overflow-x: auto;
         }
 
-        .filter-btn {
-            padding: 6px 12px;
-            font-size: 14px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: 4px;
-            white-space: nowrap;
-            transition: 0.2s;
-            font-family: inherit;
+        /* Průběh signálu */
+        .canvas-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-5);
+            margin-bottom: var(--space-4);
+        }
+        .canvas-wrap { flex: 1 1 280px; min-width: 0; }
+        .canvas-wrap canvas {
+            width: 100%;
+            height: 180px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
         }
 
-        .filter-btn:hover { background: var(--hover-bg); color: var(--text); }
-        .filter-btn.active { background: var(--hover-bg); color: var(--text); font-weight: 600; }
-
-        /* --- CONTENT PANELS --- */
-        .tab-content { display: none; animation: fadeIn 0.2s ease-in-out; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Vstupy a tlačítka */
-        input[type="text"], input[type="number"] { 
-            width: 100%; padding: 8px 12px; font-size: 15px; margin-bottom: 15px; 
-            box-sizing: border-box; background: var(--bg); color: var(--text);
-            border: 1px solid var(--border); border-radius: 6px; font-family: inherit; outline: none;
-            transition: border-color 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
-        
-        .btn {
-            padding: 6px 12px; background: var(--bg); border: 1px solid var(--border);
-            color: var(--text); border-radius: 4px; font-family: inherit; font-size: 14px;
-            font-weight: 500; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            display: inline-flex; align-items: center; gap: 5px;
-        }
-        .btn:hover:not(:disabled) { background: var(--hover-bg); }
-
-        /* Výstupy dat */
-        .code-box {
-            background: var(--hover-bg); color: #eb5757;
-            padding: 16px; border: 1px solid var(--border); border-radius: 6px; word-wrap: break-word;
-            font-size: 14px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-            margin-bottom: 20px;
-        }
-        .label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-        
-        .info-box { 
-            background: var(--hover-bg); border: 1px solid var(--border); border-left: 4px solid var(--accent); 
-            padding: 16px; margin-bottom: 20px; font-size: 14px; color: var(--text); border-radius: 6px;
-        }
-
-        /* Mřížka (Obrázek) */
-        .grid-container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
-        .grid { display: grid; grid-template-columns: repeat(8, 25px); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-        .pixel { width: 25px; height: 25px; background-color: #ffffff; cursor: crosshair; }
-
-        /* Zvuk */
-        canvas { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; width: 100%; height: 180px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .canvas-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;}
-        .canvas-wrap { flex: 1; min-width: 300px; }
-        
         .controls-box {
-            background: var(--hover-bg); padding: 16px; border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; gap: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+            padding: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
         }
+        .controls-box .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); }
+        .controls-box .label span { color: var(--text); }
 
-        /* Čísla (Plovoucí řádová čárka) */
-        .bit-sign { color: var(--bar-swap); font-weight: bold;}
-        .bit-exp { color: var(--bar-sorted); font-weight: bold;}
-        .bit-mant { color: var(--bar-accent); font-weight: bold;}
-
-        /* Footer */
-        footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
-        .footer_line { display: flex; justify-content: space-between; }
-        @media (max-width: 800px) { .footer_line { flex-direction: column; gap: 10px; } }
-        
-        /* Posuvníky */
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; background: var(--bg); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; margin-top: -6px; border-radius: 50%;}
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: var(--border); border-radius: 2px;}
-
-        @media (max-width: 800px) {
-            header {flex-direction: column-reverse; align-items: flex-start;}
-            footer {flex-direction: column; gap: 10px;}
-        }
-
-        a {
-            color: var(--text)
+        .color-field {
+            display: flex;
+            align-items: flex-end;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
         }
     </style>
 </head>
 <body>
-     <header>
-        <div>
-            <h1>Vizualizace kódování dat</h1>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="inf">Informatika</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">Kódování dat</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <h1>Kódování dat</h1>
             <p class="subtitle">Interaktivní pohled na binární strukturu informací</p>
         </div>
-        <button class="btn" onclick="location.href = '../index.html'">↩ Zpět</button>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
     </header>
+
+<main id="obsah" tabindex="-1">
+
     
-    <div class="filter-bar">
-        <button class="filter-btn active" onclick="showTab('textTab', this)">Text</button>
-        <button class="filter-btn" onclick="showTab('numTab', this)">Čísla</button>
-        <button class="filter-btn" onclick="showTab('imageTab', this)">Obrázek</button>
-        <button class="filter-btn" onclick="showTab('audioTab', this)">Zvuk</button>
+    <div class="tabs" role="tablist" aria-label="Typ dat">
+        <button class="tab active" type="button" role="tab" id="t-textTab" aria-controls="textTab" aria-selected="true" tabindex="0" onclick="showTab('textTab', this)">Text</button>
+        <button class="tab" type="button" role="tab" id="t-numTab" aria-controls="numTab" aria-selected="false" tabindex="-1" onclick="showTab('numTab', this)">Čísla</button>
+        <button class="tab" type="button" role="tab" id="t-imageTab" aria-controls="imageTab" aria-selected="false" tabindex="-1" onclick="showTab('imageTab', this)">Obrázek</button>
+        <button class="tab" type="button" role="tab" id="t-audioTab" aria-controls="audioTab" aria-selected="false" tabindex="-1" onclick="showTab('audioTab', this)">Zvuk</button>
     </div>
 
-    <div id="textTab" class="tab-content active">
+    <div id="textTab" class="tab-content active" role="tabpanel" aria-labelledby="t-textTab">
         <h2>Kódování textu: ASCII vs UTF-8</h2>
         <div class="info-box">
             <strong>ASCII (1 byte/znak)</strong> = 0-127 (Základní anglická abeceda a řídící znaky)<br>
@@ -183,25 +175,25 @@
         <div class="code-box" id="textBinOutput">...</div>
         
         <span class="label">Hexadecimální reprezentace</span>
-        <div class="code-box" id="textHexOutput" style="color: var(--bar-compare);">...</div>
-        <p style="font-size: 13px; color: var(--text-muted);">Alokováno bajtů v paměti: <strong style="color: var(--text);" id="byteCount">0</strong></p>
+        <div class="code-box" id="textHexOutput" style="color:var(--c-orange)">...</div>
+        <p class="muted text-sm">Alokováno bajtů v paměti: <strong id="byteCount">0</strong></p>
     </div>
 
-    <div id="numTab" class="tab-content">
+    <div id="numTab" class="tab-content" role="tabpanel" aria-labelledby="t-numTab" hidden>
         <h2>Kódování čísel</h2>
         
         <h3>Celá čísla (32-bit Integer)</h3>
-        <p style="font-size: 14px; color: var(--text-muted);">Zadej záporné číslo pro zobrazení reprezentace pomocí dvojkového doplňku.</p>
+        <p class="muted">Zadej záporné číslo pro zobrazení reprezentace pomocí dvojkového doplňku.</p>
         <input type="number" id="intInput" value="42" oninput="updateNumbers()">
         <span class="label">Memory Dump (32-bit)</span>
         <div class="code-box" id="intBinOutput">...</div>
 
         <h3>Desetinná čísla (Float 32 - IEEE 754)</h3>
-        <p style="font-size: 14px; color: var(--text-muted);">Standard alokuje 32 bitů: Znaménko (1 bit) | Exponent (8 bitů) | Mantisa (23 bitů).</p>
+        <p class="muted">Standard alokuje 32 bitů: Znaménko (1 bit) | Exponent (8 bitů) | Mantisa (23 bitů).</p>
         
         <input type="number" id="floatInput" step="0.1" value="3.14" oninput="updateNumbers()">
         <span class="label">IEEE 754 Struktura</span>
-        <div class="code-box" style="letter-spacing: 1px;">
+        <div class="code-box" style="letter-spacing:1px">
             <span class="bit-sign" title="Znaménko (Sign)">S</span> 
             <span class="bit-exp" title="Exponent">EEEEEEEE</span> 
             <span class="bit-mant" title="Mantisa">MMMMMMMMMMMMMMMMMMMMMMM</span><br><br>
@@ -209,22 +201,22 @@
         </div>
     </div>
 
-    <div id="imageTab" class="tab-content">
+    <div id="imageTab" class="tab-content" role="tabpanel" aria-labelledby="t-imageTab" hidden>
         <h2>Barevný obraz (RGB Matrix)</h2>
-        <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-            <div style="display: flex; flex-direction: column;">
-                <span class="label" style="margin-bottom: 4px;">Výběr barvy</span>
-                <input type="color" id="colorPicker" value="#0f7b6c" style="background: transparent; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; height: 32px; width: 60px; padding: 2px;">
+        <div class="color-field">
+            <div>
+                <span class="label">Výběr barvy</span>
+                <input type="color" id="colorPicker" value="#0f7b6c" aria-label="Barva pixelu">
             </div>
-            <button class="btn" style="margin-top: auto; height: 32px;" onclick="clearImageGrid()">Vyčistit mřížku</button>
+            <button class="btn" type="button" onclick="clearImageGrid()">Vyčistit mřížku</button>
         </div>
         <div class="grid-container">
-            <div class="grid" id="imageGrid"></div>
-            <div class="code-box" id="imageOutput" style="font-size: 13px; flex: 1; letter-spacing: 1px; color: var(--text-muted);"></div>
+            <div class="pixel-grid" id="imageGrid"></div>
+            <div class="code-box" id="imageOutput"></div>
         </div>
     </div>
 
-    <div id="audioTab" class="tab-content">
+    <div id="audioTab" class="tab-content" role="tabpanel" aria-labelledby="t-audioTab" hidden>
         <h2>Zpracování signálu (A/D Převodník)</h2>
         <div class="canvas-row">
             <div class="canvas-wrap">
@@ -238,36 +230,34 @@
         </div>
         <div class="controls-box">
             <div>
-                <span class="label">Vzorkovací frekvence (Sample Rate): <span id="freqVal" style="color: var(--text);">12</span> Hz</span>
-                <input type="range" id="sampleRate" min="4" max="60" value="12" oninput="drawAudio()">
+                <span class="label">Vzorkovací frekvence (Sample Rate): <span id="freqVal">12</span> Hz</span>
+                <input type="range" id="sampleRate" aria-label="Vzorkovací frekvence" min="4" max="60" value="12" oninput="drawAudio()">
             </div>
             <div>
-                <span class="label">Bitová hloubka (Bit Depth / Kvantizace): <span id="depthVal" style="color: var(--text);">4</span> úrovní</span>
-                <input type="range" id="bitDepth" min="2" max="16" value="4" oninput="drawAudio()">
+                <span class="label">Bitová hloubka (Bit Depth / Kvantizace): <span id="depthVal">4</span> úrovní</span>
+                <input type="range" id="bitDepth" aria-label="Bitová hloubka" min="2" max="16" value="4" oninput="drawAudio()">
             </div>
         </div>
     </div>
 
-    <footer>
-        <div class="footer_line">
-            <span><strong>Ing. Viktor Vráblík</strong></span>
-            <span><a href="https://viktorvrablik.cz" target="_blank">viktorvrablik.cz</a> </span>
-            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank">bit.ly/vyukoveMaterialy</a></span>
-        </div>
+</main>
 
-        <div class="footer_line">
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
             <span>Vytvořeno pomocí <b>Gemini AI</b></span>
         </div>
     </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
     <script>
         // --- NAVIGACE ---
-        function showTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active');
-            if(tabId === 'audioTab') drawAudio();
-        }
 
         // --- 1. TEXT (UTF-8 a ASCII) ---
         function updateText() {
@@ -344,6 +334,11 @@
         }
 
         // --- 4. ZVUK ---
+        // Barvy křivek bere z CSS proměnných, aby seděly i v tmavém režimu.
+        function tok(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
         function drawAudio() {
             const cin = document.getElementById('inCanvas'), cout = document.getElementById('outCanvas');
             const ctxin = cin.getContext('2d'), ctxout = cout.getContext('2d');
@@ -358,23 +353,24 @@
             ctxin.clearRect(0,0,w,h); ctxout.clearRect(0,0,w,h);
             
             // Mřížka pozadí (Light Notion styl)
-            ctxin.strokeStyle = '#e9e9e7'; ctxout.strokeStyle = '#e9e9e7'; ctxin.lineWidth = 1; ctxout.lineWidth = 1;
+            var cBorder = tok('--border'), cMuted = tok('--text-muted'), cGreen = tok('--c-green'), cRed = tok('--c-red');
+            ctxin.strokeStyle = cBorder; ctxout.strokeStyle = cBorder; ctxin.lineWidth = 1; ctxout.lineWidth = 1;
             ctxin.beginPath(); ctxout.beginPath();
             for(let i=0; i<h; i+=20) { ctxin.moveTo(0,i); ctxin.lineTo(w,i); ctxout.moveTo(0,i); ctxout.lineTo(w,i); }
             ctxin.stroke(); ctxout.stroke();
 
             // Analog (Tlumená šedá)
-            ctxin.beginPath(); ctxin.strokeStyle = '#787774'; ctxin.lineWidth = 2;
+            ctxin.beginPath(); ctxin.strokeStyle = cMuted; ctxin.lineWidth = 2;
             for(let x=0; x<w; x++) { let y = mid + Math.sin(x*0.04)*(h/2-15); x===0?ctxin.moveTo(x,y):ctxin.lineTo(x,y); }
             ctxin.stroke();
 
             // Digitál (Notion Green)
             const stepX = w/samples, stepY = (h-30)/levels;
-            ctxout.beginPath(); ctxout.strokeStyle = '#0f7b6c'; ctxout.lineWidth = 2;
+            ctxout.beginPath(); ctxout.strokeStyle = cGreen; ctxout.lineWidth = 2;
             for(let x=0; x<w; x+=stepX) {
                 let rY = Math.sin(x*0.04)*(h/2-15);
                 let qY = Math.round(rY/stepY)*stepY;
-                ctxin.beginPath(); ctxin.fillStyle='#e03e3e'; ctxin.arc(x, mid+qY, 4, 0, Math.PI*2); ctxin.fill(); // Notion Red body měření
+                ctxin.beginPath(); ctxin.fillStyle = cRed; ctxin.arc(x, mid+qY, 4, 0, Math.PI*2); ctxin.fill(); // Notion Red body měření
                 ctxout.moveTo(x, mid+qY); ctxout.lineTo(x+stepX, mid+qY);
                 if(x+stepX < w) ctxout.lineTo(x+stepX, mid + Math.round((Math.sin((x+stepX)*0.04)*(h/2-15))/stepY)*stepY);
             }
@@ -388,6 +384,54 @@
         };
         window.onresize = drawAudio;
 
+    
+        // Překreslení průběhů při přepnutí motivu, změně velikosti
+        // i ve chvíli, kdy se záložka Zvuk poprvé zobrazí (do té doby má nulovou šířku).
+        window.addEventListener('themechange', drawAudio);
+        window.addEventListener('resize', drawAudio);
+        if (window.ResizeObserver) {
+            new ResizeObserver(function () {
+                if (document.getElementById('inCanvas').parentElement.clientWidth > 0) drawAudio();
+            }).observe(document.querySelector('.canvas-row'));
+        }
     </script>
+<script>
+    /* Sjednocené přepínání panelů + ovládání šipkami a ARIA stavy. */
+    function showTab(id, btn) {
+        var panel = document.getElementById(id);
+        if (!panel) return;
+        var scope = panel.parentElement;
+
+        scope.querySelectorAll(':scope > .tab-content').forEach(function (p) {
+            p.classList.toggle('active', p === panel);
+            p.hidden = (p !== panel);
+        });
+
+        var bar = btn ? btn.closest('.tabs') : document.querySelector('.tabs');
+        if (bar) {
+            bar.querySelectorAll('.tab').forEach(function (b) {
+                var on = (b === btn);
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+                b.setAttribute('tabindex', on ? '0' : '-1');
+            });
+        }
+    }
+
+    document.querySelectorAll('.tabs[role="tablist"]').forEach(function (bar) {
+        bar.addEventListener('keydown', function (e) {
+            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+            var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab:not(:disabled)'));
+            var i = tabs.indexOf(document.activeElement);
+            if (i === -1) return;
+            e.preventDefault();
+            var next = e.key === 'Home' ? 0
+                : e.key === 'End' ? tabs.length - 1
+                : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+            tabs[next].focus();
+            tabs[next].click();
+        });
+    });
+</script>
 </body>
 </html>
