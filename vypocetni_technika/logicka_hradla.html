@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Logická hradla | Výukové aplikace</title>
-    <meta name="description" content="Booleova algebra a logická hradla AND, OR, NOT, XOR, NAND a NOR — pravdivostní tabulky, interaktivní simulátor obvodů a logické hádanky.">
+    <meta name="description" content="Booleova algebra a logická hradla AND, OR, NOT, XOR, NAND a NOR — pravdivostní tabulky, simulátor obvodů s vlastními čipy, sčítačky, klopné obvody a registry.">
     <meta name="author" content="Ing. Viktor Vráblík">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#ffffff">
@@ -12,7 +12,7 @@
     <meta property="og:type" content="article">
     <meta property="og:locale" content="cs_CZ">
     <meta property="og:title" content="Logická hradla">
-    <meta property="og:description" content="Booleova algebra a logická hradla AND, OR, NOT, XOR, NAND a NOR — pravdivostní tabulky, interaktivní simulátor obvodů a logické hádanky.">
+    <meta property="og:description" content="Booleova algebra a logická hradla — pravdivostní tabulky, simulátor obvodů s vlastními čipy, sčítačky, klopné obvody a registry.">
     <link rel="stylesheet" href="../assets/style.css">
     <script>
         // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
@@ -27,46 +27,103 @@
         })();
     </script>
     <style>
-        /* --- Specifika stránky: simulátor obvodů --- */
+        /* ==================================================================
+           Specifika stránky: simulátor číslicových obvodů
+           ================================================================== */
 
-        .sim-wrapper {
-            display: flex;
-            height: clamp(420px, 62vh, 640px);
-            margin-bottom: var(--space-5);
-            background: var(--surface-sunken);
+        /* --- Rozvržení --- */
+        .sim-shell {
+            margin-bottom: var(--space-4);
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             overflow: hidden;
         }
 
+        .sim-topbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: var(--surface-sunken);
+            border-bottom: 1px solid var(--border);
+        }
+        .sim-topbar .sep {
+            width: 1px;
+            align-self: stretch;
+            margin: 0 var(--space-1);
+            background: var(--border);
+        }
+        .sim-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            min-width: 0;
+            margin-right: auto;
+            font-size: var(--fs-sm);
+            color: var(--text-muted);
+        }
+        .sim-title strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 15ch;
+            color: var(--text);
+        }
+        .sim-speed {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--fs-xs);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .sim-speed input[type="range"] { width: clamp(70px, 10vw, 110px); }
+
+        .sim-body {
+            display: flex;
+            height: clamp(430px, 66vh, 700px);
+            background: var(--surface-sunken);
+        }
+
+        /* --- Paleta --- */
         .sim-palette {
             display: flex;
             flex-direction: column;
             gap: var(--space-2);
             flex-shrink: 0;
-            width: 150px;
+            width: 168px;
             padding: var(--space-3);
             background: var(--surface);
             border-right: 1px solid var(--border);
             overflow-y: auto;
+            overscroll-behavior: contain;
             z-index: 10;
         }
         .sim-palette h4 {
-            margin: 0;
+            margin: var(--space-2) 0 0;
             font-size: var(--fs-xs);
             font-weight: 600;
             letter-spacing: var(--tracking-wide);
             text-transform: uppercase;
             color: var(--text-muted);
         }
+        .sim-palette h4:first-child { margin-top: 0; }
+        .palette-empty { font-size: var(--fs-xs); color: var(--text-faint); line-height: var(--lh-normal); }
 
         .palette-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
             padding: var(--space-2);
             font-size: var(--fs-sm);
             font-weight: 600;
-            text-align: center;
+            text-align: left;
             background: var(--surface);
             border: 1px solid var(--border);
+            border-left: 3px solid var(--border-strong);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-sm);
             cursor: grab;
@@ -74,50 +131,111 @@
             transition: border-color var(--dur-fast) var(--ease),
                         background var(--dur-fast) var(--ease);
         }
-        .palette-item:hover { border-color: var(--accent); }
+        .palette-item:hover { background: var(--hover-bg); }
         .palette-item.selected {
             color: var(--accent);
             background: var(--accent-soft);
             border-color: var(--accent);
             box-shadow: 0 0 0 1px var(--accent);
         }
+        .palette-item__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .palette-item__io {
+            font-size: 10px;
+            font-weight: 500;
+            font-family: var(--font-mono);
+            color: var(--text-faint);
+        }
+        .palette-item__open {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px; height: 20px;
+            padding: 0;
+            color: var(--text-faint);
+            background: none;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .palette-item__open:hover { color: var(--accent); background: var(--active-bg); }
+        .palette-item__open svg { width: 13px; height: 13px; }
 
+        /* --- Plátno --- */
         .sim-canvas {
             position: relative;
             flex: 1;
             min-width: 0;
             overflow: hidden;
-            cursor: crosshair;
+            cursor: default;
             background-color: var(--bg);
             background-image: radial-gradient(var(--border-strong) 1px, transparent 0);
-            background-size: 20px 20px;
+            background-size: 22px 22px;
+            touch-action: none;
         }
         .sim-canvas.placing { cursor: copy; }
+        .sim-canvas.panning { cursor: grabbing; }
+
+        .sim-world {
+            position: absolute;
+            top: 0; left: 0;
+            width: 4000px;
+            height: 2600px;
+            transform-origin: 0 0;
+        }
 
         .canvas-hint {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: min(90%, 320px);
+            width: min(90%, 360px);
             text-align: center;
             font-size: var(--fs-base);
+            line-height: var(--lh-normal);
             color: var(--text-faint);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .sim-zoom {
+            position: absolute;
+            right: var(--space-3);
+            bottom: var(--space-3);
+            display: flex;
+            gap: var(--space-1);
+            z-index: 30;
+        }
+        .sim-zoom .btn { background: var(--surface); box-shadow: var(--shadow-md); }
+
+        .sim-badge {
+            position: absolute;
+            left: var(--space-3);
+            bottom: var(--space-3);
+            z-index: 30;
+            padding: var(--space-1) var(--space-2);
+            font-size: var(--fs-xs);
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
             pointer-events: none;
         }
 
-        /* Uzly na plátně */
+        /* --- Uzly --- */
         .node {
             position: absolute;
             z-index: 20;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 64px;
-            padding: var(--space-3) var(--space-4);
-            font-size: var(--fs-md);
+            box-sizing: border-box;
+            font-size: 13px;
             font-weight: 600;
+            line-height: 1.1;
             text-align: center;
+            color: var(--text);
             background: var(--surface);
             border: 2px solid var(--border-strong);
             border-radius: var(--radius-md);
@@ -126,33 +244,139 @@
             user-select: none;
             touch-action: none;
         }
-        .node:active { cursor: grabbing; }
-        .node.node-INPUT { cursor: pointer; }
-        .node.val-1 { color: var(--wire-on); border-color: var(--wire-on); background: var(--c-yellow-bg); }
-        .node.val-0 { color: var(--text-muted); border-color: var(--wire-off); }
-
-        /* Žárovka */
-        .bulb-icon { width: 24px; height: 24px; stroke-width: 1.75; }
-        .node.node-OUTPUT {
-            width: 52px;
-            height: 52px;
-            min-width: 0;
+        .node.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow-md); }
+        .node .del {
+            position: absolute;
+            top: -9px; right: -9px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 18px; height: 18px;
             padding: 0;
-            font-size: 1.5rem;
+            font-size: 12px;
+            line-height: 1;
+            color: var(--c-red);
+            background: var(--surface);
+            border: 1px solid var(--c-red);
             border-radius: 50%;
+            cursor: pointer;
+            z-index: 30;
         }
-        .node.node-OUTPUT.val-1 {
+        .node:hover .del, .node.selected .del { display: flex; }
+
+        .node-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            max-width: 90px;
+            overflow: hidden;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+            cursor: text;
+        }
+        .node-label.on-left  { right: calc(100% + 12px); text-align: right; }
+        .node-label.on-right { left: calc(100% + 12px);  text-align: left; }
+        .node-label input {
+            width: 78px;
+            padding: 1px 3px;
+            font: inherit;
+            color: var(--text);
+            background: var(--surface);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-sm);
+        }
+
+        /* Vypínač */
+        .node-SWITCH {
+            width: 54px; height: 38px;
+            font-size: 15px;
+            font-family: var(--font-mono);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+        }
+        .node-SWITCH.on {
+            color: var(--c-yellow);
+            background: var(--c-yellow-bg);
+            border-color: var(--wire-on);
+        }
+        /* Žárovka */
+        .node-BULB {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            color: var(--text-muted);
+        }
+        .node-BULB svg { width: 22px; height: 22px; }
+        .node-BULB.on {
+            color: #7a5a00;
             background: var(--bulb-on);
             border-color: var(--wire-on);
-            box-shadow: 0 0 22px var(--wire-on-glow);
+            box-shadow: 0 0 20px var(--wire-on-glow);
         }
+        /* Hodiny */
+        .node-CLOCK { width: 62px; height: 42px; font-size: 11px; }
+        .node-CLOCK svg { width: 16px; height: 16px; }
+        .node-CLOCK.on { color: var(--c-yellow); background: var(--c-yellow-bg); border-color: var(--wire-on); }
 
-        /* Piny */
+        /* Vícebitový vstup / displej */
+        .node-NUM,
+        .node-DISP {
+            flex-direction: column;
+            gap: 2px;
+            width: 74px;
+            font-family: var(--font-mono);
+        }
+        .node-NUM .num-val,
+        .node-DISP .num-val { font-size: 19px; }
+        .node-NUM .num-sub,
+        .node-DISP .num-sub { font-size: 10px; font-weight: 500; color: var(--text-muted); font-family: var(--font-sans); }
+        .node-NUM .num-btns { display: flex; gap: 3px; margin-top: 1px; }
+        .node-NUM .num-btns button {
+            width: 22px; height: 17px;
+            padding: 0;
+            font-size: 10px;
+            line-height: 1;
+            color: var(--text-muted);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .node-NUM .num-btns button:hover { color: var(--accent); border-color: var(--accent); }
+
+        /* Čip */
+        .node-CHIP {
+            flex-direction: column;
+            padding: 0 14px;
+            font-size: 12px;
+            border-width: 2px;
+            border-radius: var(--radius-md);
+        }
+        .chip-name { pointer-events: none; }
+
+        /* Popisky pinů uvnitř čipu */
+        .pin-label {
+            position: absolute;
+            font-size: 9px;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            line-height: 1;
+            color: var(--text-faint);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .pin-label.lbl-in  { left: 5px; }
+        .pin-label.lbl-out { right: 5px; }
+
+        /* --- Piny --- */
         .pin {
             position: absolute;
             z-index: 25;
-            width: 16px;
-            height: 16px;
+            box-sizing: border-box;
+            width: 14px; height: 14px;
+            margin: -7px 0 0 -7px;
             background: var(--surface);
             border: 3px solid var(--wire-off);
             border-radius: 50%;
@@ -160,43 +384,117 @@
             touch-action: none;
             transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
         }
-        .pin:hover, .pin.active { border-color: var(--accent); transform: scale(1.25); }
-        .pin.val-1 { background: var(--wire-on); border-color: var(--wire-on); }
-        .pin-in { left: -10px; }
-        .pin-out { right: -10px; }
-        .pin-single { top: 50%; transform: translateY(-50%); }
-        .pin-top { top: 25%; transform: translateY(-50%); }
-        .pin-bot { top: 75%; transform: translateY(-50%); }
-        .pin-single:hover, .pin-single.active { transform: translateY(-50%) scale(1.25); }
-        .pin-top:hover, .pin-top.active { transform: translateY(-50%) scale(1.25); }
-        .pin-bot:hover, .pin-bot.active { transform: translateY(-50%) scale(1.25); }
+        .pin::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
+        .pin:hover, .pin.active { border-color: var(--accent); transform: scale(1.3); }
+        .pin.on { background: var(--wire-on); border-color: var(--wire-on); }
 
-        /* Vodiče */
-        #svg-layer {
+        /* --- Vodiče --- */
+        .wire-layer {
             position: absolute;
             inset: 0;
-            width: 100%;
-            height: 100%;
+            width: 4000px;
+            height: 2600px;
             z-index: 10;
+            overflow: visible;
             pointer-events: none;
         }
         .wire {
             fill: none;
             stroke: var(--wire-off);
-            stroke-width: 4;
+            stroke-width: 3.5;
             stroke-linecap: round;
             pointer-events: stroke;
             cursor: pointer;
             transition: stroke var(--dur-fast) var(--ease);
         }
-        .wire:hover { stroke: var(--c-red); stroke-width: 6; }
-        .wire.val-1 { stroke: var(--wire-on); }
-        .temp-wire { stroke: var(--accent); stroke-dasharray: 6; opacity: 0.6; }
+        .wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+        .wire.on { stroke: var(--wire-on); }
+        .wire.doomed, .wire-hit:hover + .wire { stroke: var(--c-red); stroke-width: 5; }
+        .temp-wire { stroke: var(--accent); stroke-dasharray: 6 5; opacity: 0.75; pointer-events: none; }
 
-        /* Hádanky */
+        /* --- Dialog --- */
+        .sim-dialog {
+            position: fixed;
+            inset: 0;
+            z-index: var(--z-modal);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-4);
+            background: rgba(15, 15, 15, 0.45);
+        }
+        .sim-dialog.open { display: flex; }
+        .sim-dialog__box {
+            width: min(440px, 100%);
+            max-height: 86vh;
+            overflow-y: auto;
+            padding: var(--space-5);
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+        .sim-dialog__box h3 { margin-top: 0; }
+        .sim-dialog__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+        .sim-dialog__row label { min-width: 74px; font-size: var(--fs-sm); color: var(--text-muted); }
+        .sim-dialog__row input[type="text"] {
+            flex: 1;
+            min-width: 140px;
+            min-height: 34px;
+            padding: var(--space-2);
+            font: inherit;
+            color: var(--text);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+        }
+        .swatches { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+        .swatch {
+            width: 26px; height: 26px;
+            padding: 0;
+            border: 2px solid transparent;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+        }
+        .swatch.sel { border-color: var(--text); }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+        .dialog-note { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-normal); }
+
+        /* --- Pravdivostní tabulka z obvodu --- */
+        #tt-panel { display: none; }
+        #tt-panel.open { display: block; }
+        .tt-table { font-family: var(--font-mono); font-size: var(--fs-sm); }
+        .tt-table th { font-family: var(--font-sans); }
+        .tt-table td.center { text-align: center; }
+        .tt-in  { background: var(--surface-sunken); }
+        .tt-one { color: var(--c-green); font-weight: 700; }
+
+        /* --- Karty knihovny --- */
+        .lib-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+            gap: var(--space-3);
+        }
+        .lib-card {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .lib-card h4 { margin: 0; font-size: var(--fs-md); }
+        .lib-card p { margin: 0; font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-normal); }
+        .lib-card .lib-io { font-size: var(--fs-xs); font-family: var(--font-mono); color: var(--text-faint); }
+        .lib-card .lib-actions { display: flex; gap: var(--space-2); margin-top: auto; padding-top: var(--space-1); }
+
+        /* --- Hádanky --- */
         .puzzle-card {
             padding: var(--space-5);
-            margin-bottom: var(--space-5);
+            margin-bottom: var(--space-4);
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
@@ -230,10 +528,15 @@
             color: var(--c-red);
             background: var(--c-red-bg);
             border-color: var(--c-red);
-            animation: shake 0.4s;
+        }
+        .puzzle-why {
+            margin-top: var(--space-3);
+            font-size: var(--fs-sm);
+            color: var(--text-muted);
+            line-height: var(--lh-normal);
         }
 
-        /* Pravdivostní tabulky: oddělovací řádek mezi hradly */
+        /* --- Pravdivostní tabulky v teorii --- */
         .gate-table .spacer td {
             height: 8px;
             padding: 0;
@@ -244,35 +547,28 @@
         .out-1 { color: var(--c-green); font-weight: 700; }
 
         /* --- Mobil a tablet --- */
+        @media (max-width: 900px) {
+            .sim-palette { width: 146px; }
+        }
         @media (max-width: 760px) {
-            .sim-wrapper {
-                flex-direction: column;
-                height: auto;
-            }
+            .sim-body { flex-direction: column; height: auto; }
             .sim-palette {
                 flex-direction: row;
+                align-items: center;
                 width: auto;
                 gap: var(--space-2);
-                padding: var(--space-3);
+                padding: var(--space-2) var(--space-3);
                 border-right: none;
                 border-bottom: 1px solid var(--border);
                 overflow-x: auto;
                 overflow-y: hidden;
                 scroll-snap-type: x proximity;
             }
-            .sim-palette h4 {
-                align-self: center;
-                white-space: nowrap;
-                padding-right: var(--space-1);
-            }
-            .palette-item {
-                flex-shrink: 0;
-                min-width: 92px;
-                scroll-snap-align: start;
-                padding: var(--space-2) var(--space-3);
-                font-size: var(--fs-sm);
-            }
-            .sim-canvas { height: 62vh; min-height: 340px; }
+            .sim-palette h4 { margin: 0; align-self: center; white-space: nowrap; }
+            .palette-item { flex-shrink: 0; min-width: 96px; scroll-snap-align: start; }
+            .palette-item__io { display: none; }
+            .sim-canvas { height: 60vh; min-height: 340px; }
+            .sim-title { width: 100%; margin-right: 0; }
         }
     </style>
 </head>
@@ -280,7 +576,7 @@
 
 <a class="skip-link" href="#obsah">Přeskočit na obsah</a>
 
-<div class="page">
+<div class="page page--wide">
 
     <header class="site-header">
         <div class="site-header__text">
@@ -293,7 +589,7 @@
             </nav>
             <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             <h1>Logická hradla</h1>
-            <p class="subtitle">Základy Booleovy algebry, interaktivní simulátor a logické úlohy</p>
+            <p class="subtitle">Od Booleovy algebry přes sčítačky a klopné obvody až po vlastní čipy</p>
         </div>
         <div class="site-header__actions">
             <a class="btn" href="../index.html">
@@ -310,18 +606,19 @@
 
 <main id="obsah" tabindex="-1">
 
-    
     <div class="tabs" role="tablist" aria-label="Kapitoly">
-        <button class="tab active" type="button" role="tab" id="t-theory" aria-controls="theory" aria-selected="true" tabindex="0" onclick="showTab('theory', this)">Teorie a Pravdivostní tabulky</button>
-        <button class="tab" type="button" role="tab" id="t-simulator" aria-controls="simulator" aria-selected="false" tabindex="-1" onclick="showTab('simulator', this)">Simulátor (Pískoviště)</button>
-        <button class="tab" type="button" role="tab" id="t-puzzles" aria-controls="puzzles" aria-selected="false" tabindex="-1" onclick="showTab('puzzles', this)">Logické hádanky</button>
+        <button class="tab active" type="button" role="tab" id="t-theory" aria-controls="theory" aria-selected="true" tabindex="0">Teorie a tabulky</button>
+        <button class="tab" type="button" role="tab" id="t-simulator" aria-controls="simulator" aria-selected="false" tabindex="-1">Simulátor</button>
+        <button class="tab" type="button" role="tab" id="t-library" aria-controls="library" aria-selected="false" tabindex="-1">Knihovna obvodů</button>
+        <button class="tab" type="button" role="tab" id="t-puzzles" aria-controls="puzzles" aria-selected="false" tabindex="-1">Logické hádanky</button>
     </div>
 
+    <!-- =============================== TEORIE =============================== -->
     <div id="theory" class="tab-content active" role="tabpanel" aria-labelledby="t-theory">
         <h2>1. Co jsou to logická hradla?</h2>
-        <p>Logická hradla jsou základní stavební bloky číslicových obvodů. Zpracovávají binární signály – jedničky (1 = zapnuto) a nuly (0 = vypnuto). Na základě vstupů vrací jeden výstup podle jasných logických pravidel.</p>
+        <p>Logická hradla jsou základní stavební bloky číslicových obvodů. Zpracovávají binární signály – jedničky (1 = zapnuto) a nuly (0 = vypnuto). Na základě vstupů vrací výstup podle jasných logických pravidel.</p>
 
-        <div class="alert-box">
+        <div class="callout callout--info">
             <strong>Klíč k pochopení:</strong> Představte si vstupy jako vypínače na zdi a výstup jako žárovku. Hradlo určuje, jaká kombinace vypínačů žárovku rozsvítí.
         </div>
 
@@ -331,14 +628,14 @@
                 <thead>
                     <tr>
                         <th>Hradlo</th>
-                        <th>Popis (Kdy je výsledek 1?)</th>
+                        <th>Popis (kdy je výsledek 1?)</th>
                         <th class="center">A</th><th class="center">B</th><th class="center">Výstup</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td rowspan="4"><strong>AND</strong><br><br><code>A * B</code></td>
-                        <td rowspan="4">Žárovka svítí <strong>POUZE TEHDY</strong>, když jsou zapnuté <strong>VŠECHNY</strong> vstupy.</td>
+                        <td rowspan="4"><strong>AND</strong><br><br><code>A · B</code></td>
+                        <td rowspan="4">Výstup je 1 <strong>pouze tehdy</strong>, když jsou v 1 <strong>všechny</strong> vstupy.</td>
                         <td class="center">0</td><td class="center">0</td><td class="center">0</td>
                     </tr>
                     <tr><td class="center">0</td><td class="center">1</td><td class="center">0</td></tr>
@@ -347,7 +644,7 @@
                     <tr class="spacer"><td colspan="5"></td></tr>
                     <tr>
                         <td rowspan="4"><strong>OR</strong><br><br><code>A + B</code></td>
-                        <td rowspan="4">Žárovka svítí, pokud je zapnutý <strong>ALESPOŇ JEDEN</strong> vstup.</td>
+                        <td rowspan="4">Výstup je 1, pokud je v 1 <strong>alespoň jeden</strong> vstup.</td>
                         <td class="center">0</td><td class="center">0</td><td class="center">0</td>
                     </tr>
                     <tr><td class="center">0</td><td class="center">1</td><td class="center out-1">1</td></tr>
@@ -355,63 +652,208 @@
                     <tr><td class="center">1</td><td class="center">1</td><td class="center out-1">1</td></tr>
                     <tr class="spacer"><td colspan="5"></td></tr>
                     <tr>
-                        <td rowspan="2"><strong>NOT</strong><br><br><code>~A</code></td>
-                        <td rowspan="2">Invertor. Dělá přesný opak toho, co dostane. (Má jen 1 vstup).</td>
-                        <td class="center">0</td><td class="center">-</td><td class="center out-1">1</td>
+                        <td rowspan="2"><strong>NOT</strong><br><br><code>A&#773;</code></td>
+                        <td rowspan="2">Invertor. Dělá přesný opak toho, co dostane (má jen 1 vstup).</td>
+                        <td class="center">0</td><td class="center">–</td><td class="center out-1">1</td>
                     </tr>
-                    <tr><td class="center">1</td><td class="center">-</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">–</td><td class="center">0</td></tr>
                     <tr class="spacer"><td colspan="5"></td></tr>
                     <tr>
                         <td rowspan="4"><strong>XOR</strong><br><br><code>A ⊕ B</code></td>
-                        <td rowspan="4">Žárovka svítí, pokud jsou vstupy <strong>RŮZNÉ</strong> (jeden 1, druhý 0).</td>
+                        <td rowspan="4">Výstup je 1, pokud jsou vstupy <strong>různé</strong> (jeden 1, druhý 0).</td>
                         <td class="center">0</td><td class="center">0</td><td class="center">0</td>
                     </tr>
                     <tr><td class="center">0</td><td class="center">1</td><td class="center out-1">1</td></tr>
                     <tr><td class="center">1</td><td class="center">0</td><td class="center out-1">1</td></tr>
                     <tr><td class="center">1</td><td class="center">1</td><td class="center">0</td></tr>
+                    <tr class="spacer"><td colspan="5"></td></tr>
+                    <tr>
+                        <td rowspan="4"><strong>NAND</strong><br><br><code>A&#8202;·&#8202;B</code> s pruhem</td>
+                        <td rowspan="4">Obrácené AND. Výstup je 0 jen tehdy, když jsou <strong>oba</strong> vstupy v 1.</td>
+                        <td class="center">0</td><td class="center">0</td><td class="center out-1">1</td>
+                    </tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td class="center out-1">1</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td class="center out-1">1</td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td class="center">0</td></tr>
+                    <tr class="spacer"><td colspan="5"></td></tr>
+                    <tr>
+                        <td rowspan="4"><strong>NOR</strong><br><br><code>A&#8202;+&#8202;B</code> s pruhem</td>
+                        <td rowspan="4">Obrácené OR. Výstup je 1 jen tehdy, když jsou <strong>oba</strong> vstupy v 0.</td>
+                        <td class="center">0</td><td class="center">0</td><td class="center out-1">1</td>
+                    </tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td class="center">0</td></tr>
                 </tbody>
             </table>
         </div>
+
+        <div class="callout callout--neutral">
+            <strong>NAND je „univerzální“ hradlo.</strong> Jen z hradel NAND se dá poskládat NOT, AND, OR i XOR — a tedy úplně celý počítač. Totéž platí pro NOR. Proto se jim říká funkčně úplné.
+        </div>
+
+        <h2>3. De Morganova pravidla</h2>
+        <p>Dvě rovnosti, které umožňují převádět AND na OR a naopak. Používají se při zjednodušování obvodů, ale i v programování (podmínky) a v databázových dotazech.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Slovy</th><th>Zápis</th></tr></thead>
+                <tbody>
+                    <tr><td>Negace součinu je součet negací</td><td><code>NOT (A AND B) = (NOT A) OR (NOT B)</code></td></tr>
+                    <tr><td>Negace součtu je součin negací</td><td><code>NOT (A OR B) = (NOT A) AND (NOT B)</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted">Zkuste si to ověřit v simulátoru: postavte obě strany rovnice vedle sebe a nechte si vypsat pravdivostní tabulku.</p>
+
+        <h2>4. Od hradel ke sčítání</h2>
+        <p>Počítač neumí nic než logiku — a přesto počítá. Sčítání dvou bitů se dá vyjádřit dvěma hradly:</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th class="center">A</th><th class="center">B</th><th class="center">Součet&nbsp;S</th><th class="center">Přenos&nbsp;C</th><th>Výpočet</th></tr></thead>
+                <tbody>
+                    <tr><td class="center">0</td><td class="center">0</td><td class="center">0</td><td class="center">0</td><td rowspan="4"><strong>S = A XOR B</strong><br><strong>C = A AND B</strong></td></tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td class="center out-1">1</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td class="center out-1">1</td><td class="center">0</td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td class="center">0</td><td class="center out-1">1</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>Tomuto obvodu se říká <strong>půlsčítačka</strong>. Neumí ale přijmout přenos z nižšího řádu — a bez toho nesečtete víc než jeden bit. Když spojíte dvě půlsčítačky a jedno hradlo OR, vznikne <strong>úplná sčítačka</strong> se vstupy A, B, C<sub>in</sub> a výstupy S, C<sub>out</sub>. Zřetězením čtyř úplných sčítaček dostanete <strong>čtyřbitovou sčítačku</strong>, která sečte čísla 0–15. Přesně tak je postavená aritmetická jednotka procesoru.</p>
+        <div class="callout callout--info">
+            <strong>Vyzkoušejte:</strong> v záložce <em>Knihovna obvodů</em> otevřete Půlsčítačku, Úplnou sčítačku a Sčítačku 4b. Uvidíte, že vyšší obvod je vždy poskládaný z těch nižších.
+        </div>
+
+        <h2>5. Paměť: klopné obvody</h2>
+        <p>Všechny dosavadní obvody byly <strong>kombinační</strong> — výstup závisí jen na tom, co je právě na vstupech. Jakmile ale výstup hradla přivedete zpátky na jeho vstup, vznikne <strong>zpětná vazba</strong> a obvod si začne pamatovat. Takovým obvodům říkáme <strong>sekvenční</strong>.</p>
+
+        <h3>S/R klopný obvod (latch)</h3>
+        <p>Dvě hradla NOR zapojená křížem. <code>S</code> (set) nastaví výstup na 1, <code>R</code> (reset) na 0. Když jsou oba vstupy v 0, obvod drží poslední hodnotu — to je jeden bit paměti.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th class="center">S</th><th class="center">R</th><th>Co se stane s Q</th></tr></thead>
+                <tbody>
+                    <tr><td class="center">0</td><td class="center">0</td><td><strong>Pamatuje</strong> předchozí hodnotu</td></tr>
+                    <tr><td class="center">1</td><td class="center">0</td><td>Nastaví se na <strong>1</strong></td></tr>
+                    <tr><td class="center">0</td><td class="center">1</td><td>Nuluje se na <strong>0</strong></td></tr>
+                    <tr><td class="center">1</td><td class="center">1</td><td><strong>Zakázaný stav</strong> — Q i Q&#773; jsou 0, po návratu do 0 0 je výsledek nepředvídatelný</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>D klopný obvod a hodiny</h3>
+        <p>S/R obvod reaguje okamžitě, což se v procesoru nehodí — data se musí měnit ve stejný okamžik. Proto se přidá <strong>hodinový signál</strong> (CLK). <strong>D latch</strong> propouští hodnotu ze vstupu D na výstup jen když je povolovací vstup v 1. <strong>D klopný obvod řízený hranou</strong> (dva D latche za sebou) hodnotu převezme jen v okamžiku náběžné hrany hodin — tedy jednou za takt.</p>
+        <p>Když jich dáte čtyři vedle sebe se společnými hodinami, vznikne <strong>čtyřbitový registr</strong> — základní paměťová buňka procesoru. A když výstup Q&#773; přivedete zpět na vstup D a zřetězíte je, dostanete <strong>čítač</strong>.</p>
+
+        <div class="callout callout--warn">
+            <strong>Pozor na rychlost simulace.</strong> Simulátor počítá s tím, že každé hradlo má malé zpoždění — proto v něm zpětné vazby a hodiny fungují jako ve skutečnosti. Pomocí tlačítka <em>Krok</em> můžete sledovat, jak se signál obvodem šíří hradlo po hradle.
+        </div>
     </div>
 
+    <!-- =============================== SIMULÁTOR =============================== -->
     <div id="simulator" class="tab-content" role="tabpanel" aria-labelledby="t-simulator" hidden>
         <h2>Pískoviště obvodů</h2>
-        <p>Postavte si vlastní logický obvod. Na počítači prvky <strong>přetáhněte</strong> z nabídky na plátno, na dotykovém zařízení prvek <strong>klepnutím vyberte</strong> a pak klepněte na místo na plátně. Hradla propojíte klepnutím na výstupní kolečko (vpravo) a následně na vstupní kolečko (vlevo).</p>
+        <p>Na počítači prvek <strong>přetáhněte</strong> z nabídky na plátno, na dotykovém zařízení ho <strong>klepnutím vyberte</strong> a pak klepněte na plátno. Spoj vytvoříte klepnutím na výstupní kolečko (vpravo) a pak na vstupní kolečko (vlevo). <strong>Kliknutím na vodič ho smažete.</strong> Prázdnou plochu lze táhnout a kolečkem myši přibližovat.</p>
 
-        <div class="sim-wrapper">
-            <div class="sim-palette">
-                <h4>I/O</h4>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="INPUT" ondragstart="dragStart(event, \'INPUT\')">Vypínač (0/1)</div>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="OUTPUT" ondragstart="dragStart(event, \'OUTPUT\')">Žárovka</div>
-                <h4>Hradla</h4>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="AND" ondragstart="dragStart(event, \'AND\')">AND</div>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="OR" ondragstart="dragStart(event, \'OR\')">OR</div>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="NOT" ondragstart="dragStart(event, \'NOT\')">NOT</div>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="XOR" ondragstart="dragStart(event, \'XOR\')">XOR</div>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="NAND" ondragstart="dragStart(event, \'NAND\')">NAND</div>
-                <div class="palette-item" draggable="true" role="button" tabindex="0" data-type="NOR" ondragstart="dragStart(event, \'NOR\')">NOR</div>
+        <div class="sim-shell">
+            <div class="sim-topbar">
+                <span class="sim-title">
+                    <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                    <strong id="circuit-name">Nový obvod</strong>
+                </span>
+
+                <button class="btn btn--sm" type="button" id="btn-run" title="Spustit nebo pozastavit simulaci">
+                    <svg class="icon icon--sm" id="ico-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <svg class="icon icon--sm" id="ico-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span id="run-label">Pauza</span>
+                </button>
+                <button class="btn btn--sm" type="button" id="btn-step" title="Posun o jedno zpoždění hradla — ukáže šíření signálu">
+                    <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                    Krok
+                </button>
+                <button class="btn btn--sm" type="button" id="btn-tick" title="Jeden impulz hodinového signálu">
+                    <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Takt
+                </button>
+                <label class="sim-speed">
+                    Hodiny
+                    <input type="range" id="clock-rate" min="0" max="5" step="1" value="2" aria-label="Rychlost hodinového signálu">
+                    <span id="clock-rate-label">1 Hz</span>
+                </label>
+
+                <span class="sep" aria-hidden="true"></span>
+
+                <button class="btn btn--sm" type="button" id="btn-truth" title="Vypsat pravdivostní tabulku obvodu">Tabulka</button>
+                <button class="btn btn--sm btn--primary" type="button" id="btn-savechip" title="Uložit obvod jako znovupoužitelný čip">Uložit jako čip…</button>
             </div>
 
-            <div class="sim-canvas" id="canvas" ondragover="event.preventDefault()" ondrop="dropNode(event)">
-                <div class="canvas-hint" id="canvas-hint">Vyberte prvek z nabídky a klepněte sem (nebo ho sem přetáhněte).<br><br>Dvojklik na prvek či vodič jej smaže.</div>
-                <svg id="svg-layer">
-                    <path id="temp-wire" class="wire temp-wire" d="" style="display: none;"></path>
-                </svg>
+            <div class="sim-body">
+                <div class="sim-palette" id="palette"></div>
+                <div class="sim-canvas" id="canvas">
+                    <div class="canvas-hint" id="canvas-hint">
+                        Vyberte prvek z nabídky a klepněte sem (nebo ho sem přetáhněte).<br><br>
+                        Nebo si v záložce <strong>Knihovna obvodů</strong> otevřete hotový příklad.
+                    </div>
+                    <div class="sim-world" id="world">
+                        <svg class="wire-layer" id="wire-layer" aria-hidden="true">
+                            <g id="wire-group"></g>
+                            <path id="temp-wire" class="wire temp-wire" d="" style="display:none"></path>
+                        </svg>
+                    </div>
+                    <div class="sim-badge" id="sim-badge">—</div>
+                    <div class="sim-zoom">
+                        <button class="btn btn--icon btn--sm" type="button" id="zoom-out" title="Oddálit"><span class="visually-hidden">Oddálit</span>
+                            <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                        </button>
+                        <button class="btn btn--icon btn--sm" type="button" id="zoom-fit" title="Přizpůsobit obsahu"><span class="visually-hidden">Přizpůsobit</span>
+                            <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+                        </button>
+                        <button class="btn btn--icon btn--sm" type="button" id="zoom-in" title="Přiblížit"><span class="visually-hidden">Přiblížit</span>
+                            <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                        </button>
+                    </div>
                 </div>
+            </div>
         </div>
 
-        <div class="controls-bar">
-            <button class="btn" type="button" onclick="clearCanvas()">Vyčistit plochu</button>
-            <span class="controls-info"><strong>Spojení:</strong> Klikni na výstup (pravý pin) a pak na vstup (levý pin). <strong>Mazání:</strong> Dvojklik.</span>
+        <div class="controls-bar" id="more-bar">
+            <button class="btn btn--sm" type="button" id="btn-clear">Vyčistit plochu</button>
+            <button class="btn btn--sm" type="button" id="btn-export">Export do souboru</button>
+            <button class="btn btn--sm" type="button" id="btn-import">Import ze souboru</button>
+            <input type="file" id="file-input" accept="application/json,.json" hidden>
+            <span class="controls-info">Vlastní čipy i rozpracovaný obvod se automaticky ukládají do tohoto prohlížeče.</span>
+        </div>
+
+        <div class="panel" id="tt-panel">
+            <h3 id="tt-title">Pravdivostní tabulka obvodu</h3>
+            <div id="tt-body"></div>
         </div>
     </div>
 
+    <!-- =============================== KNIHOVNA =============================== -->
+    <div id="library" class="tab-content" role="tabpanel" aria-labelledby="t-library" hidden>
+        <h2>Knihovna hotových obvodů</h2>
+        <p>Každý obvod je poskládaný jen ze základních hradel (a z jednodušších obvodů z této knihovny). <strong>Otevřít</strong> ho rozloží na plátně, abyste viděli, jak je udělaný. <strong>Vložit</strong> ho přidá do vašeho obvodu jako jeden čip.</p>
+
+        <h3>Ukázkové obvody</h3>
+        <p class="muted">Hotové zapojení včetně vypínačů, hodin a displejů — stačí otevřít a hrát si.</p>
+        <div class="lib-grid" id="demo-grid"></div>
+
+        <h3>Stavební čipy</h3>
+        <p class="muted">Znovupoužitelné bloky. Vložte je do svého obvodu, nebo si je otevřete a podívejte se dovnitř.</p>
+        <div class="lib-grid" id="lib-grid"></div>
+
+        <h2>Moje čipy</h2>
+        <div class="lib-grid" id="mine-grid"></div>
+    </div>
+
+    <!-- =============================== HÁDANKY =============================== -->
     <div id="puzzles" class="tab-content" role="tabpanel" aria-labelledby="t-puzzles" hidden>
         <h2>Logické hádanky</h2>
+        <p>Odpovědi si můžete kdykoli ověřit v simulátoru.</p>
         <div id="quiz-container"></div>
         <div id="resultMsg" class="result-overlay">
             <h3>Výborně! Všechny hádanky jsou správně.</h3>
-            <button class="btn btn--primary" type="button" onclick="resetQuiz()">Zkusit znovu</button>
+            <button class="btn btn--primary" type="button" id="btn-quiz-reset">Zkusit znovu</button>
         </div>
     </div>
 
@@ -423,433 +865,1443 @@
             <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
             <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
         </div>
-        <div class="site-footer__line">
-            <span>Vytvořeno pomocí <b>Gemini AI</b></span>
-        </div>
     </footer>
 
 </div>
 
+<!-- Dialog: uložení čipu -->
+<div class="sim-dialog" id="dlg-chip" role="dialog" aria-modal="true" aria-labelledby="dlg-chip-title">
+    <div class="sim-dialog__box">
+        <h3 id="dlg-chip-title">Uložit obvod jako čip</h3>
+        <p class="dialog-note" id="dlg-chip-note"></p>
+        <div class="sim-dialog__row">
+            <label for="chip-name-input">Název</label>
+            <input type="text" id="chip-name-input" maxlength="22" placeholder="např. Sčítačka 2b">
+        </div>
+        <div class="sim-dialog__row">
+            <label>Barva</label>
+            <div class="swatches" id="chip-colors"></div>
+        </div>
+        <p class="dialog-note">Vypínače se stanou <strong>vstupy</strong> čipu a žárovky jeho <strong>výstupy</strong> — v pořadí shora dolů. Pojmenujte si je dvojklikem na popisek vedle prvku.</p>
+        <p class="feedback error" id="dlg-chip-err" hidden></p>
+        <div class="dialog-actions">
+            <button class="btn" type="button" id="dlg-chip-cancel">Zrušit</button>
+            <button class="btn btn--primary" type="button" id="dlg-chip-ok">Uložit čip</button>
+        </div>
+    </div>
+</div>
+
 <script src="../assets/theme.js"></script>
-    <script>
-        // --- ZÁLOŽKY ---
-        function showTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(p => {
-                const on = (p.id === tabId);
-                p.classList.toggle('active', on);
-                p.hidden = !on;
-            });
-            document.querySelectorAll('.tabs .tab').forEach(b => {
-                const on = (b === btn);
-                b.classList.toggle('active', on);
-                b.setAttribute('aria-selected', on ? 'true' : 'false');
-                b.setAttribute('tabindex', on ? '0' : '-1');
-            });
-            if (tabId === 'simulator') renderSimulation(); // po zobrazení překreslit vodiče
-        }
-
-        // --- DRAG & DROP SIMULÁTOR LOGIKA ---
-        const canvas = document.getElementById('canvas');
-        const svgLayer = document.getElementById('svg-layer');
-        const tempWire = document.getElementById('temp-wire');
-        const hint = document.getElementById('canvas-hint');
-
-        let nodes = []; 
-        /* Node struktura: { id: string, type: string, x: number, y: number, el: HTMLElement, val: 0/1/null } */
-        let wires = []; 
-        /* Wire struktura: { id: string, fromNode: string, toNode: string, toPin: 0|1, svgEl: SVGElement, val: 0/1 } */
-        
-        let nextId = 1;
-        let wiringState = null; // { nodeId: string }
-        let draggedNode = null; // HTMLElement pro posouvání po plátně
-        let dragOffset = {x: 0, y: 0};
-        let dragMoved = false;
-        let pendingType = null; // prvek vybraný v nabídce (dotykové ovládání)
-
-        // Paleta: tažení (myš) i výběr klepnutím (dotyk a klávesnice)
-        function dragStart(e, type) {
-            e.dataTransfer.setData('text/plain', type);
-            selectPaletteItem(null);
-        }
-
-        function selectPaletteItem(el) {
-            document.querySelectorAll('.palette-item').forEach(i => i.classList.remove('selected'));
-            pendingType = el ? el.dataset.type : null;
-            if (el) el.classList.add('selected');
-            canvas.classList.toggle('placing', !!pendingType);
-        }
-
-        document.querySelectorAll('.palette-item').forEach(item => {
-            item.addEventListener('click', () => {
-                selectPaletteItem(item.classList.contains('selected') ? null : item);
-            });
-            item.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
-            });
-        });
-
-        // Klepnutí na volné plátno umístí vybraný prvek
-        canvas.addEventListener('click', (e) => {
-            if (!pendingType) return;
-            if (e.target.closest('.node') || e.target.closest('.wire')) return;
-            const rect = canvas.getBoundingClientRect();
-            createNode(pendingType, e.clientX - rect.left - 32, e.clientY - rect.top - 20);
-            selectPaletteItem(null);
-        });
-
-        function dropNode(e) {
-            e.preventDefault();
-            const type = e.dataTransfer.getData('text/plain');
-            if(!type) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left - 30;
-            const y = e.clientY - rect.top - 20;
-
-            createNode(type, x, y);
-        }
-
-        // Vytvoření uzlu
-        function createNode(type, x, y) {
-            hint.style.display = 'none';
-            const id = 'node_' + nextId++;
-            const el = document.createElement('div');
-            el.className = `node node-${type}`;
-            el.id = id;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-
-            let innerHTML = '';
-            
-            // Konfigurace pinů podle typu
-            if (type === 'INPUT') {
-                el.classList.add('val-0');
-                innerHTML = `<span class="label-text">0</span><div class="pin pin-out pin-single" onclick="startWire(event, '${id}')"></div>`;
-                el.onclick = () => { if (!dragMoved) toggleInput(id); };
-            } else if (type === 'OUTPUT') {
-                innerHTML = `<svg class="icon bulb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg><div class="pin pin-in pin-single" onclick="finishWire(event, '${id}', 0)"></div>`;
-            } else if (type === 'NOT') {
-                innerHTML = `<div class="pin pin-in pin-single" onclick="finishWire(event, '${id}', 0)"></div>
-                             ${type}
-                             <div class="pin pin-out pin-single" onclick="startWire(event, '${id}')"></div>`;
-            } else {
-                // 2-vstupová hradla
-                innerHTML = `<div class="pin pin-in pin-top" onclick="finishWire(event, '${id}', 0)"></div>
-                             <div class="pin pin-in pin-bot" onclick="finishWire(event, '${id}', 1)"></div>
-                             ${type}
-                             <div class="pin pin-out pin-single" onclick="startWire(event, '${id}')"></div>`;
-            }
-
-            el.innerHTML = innerHTML;
-            
-            // Posouvání po plátně — Pointer Events zvládnou myš i dotyk
-            el.addEventListener('pointerdown', (e) => {
-                if (e.target.classList.contains('pin')) return; // klik na pin neposouvá
-                draggedNode = el;
-                dragMoved = false;
-                dragOffset.x = e.clientX - el.offsetLeft;
-                dragOffset.y = e.clientY - el.offsetTop;
-                el.setPointerCapture(e.pointerId);
-            });
-
-            // Dvojklik pro smazání
-            el.ondblclick = (e) => {
-                deleteNode(id);
-            };
-
-            canvas.appendChild(el);
-            nodes.push({ id, type, x, y, el, val: (type === 'INPUT' ? 0 : null) });
-            evaluateCircuit();
-        }
-
-        // Přesouvání na plátně
-        document.addEventListener('pointermove', (e) => {
-            if (draggedNode) {
-                const rect = canvas.getBoundingClientRect();
-                let nx = e.clientX - dragOffset.x;
-                let ny = e.clientY - dragOffset.y;
-                // Udrž prvek uvnitř plátna
-                nx = Math.max(0, Math.min(nx, canvas.clientWidth - draggedNode.offsetWidth));
-                ny = Math.max(0, Math.min(ny, canvas.clientHeight - draggedNode.offsetHeight));
-                dragMoved = true;
-                draggedNode.style.left = nx + 'px';
-                draggedNode.style.top = ny + 'px';
-                
-                // Update dat
-                let n = nodes.find(x => x.id === draggedNode.id);
-                n.x = nx; n.y = ny;
-                renderSimulation();
-            }
-
-            if (wiringState) {
-                const rect = canvas.getBoundingClientRect();
-                const fromNode = nodes.find(n => n.id === wiringState.nodeId);
-                const pinOut = fromNode.el.querySelector('.pin-out');
-                const pRect = pinOut.getBoundingClientRect();
-                
-                const startX = pRect.left + pRect.width/2 - rect.left;
-                const startY = pRect.top + pRect.height/2 - rect.top;
-                const endX = e.clientX - rect.left;
-                const endY = e.clientY - rect.top;
-                
-                tempWire.style.display = 'block';
-                tempWire.setAttribute('d', getBezierPath(startX, startY, endX, endY));
-            }
-        });
-
-        document.addEventListener('pointerup', () => {
-            draggedNode = null;
-        });
-        document.addEventListener('pointercancel', () => {
-            draggedNode = null;
-        });
-
-        // Kreslení čar
-        function getBezierPath(x1, y1, x2, y2) {
-            const offset = Math.max(Math.abs(x2 - x1) * 0.5, 40);
-            return `M ${x1} ${y1} C ${x1 + offset} ${y1}, ${x2 - offset} ${y2}, ${x2} ${y2}`;
-        }
-
-        function startWire(e, nodeId) {
-            e.stopPropagation();
-            // Zruš předchozí rozdělaný spoj
-            if(wiringState) cancelWiring();
-            wiringState = { nodeId };
-            e.target.classList.add('active');
-        }
-
-        function finishWire(e, toNodeId, toPin) {
-            e.stopPropagation();
-            if (!wiringState) return;
-            if (wiringState.nodeId === toNodeId) { cancelWiring(); return; } // Nelze propojit samo do sebe
-
-            // Zkontroluj, zda na tomto vstupu už není čára (pokud ano, smaž ji)
-            const existingWireIndex = wires.findIndex(w => w.toNode === toNodeId && w.toPin === toPin);
-            if(existingWireIndex !== -1) deleteWire(wires[existingWireIndex].id);
-
-            const wireId = 'wire_' + nextId++;
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('class', 'wire');
-            path.id = wireId;
-            
-            // Dvojklik pro smazání čáry
-            path.ondblclick = () => deleteWire(wireId);
-
-            svgLayer.appendChild(path);
-
-            wires.push({ id: wireId, fromNode: wiringState.nodeId, toNode: toNodeId, toPin, svgEl: path, val: null });
-            
-            cancelWiring();
-            evaluateCircuit();
-        }
-
-        function cancelWiring() {
-            if(wiringState) {
-                const node = nodes.find(n => n.id === wiringState.nodeId);
-                if(node) node.el.querySelector('.pin-out').classList.remove('active');
-            }
-            wiringState = null;
-            tempWire.style.display = 'none';
-        }
-
-        // Tlačítko Vstup
-        function toggleInput(nodeId) {
-            const n = nodes.find(x => x.id === nodeId);
-            if(n && n.type === 'INPUT') {
-                n.val = n.val === 1 ? 0 : 1;
-                n.el.querySelector('.label-text').innerText = n.val;
-                if(n.val === 1) n.el.classList.replace('val-0', 'val-1');
-                else n.el.classList.replace('val-1', 'val-0');
-                evaluateCircuit();
-            }
-        }
-
-        // Smazání prvků
-        function deleteNode(id) {
-            const nodeIndex = nodes.findIndex(n => n.id === id);
-            if(nodeIndex === -1) return;
-            // Smaž připojené čáry
-            const connectedWires = wires.filter(w => w.fromNode === id || w.toNode === id);
-            connectedWires.forEach(w => deleteWire(w.id));
-            // Smaž uzel z DOM
-            nodes[nodeIndex].el.remove();
-            nodes.splice(nodeIndex, 1);
-            if(nodes.length === 0) hint.style.display = 'block';
-            evaluateCircuit();
-        }
-
-        function deleteWire(id) {
-            const index = wires.findIndex(w => w.id === id);
-            if(index !== -1) {
-                wires[index].svgEl.remove();
-                wires.splice(index, 1);
-                evaluateCircuit();
-            }
-        }
-
-        function clearCanvas() {
-            nodes.forEach(n => n.el.remove());
-            wires.forEach(w => w.svgEl.remove());
-            nodes = []; wires = [];
-            hint.style.display = 'block';
-        }
-
-        // Vyhodnocení obvodu (jednoduchý iterační solver)
-        function logicOperation(type, a, b) {
-            // Null propagate
-            if (a === null) a = 0; 
-            if (b === null) b = 0;
-
-            switch(type) {
-                case 'AND': return (a === 1 && b === 1) ? 1 : 0;
-                case 'OR': return (a === 1 || b === 1) ? 1 : 0;
-                case 'XOR': return (a !== b) ? 1 : 0;
-                case 'NAND': return !(a === 1 && b === 1) ? 1 : 0;
-                case 'NOR': return !(a === 1 || b === 1) ? 1 : 0;
-                case 'NOT': return (a === 0) ? 1 : 0;
-                case 'OUTPUT': return a;
-                default: return 0;
-            }
-        }
-
-        function evaluateCircuit() {
-            // Resetuj hodnoty všeho kromě vstupů
-            nodes.forEach(n => { if(n.type !== 'INPUT') n.val = null; });
-            wires.forEach(w => w.val = null);
-
-            let changed = true;
-            let iterations = 0;
-
-            // Procházej dopředně, dokud se něco mění
-            while (changed && iterations < 100) {
-                changed = false;
-                iterations++;
-
-                nodes.forEach(n => {
-                    if (n.type === 'INPUT' || n.val !== null) return; // Již spočítáno
-
-                    let inputsNeeded = (n.type === 'NOT' || n.type === 'OUTPUT') ? 1 : 2;
-                    let inputVals = [null, null];
-
-                    for(let i=0; i<inputsNeeded; i++) {
-                        const wire = wires.find(w => w.toNode === n.id && w.toPin === i);
-                        if (wire) {
-                            const srcNode = nodes.find(sn => sn.id === wire.fromNode);
-                            if (srcNode && srcNode.val !== null) inputVals[i] = srcNode.val;
-                        } else {
-                            inputVals[i] = 0; // Nepřipojený pin se bere jako 0
-                        }
-                    }
-
-                    // Pokud máme všechny potřebné vstupy, spočítej uzel
-                    if ( (inputsNeeded === 1 && inputVals[0] !== null) || 
-                         (inputsNeeded === 2 && inputVals[0] !== null && inputVals[1] !== null) ) {
-                        n.val = logicOperation(n.type, inputVals[0], inputVals[1]);
-                        changed = true;
-                    }
-                });
-            }
-
-            // Propagace hodnot z uzlů do čar pro vizualizaci
-            wires.forEach(w => {
-                const srcNode = nodes.find(n => n.id === w.fromNode);
-                if(srcNode && srcNode.val !== null) w.val = srcNode.val;
-            });
-
-            renderSimulation();
-        }
-
-        function renderSimulation() {
-            const rect = canvas.getBoundingClientRect();
-            if(rect.width === 0) return; // Skryto v jiné záložce
-
-            // Vykresli čáry
-            wires.forEach(w => {
-                const fromN = nodes.find(n => n.id === w.fromNode);
-                const toN = nodes.find(n => n.id === w.toNode);
-                if(!fromN || !toN) return;
-
-                const pinOut = fromN.el.querySelector('.pin-out');
-                const pinIn = toN.el.querySelectorAll('.pin-in')[w.toPin];
-
-                if(!pinOut || !pinIn) return;
-
-                const pOutRect = pinOut.getBoundingClientRect();
-                const pInRect = pinIn.getBoundingClientRect();
-
-                const x1 = pOutRect.left + pOutRect.width/2 - rect.left;
-                const y1 = pOutRect.top + pOutRect.height/2 - rect.top;
-                const x2 = pInRect.left + pInRect.width/2 - rect.left;
-                const y2 = pInRect.top + pInRect.height/2 - rect.top;
-
-                w.svgEl.setAttribute('d', getBezierPath(x1, y1, x2, y2));
-                
-                // Stylování 1/0 pro čáry a vstupní piny
-                if (w.val === 1) { w.svgEl.classList.add('val-1'); pinIn.classList.add('val-1'); }
-                else { w.svgEl.classList.remove('val-1'); pinIn.classList.remove('val-1'); }
-                
-                // Výstupní piny svítí pokud je hradlo 1
-                if(fromN.val === 1) pinOut.classList.add('val-1');
-                else pinOut.classList.remove('val-1');
-            });
-
-            // Vizualizace výstupu (Žárovka)
-            nodes.forEach(n => {
-                if(n.type === 'OUTPUT') {
-                    if(n.val === 1) n.el.classList.add('val-1');
-                    else n.el.classList.remove('val-1');
-                }
-            });
-        }
-
-        // Oprava resize okna (překreslení čar)
-        window.addEventListener('resize', renderSimulation);
-
-        // --- HÁDANKY LOGIKA ---
-        const quizData = [
-            { q: "1. Vstup A je 1, Vstup B je 0. Výstup je 1. Které hradlo to může být?", options: ["AND", "OR", "NOR"], answer: 1 },
-            { q: "2. Bezpečnostní systém spustí alarm (1) POUZE ve chvíli, kdy jsou porušeny oba senzory současně (Senzor A=1, B=1). Které hradlo použijete?", options: ["XOR", "OR", "AND"], answer: 2 },
-            { q: "3. Představte si obvod: Vstupy A=1 a B=1 jdou do hradla NAND. Co z něj vyjde?", options: ["0", "1", "Nedá se určit"], answer: 0 }
-        ];
-        let currentQuizState = [];
-
-        function renderQuiz() {
-            const container = document.getElementById('quiz-container');
-            container.innerHTML = '';
-            currentQuizState = new Array(quizData.length).fill(null);
-            document.getElementById('resultMsg').style.display = 'none';
-
-            quizData.forEach((item, qIndex) => {
-                const card = document.createElement('div'); card.className = 'puzzle-card';
-                card.innerHTML = `<div class="puzzle-q">${item.q}</div>`;
-                const optionsDiv = document.createElement('div'); optionsDiv.className = 'puzzle-options';
-
-                item.options.forEach((opt, optIndex) => {
-                    const btn = document.createElement('button'); btn.className = 'puzzle-btn'; btn.innerText = opt;
-                    btn.onclick = () => handleAnswer(qIndex, optIndex, btn);
-                    optionsDiv.appendChild(btn);
-                });
-                card.appendChild(optionsDiv); container.appendChild(card);
-            });
-        }
-
-        function handleAnswer(qIndex, optIndex, btnElement) {
-            if(currentQuizState[qIndex] !== null) return;
-            if(optIndex === quizData[qIndex].answer) {
-                btnElement.classList.add('correct'); currentQuizState[qIndex] = true;
-                if(currentQuizState.every(val => val === true)) setTimeout(() => document.getElementById('resultMsg').style.display = 'block', 300);
-            } else {
-                btnElement.classList.add('wrong'); setTimeout(() => btnElement.classList.remove('wrong'), 500);
-            }
-        }
-        function resetQuiz() { renderQuiz(); }
-        renderQuiz();
-    
-        // Překreslení vodičů po změně velikosti okna nebo otočení displeje
-        window.addEventListener('resize', () => renderSimulation());
-    </script>
 <script>
-    /* Ovládání záložek šipkami */
+/* =====================================================================
+   Simulátor číslicových obvodů
+   ---------------------------------------------------------------------
+   Model:  obvod = seznam uzlů (hradla, piny, čipy) + seznam vodičů.
+   Překlad: čipy se rekurzivně rozbalí na základní hradla (prims).
+   Simulace: každé hradlo má zpoždění 1–2 tiky, takže fungují i zpětné
+            vazby (klopné obvody) a hodinový signál.
+   ===================================================================== */
+(function () {
+'use strict';
+
+/* ------------------------------- Typy ------------------------------- */
+
+var TYPES = {
+    SWITCH: { ins: 0, outs: 1, w: 54, h: 38 },
+    BULB:   { ins: 1, outs: 0, w: 46, h: 46 },
+    CLOCK:  { ins: 0, outs: 1, w: 62, h: 42 },
+    NUM:    { ins: 0, outs: 4, w: 74, h: 96 },
+    DISP:   { ins: 4, outs: 0, w: 74, h: 96 },
+    AND:    { ins: 2, outs: 1, w: 76, h: 54 },
+    OR:     { ins: 2, outs: 1, w: 76, h: 54 },
+    NOT:    { ins: 1, outs: 1, w: 68, h: 46 },
+    XOR:    { ins: 2, outs: 1, w: 76, h: 54 },
+    NAND:   { ins: 2, outs: 1, w: 76, h: 54 },
+    NOR:    { ins: 2, outs: 1, w: 76, h: 54 }
+};
+
+var COLORS = ['blue', 'green', 'purple', 'orange', 'pink', 'red', 'brown', 'gray'];
+
+var LIB = new Map();          // id -> definice čipu
+var circuit = null;           // { name, nodes, wires }
+var view = { x: 40, y: 30, s: 1 };
+var uid = 1;
+
+/* --------------------------- Pomocné funkce -------------------------- */
+
+function nid(p) { return (p || 'n') + (Date.now() % 100000) + '_' + (uid++); }
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function byId(id) { return document.getElementById(id); }
+function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+
+function ifaceIn(def) {
+    if (!def) return [];
+    return def.nodes.filter(function (n) { return n.t === 'SWITCH'; })
+        .slice().sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); });
+}
+function ifaceOut(def) {
+    if (!def) return [];
+    return def.nodes.filter(function (n) { return n.t === 'BULB'; })
+        .slice().sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); });
+}
+
+function sizeOf(n) {
+    if (n.t === 'CHIP') return chipSize(LIB.get(n.def));
+    var s = TYPES[n.t] || TYPES.AND;
+    return { w: s.w, h: s.h };
+}
+function chipSize(def) {
+    if (!def) return { w: 92, h: 46 };
+    var ins = ifaceIn(def), outs = ifaceOut(def);
+    var rows = Math.max(ins.length, outs.length, 1);
+    var h = Math.max(48, 16 + rows * 22);
+    var li = 0, lo = 0;
+    ins.forEach(function (n) { li = Math.max(li, (n.name || '').length); });
+    outs.forEach(function (n) { lo = Math.max(lo, (n.name || '').length); });
+    var w = clamp(def.name.length * 7.2 + (li + lo) * 6.4 + 28, 96, 260);
+    return { w: w, h: h, padL: Math.round(li * 6.4 + 8), padR: Math.round(lo * 6.4 + 8) };
+}
+function inCount(n) {
+    if (n.t === 'CHIP') return ifaceIn(LIB.get(n.def)).length;
+    return (TYPES[n.t] || {}).ins || 0;
+}
+function outCount(n) {
+    if (n.t === 'CHIP') return ifaceOut(LIB.get(n.def)).length;
+    return (TYPES[n.t] || {}).outs || 0;
+}
+function pinNames(n, dir) {
+    if (n.t !== 'CHIP') return null;
+    var d = LIB.get(n.def);
+    return (dir === 'in' ? ifaceIn(d) : ifaceOut(d)).map(function (p, i) {
+        return p.name || (dir === 'in' ? 'I' : 'O') + i;
+    });
+}
+function pinLocal(n, dir, i) {
+    var sz = sizeOf(n);
+    var cnt = dir === 'in' ? inCount(n) : outCount(n);
+    return { x: dir === 'in' ? 0 : sz.w, y: sz.h * (i + 1) / (cnt + 1) };
+}
+function pinWorld(n, dir, i) {
+    var p = pinLocal(n, dir, i);
+    return { x: n.x + p.x, y: n.y + p.y };
+}
+function nodeById(id) {
+    for (var i = 0; i < circuit.nodes.length; i++) if (circuit.nodes[i].id === id) return circuit.nodes[i];
+    return null;
+}
+
+/* ====================================================================
+   PŘEKLAD OBVODU NA ZÁKLADNÍ HRADLA
+   ==================================================================== */
+
+var sim = null;
+
+function compile(rootDef) {
+    var prims = [];
+    var alias = new Map();
+    var switchOf = new Map();   // nodeId -> index primu
+    var numOf = new Map();      // nodeId -> [4 indexy]
+    var clockOf = [];
+
+    function addPrim(kind, delay) {
+        var d = delay != null ? delay : (1 + (prims.length % 2));
+        var p = { i: prims.length, k: kind, ins: [], raw: [], q: 0, nx: 0, val: 0, pipe: new Array(d).fill(0) };
+        prims.push(p);
+        return p;
+    }
+
+    function KEY(ctx, n, o) { return ctx + '|' + n + '|' + o; }
+
+    function expand(def, ctx, inTerms, depth) {
+        var outPins = ifaceOut(def);
+        var outTerms = new Array(outPins.length).fill(null);
+        if (depth > 10) return outTerms;
+
+        var wmap = new Map();
+        for (var i = 0; i < def.wires.length; i++) {
+            var w = def.wires[i];
+            wmap.set(w.t + '|' + w.ti, w);
+        }
+        function src(nodeId, pin) {
+            var w = wmap.get(nodeId + '|' + pin);
+            return w ? { a: KEY(ctx, w.f, w.fo) } : null;
+        }
+
+        var inPins = ifaceIn(def);
+        var inIdx = new Map(); inPins.forEach(function (n, i) { inIdx.set(n.id, i); });
+        var outIdx = new Map(); outPins.forEach(function (n, i) { outIdx.set(n.id, i); });
+
+        def.nodes.forEach(function (n) {
+            var p, b;
+            switch (n.t) {
+                case 'SWITCH':
+                    if (inTerms) {
+                        alias.set(KEY(ctx, n.id, 0), inTerms[inIdx.get(n.id)] || null);
+                    } else {
+                        p = addPrim('SRC', 1);
+                        p.val = n.val ? 1 : 0;
+                        alias.set(KEY(ctx, n.id, 0), { p: p.i, o: 0 });
+                        switchOf.set(n.id, p.i);
+                    }
+                    break;
+                case 'BULB':
+                    if (inTerms) outTerms[outIdx.get(n.id)] = src(n.id, 0);
+                    break;
+                case 'CLOCK':
+                    p = addPrim('CLK', 1);
+                    alias.set(KEY(ctx, n.id, 0), { p: p.i, o: 0 });
+                    clockOf.push(p.i);
+                    break;
+                case 'NUM':
+                    b = [];
+                    for (var k = 0; k < 4; k++) {
+                        p = addPrim('SRC', 1);
+                        p.val = ((n.num || 0) >> (3 - k)) & 1;
+                        alias.set(KEY(ctx, n.id, k), { p: p.i, o: 0 });
+                        b.push(p.i);
+                    }
+                    if (!inTerms) numOf.set(n.id, b);
+                    break;
+                case 'DISP':
+                    break;                       // jen zobrazení, nic nepočítá
+                case 'CHIP':
+                    var d = LIB.get(n.def);
+                    if (!d) break;
+                    var childIn = ifaceIn(d).map(function (_, i) { return src(n.id, i); });
+                    var childOut = expand(d, ctx + '/' + n.id, childIn, depth + 1);
+                    childOut.forEach(function (t, j) { alias.set(KEY(ctx, n.id, j), t || null); });
+                    break;
+                default:
+                    var spec = TYPES[n.t];
+                    if (!spec) break;
+                    p = addPrim(n.t);
+                    for (var j = 0; j < spec.ins; j++) p.raw.push(src(n.id, j));
+                    alias.set(KEY(ctx, n.id, 0), { p: p.i, o: 0 });
+            }
+        });
+
+        return outTerms;
+    }
+
+    expand(rootDef, '', null, 0);
+
+    function deref(t) {
+        var guard = 0;
+        while (t && t.a !== undefined) {
+            t = alias.has(t.a) ? alias.get(t.a) : null;
+            if (++guard > 4000) return null;
+        }
+        return t || null;
+    }
+
+    prims.forEach(function (p) { p.ins = p.raw.map(deref); });
+
+    // reference pro zobrazení hodnot na kořenové úrovni
+    var outRef = new Map(), inRef = new Map();
+    var rootWires = new Map();
+    rootDef.wires.forEach(function (w) { rootWires.set(w.t + '|' + w.ti, w); });
+    rootDef.nodes.forEach(function (n) {
+        var i;
+        for (i = 0; i < outCount(n); i++) outRef.set(n.id + '|' + i, deref({ a: '|' + n.id + '|' + i }));
+        for (i = 0; i < inCount(n); i++) {
+            var w = rootWires.get(n.id + '|' + i);
+            inRef.set(n.id + '|' + i, w ? deref({ a: '|' + w.f + '|' + w.fo }) : null);
+        }
+    });
+
+    var loops = loopPrims(prims);
+    return {
+        prims: prims, outRef: outRef, inRef: inRef,
+        switchOf: switchOf, numOf: numOf, clockOf: clockOf,
+        cyclic: loops.cyclic, loops: loops.hold
+    };
+}
+
+/* Tarjanův algoritmus: najde hradla, která leží ve zpětné vazbě.
+   Ta se při startu obvodu podrží v nule a pak se postupně uvolní,
+   aby klopné obvody nastartovaly v definovaném stavu — jinak by se
+   kříženě zapojená hradla rozkmitala. */
+function loopPrims(prims) {
+    var n = prims.length;
+    var index = new Array(n).fill(-1), low = new Array(n).fill(0);
+    var onstack = new Array(n).fill(false), stack = [], idx = 0, res = [];
+    function strong(v) {
+        index[v] = low[v] = idx++;
+        stack.push(v); onstack[v] = true;
+        var ins = prims[v].ins;
+        for (var k = 0; k < ins.length; k++) {
+            var r = ins[k];
+            if (!r) continue;
+            var w = r.p;
+            if (index[w] === -1) { strong(w); if (low[w] < low[v]) low[v] = low[w]; }
+            else if (onstack[w] && index[w] < low[v]) low[v] = index[w];
+        }
+        if (low[v] === index[v]) {
+            var comp = [], x;
+            do { x = stack.pop(); onstack[x] = false; comp.push(x); } while (x !== v);
+            if (comp.length > 1) comps.push(comp);
+            else if (prims[v].ins.some(function (r) { return r && r.p === v; })) comps.push(comp);
+        }
+    }
+    var comps = [];
+    for (var v = 0; v < n; v++) if (index[v] === -1) strong(v);
+
+    // Ze smyčky se drží jen bistabilní dvojice — dvě hradla zapojená do
+    // kříže. Uvnitř dvojice se uvolňuje od vyššího indexu (Q skončí v nule),
+    // dvojice mezi sebou od nejstarší, aby řetězec klopných obvodů
+    // nedostal při startu falešnou hranu hodin.
+    comps.forEach(function (comp) {
+        var inComp = {}, seen = {}, groups = [];
+        comp.forEach(function (i) { inComp[i] = 1; });
+        comp.forEach(function (a) {
+            prims[a].ins.forEach(function (r) {
+                if (!r || r.p === a || !inComp[r.p]) return;
+                if (!prims[r.p].ins.some(function (q) { return q && q.p === a; })) return;
+                var lo = Math.min(a, r.p), hi = Math.max(a, r.p), key = lo + '-' + hi;
+                if (seen[key]) return;
+                seen[key] = 1;
+                groups.push([hi, lo]);
+            });
+        });
+        if (!groups.length) groups.push([Math.max.apply(null, comp)]);
+        res = res.concat(groups);
+    });
+    res.sort(function (a, b) { return Math.min.apply(null, a) - Math.min.apply(null, b); });
+    return { cyclic: comps.length > 0, hold: res };
+}
+
+/* ------------------------------ Simulace ----------------------------- */
+
+var clockHigh = false, tickCount = 0, running = true;
+var TICK_RATE = 2400;                       // tiků za sekundu reálného času
+var CLOCK_HZ = [0.25, 0.5, 1, 2, 4, 8];
+var clockIdx = 2;
+
+function gv(p, i) { var r = p.ins[i]; return r ? sim.prims[r.p].q : 0; }
+
+function tick() {
+    var ps = sim.prims, i, p, v;
+    for (i = 0; i < ps.length; i++) {
+        p = ps[i];
+        switch (p.k) {
+            case 'SRC':  v = p.val; break;
+            case 'CLK':  v = clockHigh ? 1 : 0; break;
+            case 'AND':  v = (gv(p, 0) && gv(p, 1)) ? 1 : 0; break;
+            case 'OR':   v = (gv(p, 0) || gv(p, 1)) ? 1 : 0; break;
+            case 'XOR':  v = (gv(p, 0) !== gv(p, 1)) ? 1 : 0; break;
+            case 'NAND': v = (gv(p, 0) && gv(p, 1)) ? 0 : 1; break;
+            case 'NOR':  v = (gv(p, 0) || gv(p, 1)) ? 0 : 1; break;
+            case 'NOT':  v = gv(p, 0) ? 0 : 1; break;
+            default:     v = 0;
+        }
+        p.pipe.push(v);
+        p.nx = p.pipe.shift();
+    }
+    var changed = false;
+    for (i = 0; i < ps.length; i++) {
+        p = ps[i];
+        if (p.q !== p.nx) { p.q = p.nx; changed = true; }
+    }
+    tickCount++;
+    return changed;
+}
+
+function settle(max) {
+    var quiet = 0;
+    for (var i = 0; i < (max || 400); i++) {
+        if (!tick()) { if (++quiet > 2) return true; } else quiet = 0;
+    }
+    return false;
+}
+
+function resetState() {
+    sim.prims.forEach(function (p) { p.q = 0; p.nx = 0; p.pipe.fill(0); });
+}
+
+/* Start obvodu — obdoba „power-on resetu“ ve skutečném hardwaru.
+   Všechna hradla ve zpětné vazbě se podrží v nule a pak se uvolňují
+   jedno po druhém odzadu, takže se každý klopný obvod ustálí na Q = 0. */
+function powerOn() {
+    resetState();
+    var groups = sim.loops || [];
+    var held = {}, t;
+    groups.forEach(function (g) { g.forEach(function (p) { held[p] = 1; }); });
+    function hold() {
+        for (var k in held) {
+            var p = sim.prims[k];
+            p.q = 0; p.nx = 0; p.pipe.fill(0);
+        }
+    }
+    for (t = 0; t < 16; t++) { tick(); hold(); }
+    groups.forEach(function (g) {
+        g.forEach(function (idx) {
+            delete held[idx];
+            for (var k = 0; k < 10; k++) { tick(); hold(); }
+        });
+    });
+    settle(800);
+}
+
+function setRunning(v) {
+    running = !!v;
+    var pl = document.getElementById('ico-play'), pa = document.getElementById('ico-pause');
+    if (pl) pl.style.display = running ? 'none' : '';
+    if (pa) pa.style.display = running ? '' : 'none';
+    var lb = document.getElementById('run-label');
+    if (lb) lb.textContent = running ? 'Pauza' : 'Spustit';
+    if (running) { acc = 0; lastT = 0; }
+    paint(true);
+}
+
+function valOf(ref) { return ref ? sim.prims[ref.p].q : 0; }
+function outVal(id, i) { return valOf(sim.outRef.get(id + '|' + i)); }
+function inVal(id, i) { return valOf(sim.inRef.get(id + '|' + i)); }
+
+/* ====================================================================
+   VYKRESLENÍ
+   ==================================================================== */
+
+var canvas, world, wireGroup, tempWire, hint, els = new Map(), wireEls = new Map();
+var selected = null;
+
+function applyView() {
+    world.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.s + ')';
+}
+
+function icon(paths, cls) {
+    return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+}
+var ICO_BULB = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+var ICO_CLOCK = '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>';
+
+function buildNodeEl(n) {
+    var sz = sizeOf(n);
+    var el = document.createElement('div');
+    el.className = 'node node-' + n.t;
+    el.dataset.id = n.id;
+    el.style.width = sz.w + 'px';
+    el.style.height = sz.h + 'px';
+    el.style.left = n.x + 'px';
+    el.style.top = n.y + 'px';
+
+    var inner = '';
+    if (n.t === 'SWITCH') {
+        inner = '<span class="v">0</span>';
+    } else if (n.t === 'BULB') {
+        inner = icon(ICO_BULB);
+    } else if (n.t === 'CLOCK') {
+        inner = icon(ICO_CLOCK);
+    } else if (n.t === 'NUM') {
+        inner = '<span class="num-val">0</span><span class="num-sub">vstup 4b</span>' +
+            '<span class="num-btns"><button type="button" data-d="-1" title="O jedna méně">−</button>' +
+            '<button type="button" data-d="1" title="O jedna víc">+</button></span>';
+    } else if (n.t === 'DISP') {
+        inner = '<span class="num-val">0</span><span class="num-sub">displej 4b</span>';
+    } else if (n.t === 'CHIP') {
+        var d = LIB.get(n.def);
+        inner = '<span class="chip-name">' + esc(d ? d.name : '???') + '</span>';
+        if (d) {
+            el.style.borderColor = 'var(--c-' + (d.color || 'blue') + ')';
+            el.style.background = 'var(--c-' + (d.color || 'blue') + '-bg)';
+            el.style.color = 'var(--c-' + (d.color || 'blue') + ')';
+            el.style.paddingLeft = sz.padL + 'px';
+            el.style.paddingRight = sz.padR + 'px';
+        }
+    } else {
+        inner = n.t;
+    }
+    el.innerHTML = inner;
+
+    // popisek u vypínače / žárovky
+    if (n.t === 'SWITCH' || n.t === 'BULB') {
+        var lab = document.createElement('span');
+        lab.className = 'node-label ' + (n.t === 'SWITCH' ? 'on-left' : 'on-right');
+        lab.textContent = n.name || '';
+        lab.title = 'Dvojklikem přejmenujete';
+        lab.addEventListener('dblclick', function (e) { e.stopPropagation(); renameNode(n, lab); });
+        el.appendChild(lab);
+    }
+
+    // piny
+    var nin = inCount(n), nout = outCount(n), i, pin, pos;
+    var namesIn = pinNames(n, 'in'), namesOut = pinNames(n, 'out');
+    el.__in = []; el.__out = [];
+    for (i = 0; i < nin; i++) {
+        pos = pinLocal(n, 'in', i);
+        pin = document.createElement('div');
+        pin.className = 'pin pin-in';
+        pin.style.left = pos.x + 'px'; pin.style.top = pos.y + 'px';
+        pin.dataset.dir = 'in'; pin.dataset.idx = i; pin.dataset.node = n.id;
+        el.appendChild(pin); el.__in.push(pin);
+        if (namesIn) el.appendChild(pinLabel(namesIn[i], 'in', pos));
+        else if (n.t === 'DISP') el.appendChild(pinLabel(String(1 << (3 - i)), 'in', pos));
+    }
+    for (i = 0; i < nout; i++) {
+        pos = pinLocal(n, 'out', i);
+        pin = document.createElement('div');
+        pin.className = 'pin pin-out';
+        pin.style.left = pos.x + 'px'; pin.style.top = pos.y + 'px';
+        pin.dataset.dir = 'out'; pin.dataset.idx = i; pin.dataset.node = n.id;
+        el.appendChild(pin); el.__out.push(pin);
+        if (namesOut) el.appendChild(pinLabel(namesOut[i], 'out', pos));
+        else if (n.t === 'NUM') el.appendChild(pinLabel(String(1 << (3 - i)), 'out', pos));
+    }
+
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'del';
+    del.textContent = '×';
+    del.title = 'Smazat prvek';
+    del.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    del.addEventListener('click', function (e) { e.stopPropagation(); deleteNode(n.id); });
+    el.appendChild(del);
+
+    return el;
+}
+
+function pinLabel(text, dir, pos) {
+    var s = document.createElement('span');
+    s.className = 'pin-label lbl-' + dir;
+    s.textContent = text;
+    s.style.top = (pos.y - 5) + 'px';
+    return s;
+}
+
+function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+}
+
+function renameNode(n, lab) {
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.value = n.name || ''; inp.maxLength = 10;
+    lab.textContent = ''; lab.appendChild(inp);
+    inp.focus(); inp.select();
+    function done() {
+        n.name = inp.value.trim().slice(0, 10);
+        lab.textContent = n.name;
+        save();
+    }
+    inp.addEventListener('blur', done);
+    inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+        if (e.key === 'Escape') { inp.value = n.name || ''; inp.blur(); }
+        e.stopPropagation();
+    });
+    inp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+}
+
+function rebuild() {
+    els.forEach(function (el) { el.remove(); });
+    els.clear();
+    circuit.nodes.forEach(function (n) {
+        var el = buildNodeEl(n);
+        world.appendChild(el);
+        els.set(n.id, el);
+    });
+    rebuildWires();
+    sim = compile(circuit);
+    powerOn();
+    hint.style.display = circuit.nodes.length ? 'none' : 'block';
+    paint(true);
+    save();
+}
+
+function rebuildWires() {
+    wireGroup.innerHTML = '';
+    wireEls.clear();
+    circuit.wires.forEach(addWireEl);
+}
+
+function addWireEl(w) {
+    var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    var hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hit.setAttribute('class', 'wire-hit');
+    var vis = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    vis.setAttribute('class', 'wire');
+    g.appendChild(hit); g.appendChild(vis);
+    g.style.pointerEvents = 'auto';
+    g.addEventListener('click', function (e) { e.stopPropagation(); deleteWire(w.id); });
+    g.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    wireGroup.appendChild(g);
+    wireEls.set(w.id, { g: g, hit: hit, vis: vis });
+    pathWire(w);
+}
+
+function wirePath(w) {
+    var a = nodeById(w.f), b = nodeById(w.t);
+    if (!a || !b) return '';
+    var p1 = pinWorld(a, 'out', w.fo), p2 = pinWorld(b, 'in', w.ti);
+    var dx = Math.max(Math.abs(p2.x - p1.x) * 0.45, 34);
+    return 'M ' + p1.x + ' ' + p1.y + ' C ' + (p1.x + dx) + ' ' + p1.y + ', ' +
+        (p2.x - dx) + ' ' + p2.y + ', ' + p2.x + ' ' + p2.y;
+}
+function pathWire(w) {
+    var e = wireEls.get(w.id); if (!e) return;
+    var d = wirePath(w);
+    e.hit.setAttribute('d', d); e.vis.setAttribute('d', d);
+}
+function repathAround(nodeId) {
+    circuit.wires.forEach(function (w) { if (w.f === nodeId || w.t === nodeId) pathWire(w); });
+}
+
+/* ------------------------- Obarvení podle hodnot ---------------------- */
+
+function paint(force) {
+    if (!sim) return;
+    circuit.nodes.forEach(function (n) {
+        var el = els.get(n.id); if (!el) return;
+        var i, v;
+        if (n.t === 'SWITCH') {
+            v = n.val ? 1 : 0;
+            if (force || el.__v !== v) { el.__v = v; el.classList.toggle('on', !!v); el.querySelector('.v').textContent = v; }
+        } else if (n.t === 'BULB') {
+            v = inVal(n.id, 0);
+            if (force || el.__v !== v) { el.__v = v; el.classList.toggle('on', !!v); }
+        } else if (n.t === 'CLOCK') {
+            v = outVal(n.id, 0);
+            if (force || el.__v !== v) { el.__v = v; el.classList.toggle('on', !!v); }
+        } else if (n.t === 'NUM') {
+            v = n.num || 0;
+            if (force || el.__v !== v) {
+                el.__v = v;
+                el.querySelector('.num-val').textContent = v;
+                el.querySelector('.num-sub').textContent = bin4(v);
+            }
+        } else if (n.t === 'DISP') {
+            v = 0;
+            for (i = 0; i < 4; i++) v = (v << 1) | inVal(n.id, i);
+            if (force || el.__v !== v) {
+                el.__v = v;
+                el.querySelector('.num-val').textContent = v;
+                el.querySelector('.num-sub').textContent = bin4(v);
+            }
+        }
+        var pe;
+        for (i = 0; i < el.__out.length; i++) {
+            pe = el.__out[i]; v = outVal(n.id, i);
+            if (force || pe.__v !== v) { pe.__v = v; pe.classList.toggle('on', !!v); }
+        }
+        for (i = 0; i < el.__in.length; i++) {
+            pe = el.__in[i]; v = inVal(n.id, i);
+            if (force || pe.__v !== v) { pe.__v = v; pe.classList.toggle('on', !!v); }
+        }
+    });
+    circuit.wires.forEach(function (w) {
+        var e = wireEls.get(w.id); if (!e) return;
+        var v = valOf(sim.outRef.get(w.f + '|' + w.fo));
+        if (force || e.v !== v) { e.v = v; e.vis.classList.toggle('on', !!v); }
+    });
+    var badge = byId('sim-badge');
+    if (Date.now() < flashUntil) return;
+    badge.textContent = running
+        ? (plural(sim.prims.length, 'hradlo', 'hradla', 'hradel') + ' · ' +
+           plural(circuit.wires.length, 'vodič', 'vodiče', 'vodičů') + ' · CLK ' + (clockHigh ? '1' : '0'))
+        : 'pauza · posouvejte tlačítkem Krok';
+}
+
+function plural(n, one, few, many) {
+    return n + ' ' + (n === 1 ? one : (n >= 2 && n <= 4 ? few : many));
+}
+
+function bin4(v) {
+    var s = '';
+    for (var i = 3; i >= 0; i--) s += ((v >> i) & 1);
+    return s;
+}
+
+/* ----------------------------- Hlavní smyčka -------------------------- */
+
+var lastT = 0, acc = 0;
+function loop(t) {
+    requestAnimationFrame(loop);
+    var dt = lastT ? Math.min((t - lastT) / 1000, 0.1) : 0;
+    lastT = t;
+    if (!running || !sim) return;
+    acc += dt * TICK_RATE;
+    var n = Math.min(Math.floor(acc), 4000);
+    acc -= n;
+    var half = Math.max(30, Math.round(TICK_RATE / (2 * CLOCK_HZ[clockIdx])));
+    for (var i = 0; i < n; i++) {
+        clockHigh = (Math.floor(tickCount / half) % 2) === 1;
+        tick();
+    }
+    if (n) paint(false);
+}
+
+/* ====================================================================
+   ÚPRAVY OBVODU
+   ==================================================================== */
+
+function addNode(t, x, y, extra) {
+    var n = { id: nid(), t: t, x: Math.round(x), y: Math.round(y) };
+    if (t === 'SWITCH') { n.val = 0; n.name = nextName('in'); }
+    if (t === 'BULB') { n.name = nextName('out'); }
+    if (t === 'NUM') { n.num = 0; }
+    if (extra) Object.assign(n, extra);
+    circuit.nodes.push(n);
+    rebuild();
+    return n;
+}
+
+var IN_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+var OUT_NAMES = ['Y', 'Z', 'W', 'V', 'U', 'T', 'S', 'R'];
+function nextName(kind) {
+    var list = kind === 'in' ? IN_NAMES : OUT_NAMES;
+    var used = {};
+    circuit.nodes.forEach(function (n) {
+        if ((kind === 'in' && n.t === 'SWITCH') || (kind === 'out' && n.t === 'BULB')) used[n.name] = 1;
+    });
+    for (var i = 0; i < list.length; i++) if (!used[list[i]]) return list[i];
+    return (kind === 'in' ? 'I' : 'O') + circuit.nodes.length;
+}
+
+function deleteNode(id) {
+    circuit.wires = circuit.wires.filter(function (w) { return w.f !== id && w.t !== id; });
+    circuit.nodes = circuit.nodes.filter(function (n) { return n.id !== id; });
+    if (selected === id) selected = null;
+    rebuild();
+}
+
+function deleteWire(id) {
+    circuit.wires = circuit.wires.filter(function (w) { return w.id !== id; });
+    rebuild();
+}
+
+function connect(fromId, fromPin, toId, toPin) {
+    if (fromId === toId) return;
+    circuit.wires = circuit.wires.filter(function (w) { return !(w.t === toId && w.ti === toPin); });
+    circuit.wires.push({ id: nid('w'), f: fromId, fo: fromPin, t: toId, ti: toPin });
+    rebuild();
+}
+
+function clearCircuit(keepName) {
+    circuit.nodes = []; circuit.wires = [];
+    if (!keepName) circuit.name = 'Nový obvod';
+    byId('circuit-name').textContent = circuit.name;
+    byId('tt-panel').classList.remove('open');
+    rebuild();
+}
+
+function loadDef(def, asName) {
+    var c = deepCopy(def);
+    circuit.nodes = c.nodes; circuit.wires = c.wires;
+    circuit.name = asName || c.name || 'Obvod';
+    byId('circuit-name').textContent = circuit.name;
+    byId('tt-panel').classList.remove('open');
+    selected = null;
+    rebuild();
+    zoomFit();
+}
+
+/* ====================================================================
+   OVLÁDÁNÍ MYŠÍ / DOTYKEM
+   ==================================================================== */
+
+var pending = null;              // typ vybraný v paletě: {t:'AND'} nebo {t:'CHIP', def:id}
+var drag = null;                 // {node, dx, dy, moved}
+var pan = null;                  // {x0,y0,vx,vy}
+var wiring = null;               // {node, pin, el}
+var pointers = new Map();
+var pinchStart = null;
+
+function toWorld(clientX, clientY) {
+    var r = canvas.getBoundingClientRect();
+    return { x: (clientX - r.left - view.x) / view.s, y: (clientY - r.top - view.y) / view.s };
+}
+
+function setPending(p, el) {
+    pending = p;
+    document.querySelectorAll('.palette-item').forEach(function (i) { i.classList.remove('selected'); });
+    if (el && p) el.classList.add('selected');
+    canvas.classList.toggle('placing', !!p);
+}
+
+function cancelWiring() {
+    if (wiring && wiring.el) wiring.el.classList.remove('active');
+    wiring = null;
+    tempWire.style.display = 'none';
+}
+
+function initCanvas() {
+    canvas.addEventListener('pointerdown', function (e) {
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 2) {
+            var p = Array.from(pointers.values());
+            pinchStart = {
+                d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), s: view.s,
+                cx: (p[0].x + p[1].x) / 2, cy: (p[0].y + p[1].y) / 2, vx: view.x, vy: view.y
+            };
+            drag = null; pan = null;
+            return;
+        }
+
+        var pinEl = e.target.closest('.pin');
+        if (pinEl) {
+            e.stopPropagation();
+            handlePin(pinEl);
+            return;
+        }
+        var numBtn = e.target.closest('.node-NUM button');
+        if (numBtn) {
+            e.stopPropagation();
+            var nn = nodeById(e.target.closest('.node').dataset.id);
+            nn.num = ((nn.num || 0) + (numBtn.dataset.d === '1' ? 1 : 15)) % 16;
+            var bits = sim.numOf.get(nn.id);
+            if (bits) bits.forEach(function (pi, k) { sim.prims[pi].val = (nn.num >> (3 - k)) & 1; });
+            paint(true); save();
+            return;
+        }
+        var nodeEl = e.target.closest('.node');
+        if (nodeEl) {
+            if (e.target.closest('.node-label input')) return;
+            var n = nodeById(nodeEl.dataset.id);
+            if (!n) return;
+            var w = toWorld(e.clientX, e.clientY);
+            drag = { n: n, dx: w.x - n.x, dy: w.y - n.y, moved: false, el: nodeEl };
+            select(n.id);
+            canvas.setPointerCapture(e.pointerId);
+            return;
+        }
+        // prázdná plocha
+        select(null);
+        pan = { x0: e.clientX, y0: e.clientY, vx: view.x, vy: view.y, moved: false };
+        canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', function (e) {
+        if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pinchStart && pointers.size === 2) {
+            var p = Array.from(pointers.values());
+            var d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+            var r = canvas.getBoundingClientRect();
+            var ns = clamp(pinchStart.s * (d / pinchStart.d), 0.3, 2.5);
+            var cx = pinchStart.cx - r.left, cy = pinchStart.cy - r.top;
+            view.x = cx - (cx - pinchStart.vx) * (ns / pinchStart.s);
+            view.y = cy - (cy - pinchStart.vy) * (ns / pinchStart.s);
+            view.s = ns;
+            applyView();
+            return;
+        }
+
+        if (drag) {
+            var w = toWorld(e.clientX, e.clientY);
+            drag.n.x = Math.round(clamp(w.x - drag.dx, 0, 3900));
+            drag.n.y = Math.round(clamp(w.y - drag.dy, 0, 2500));
+            drag.moved = true;
+            drag.el.style.left = drag.n.x + 'px';
+            drag.el.style.top = drag.n.y + 'px';
+            repathAround(drag.n.id);
+            return;
+        }
+        if (pan) {
+            view.x = pan.vx + (e.clientX - pan.x0);
+            view.y = pan.vy + (e.clientY - pan.y0);
+            if (Math.abs(e.clientX - pan.x0) + Math.abs(e.clientY - pan.y0) > 4) {
+                pan.moved = true;
+                canvas.classList.add('panning');
+            }
+            applyView();
+            return;
+        }
+        if (wiring) {
+            var a = pinWorld(nodeById(wiring.node), 'out', wiring.pin);
+            var b = toWorld(e.clientX, e.clientY);
+            var dx = Math.max(Math.abs(b.x - a.x) * 0.45, 34);
+            tempWire.style.display = 'block';
+            tempWire.setAttribute('d', 'M ' + a.x + ' ' + a.y + ' C ' + (a.x + dx) + ' ' + a.y + ', ' +
+                (b.x - dx) + ' ' + b.y + ', ' + b.x + ' ' + b.y);
+        }
+    });
+
+    function endPointer(e) {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) pinchStart = null;
+        canvas.classList.remove('panning');
+
+        if (drag) {
+            if (!drag.moved && drag.n.t === 'SWITCH') toggleSwitch(drag.n);
+            else if (drag.moved) save();
+            drag = null;
+            return;
+        }
+        if (pan) {
+            var wasPan = pan.moved;
+            pan = null;
+            if (!wasPan) {
+                if (wiring) { cancelWiring(); return; }
+                if (pending) {
+                    var w = toWorld(e.clientX, e.clientY);
+                    addNode(pending.t, w.x - 30, w.y - 22, pending.def ? { def: pending.def } : null);
+                    setPending(null);
+                }
+            }
+        }
+    }
+    window.addEventListener('pointerup', endPointer);
+    window.addEventListener('pointercancel', endPointer);
+
+    canvas.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        var r = canvas.getBoundingClientRect();
+        var cx = e.clientX - r.left, cy = e.clientY - r.top;
+        var ns = clamp(view.s * (e.deltaY < 0 ? 1.12 : 0.89), 0.3, 2.5);
+        view.x = cx - (cx - view.x) * (ns / view.s);
+        view.y = cy - (cy - view.y) * (ns / view.s);
+        view.s = ns;
+        applyView(); save();
+    }, { passive: false });
+
+    canvas.addEventListener('dragover', function (e) { e.preventDefault(); });
+    canvas.addEventListener('drop', function (e) {
+        e.preventDefault();
+        var data = e.dataTransfer.getData('text/plain');
+        if (!data) return;
+        var parts = data.split(':');
+        var w = toWorld(e.clientX, e.clientY);
+        addNode(parts[0], w.x - 30, w.y - 22, parts[1] ? { def: parts[1] } : null);
+        setPending(null);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'Escape') { cancelWiring(); setPending(null); select(null); }
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selected) {
+            e.preventDefault(); deleteNode(selected);
+        }
+    });
+}
+
+function handlePin(pinEl) {
+    var dir = pinEl.dataset.dir, idx = +pinEl.dataset.idx, node = pinEl.dataset.node;
+    if (dir === 'out') {
+        cancelWiring();
+        wiring = { node: node, pin: idx, el: pinEl };
+        pinEl.classList.add('active');
+    } else {
+        if (!wiring) return;
+        connect(wiring.node, wiring.pin, node, idx);
+        cancelWiring();
+    }
+}
+
+function toggleSwitch(n) {
+    n.val = n.val ? 0 : 1;
+    var pi = sim.switchOf.get(n.id);
+    if (pi != null) sim.prims[pi].val = n.val;
+    paint(true);
+    save();
+}
+
+function select(id) {
+    if (selected && els.get(selected)) els.get(selected).classList.remove('selected');
+    selected = id;
+    if (id && els.get(id)) els.get(id).classList.add('selected');
+}
+
+function zoomBy(f) {
+    var r = canvas.getBoundingClientRect();
+    var cx = r.width / 2, cy = r.height / 2;
+    var ns = clamp(view.s * f, 0.3, 2.5);
+    view.x = cx - (cx - view.x) * (ns / view.s);
+    view.y = cy - (cy - view.y) * (ns / view.s);
+    view.s = ns; applyView(); save();
+}
+
+function zoomFit() {
+    if (!circuit.nodes.length) { view = { x: 40, y: 30, s: 1 }; applyView(); return; }
+    var x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+    circuit.nodes.forEach(function (n) {
+        var s = sizeOf(n);
+        x1 = Math.min(x1, n.x - 46); y1 = Math.min(y1, n.y - 20);
+        x2 = Math.max(x2, n.x + s.w + 46); y2 = Math.max(y2, n.y + s.h + 20);
+    });
+    var r = canvas.getBoundingClientRect();
+    var s = clamp(Math.min(r.width / (x2 - x1), r.height / (y2 - y1)), 0.3, 1.4);
+    view.s = s;
+    view.x = (r.width - (x2 - x1) * s) / 2 - x1 * s;
+    view.y = (r.height - (y2 - y1) * s) / 2 - y1 * s;
+    applyView(); save();
+}
+
+/* ====================================================================
+   PALETA A KNIHOVNA
+   ==================================================================== */
+
+function paletteItem(label, type, defId, io) {
+    var d = document.createElement('div');
+    d.className = 'palette-item';
+    d.draggable = true;
+    d.setAttribute('role', 'button');
+    d.tabIndex = 0;
+    if (defId) {
+        var def = LIB.get(defId);
+        d.style.borderLeftColor = 'var(--c-' + (def.color || 'blue') + ')';
+    }
+    d.innerHTML = '<span class="palette-item__name">' + esc(label) + '</span>' +
+        (io ? '<span class="palette-item__io">' + io + '</span>' : '');
+    d.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', type + (defId ? ':' + defId : ''));
+        setPending(null);
+    });
+    d.addEventListener('click', function () {
+        if (d.classList.contains('selected')) setPending(null);
+        else setPending({ t: type, def: defId }, d);
+    });
+    d.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); d.click(); }
+    });
+    return d;
+}
+
+function renderPalette() {
+    var p = byId('palette');
+    p.innerHTML = '';
+    function head(t) { var h = document.createElement('h4'); h.textContent = t; p.appendChild(h); }
+
+    head('Vstupy a výstupy');
+    p.appendChild(paletteItem('Vypínač', 'SWITCH', null, '0/1'));
+    p.appendChild(paletteItem('Žárovka', 'BULB', null, '0/1'));
+    p.appendChild(paletteItem('Hodiny', 'CLOCK', null, 'CLK'));
+    p.appendChild(paletteItem('Vstup 4b', 'NUM', null, '4×'));
+    p.appendChild(paletteItem('Displej 4b', 'DISP', null, '4×'));
+
+    head('Hradla');
+    ['AND', 'OR', 'NOT', 'XOR', 'NAND', 'NOR'].forEach(function (g) {
+        p.appendChild(paletteItem(g, g, null, TYPES[g].ins + '→1'));
+    });
+
+    var builtins = [], mine = [];
+    LIB.forEach(function (d) {
+        if (d.kind === 'demo') return;
+        (d.builtin ? builtins : mine).push(d);
+    });
+
+    head('Knihovna');
+    builtins.forEach(function (d) {
+        p.appendChild(paletteItem(d.name, 'CHIP', d.id, ifaceIn(d).length + '→' + ifaceOut(d).length));
+    });
+
+    head('Moje čipy');
+    if (!mine.length) {
+        var e = document.createElement('p');
+        e.className = 'palette-empty';
+        e.textContent = 'Zatím žádné. Postavte obvod a klepněte na „Uložit jako čip“.';
+        p.appendChild(e);
+    }
+    mine.forEach(function (d) {
+        var it = paletteItem(d.name, 'CHIP', d.id, ifaceIn(d).length + '→' + ifaceOut(d).length);
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'palette-item__open'; b.title = 'Smazat čip';
+        b.innerHTML = icon('<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>');
+        b.addEventListener('click', function (e2) { e2.stopPropagation(); deleteChip(d.id); });
+        it.appendChild(b);
+        p.appendChild(it);
+    });
+}
+
+function libCard(d) {
+    var card = document.createElement('div');
+    card.className = 'lib-card';
+    card.style.borderLeftColor = 'var(--c-' + (d.color || 'blue') + ')';
+    var ins = ifaceIn(d).map(function (n) { return n.name || '?'; }).join(' ');
+    var outs = ifaceOut(d).map(function (n) { return n.name || '?'; }).join(' ');
+    card.innerHTML = '<h4>' + esc(d.name) + '</h4>' +
+        '<p>' + esc(d.desc || '') + '</p>' +
+        (d.kind === 'demo' ? '' : '<div class="lib-io">' + esc(ins) + ' → ' + esc(outs) + '</div>');
+    var act = document.createElement('div');
+    act.className = 'lib-actions';
+    var open = document.createElement('button');
+    open.type = 'button'; open.className = 'btn btn--sm';
+    open.textContent = 'Otevřít';
+    open.title = 'Rozloží obvod na plátně';
+    open.addEventListener('click', function () {
+        if (circuit.nodes.length && !confirm('Nahradit obsah plátna obvodem „' + d.name + '“?')) return;
+        loadDef(d, d.name);
+        goTab('simulator');
+    });
+    act.appendChild(open);
+    if (d.kind !== 'demo') {
+        var ins2 = document.createElement('button');
+        ins2.type = 'button'; ins2.className = 'btn btn--sm btn--primary';
+        ins2.textContent = 'Vložit';
+        ins2.title = 'Přidá čip do rozdělaného obvodu';
+        ins2.addEventListener('click', function () {
+            var r = canvas.getBoundingClientRect();
+            var w = toWorld(r.left + r.width / 2, r.top + r.height / 2);
+            addNode('CHIP', w.x - 50, w.y - 25, { def: d.id });
+            goTab('simulator');
+        });
+        act.appendChild(ins2);
+    }
+    card.appendChild(act);
+    return card;
+}
+
+function renderLibraryTab() {
+    var g = byId('lib-grid'), m = byId('mine-grid'), dg = byId('demo-grid');
+    g.innerHTML = ''; m.innerHTML = ''; dg.innerHTML = '';
+    var mine = [];
+    LIB.forEach(function (d) {
+        if (d.kind === 'demo') dg.appendChild(libCard(d));
+        else if (d.builtin) g.appendChild(libCard(d));
+        else mine.push(d);
+    });
+    if (!mine.length) {
+        m.innerHTML = '<p class="muted">Zatím jste žádný vlastní čip neuložili. Postavte obvod v simulátoru, ' +
+            'pojmenujte vypínače a žárovky a klepněte na <strong>Uložit jako čip</strong>.</p>';
+    } else {
+        mine.forEach(function (d) {
+            var c = libCard(d);
+            var del = document.createElement('button');
+            del.type = 'button'; del.className = 'btn btn--sm btn--danger';
+            del.textContent = 'Smazat';
+            del.addEventListener('click', function () { deleteChip(d.id); });
+            c.querySelector('.lib-actions').appendChild(del);
+            m.appendChild(c);
+        });
+    }
+}
+
+/* --------------------------- Vlastní čipy ---------------------------- */
+
+var chipColor = 'blue';
+
+function usesChip(def, id) {
+    return def.nodes.some(function (n) {
+        if (n.t !== 'CHIP') return false;
+        if (n.def === id) return true;
+        var d = LIB.get(n.def);
+        return d ? usesChip(d, id) : false;
+    });
+}
+
+function openChipDialog() {
+    var ins = ifaceIn(circuit), outs = ifaceOut(circuit);
+    var note = byId('dlg-chip-note');
+    note.innerHTML = 'Vstupy: <strong>' + (ins.map(function (n) { return esc(n.name || '?'); }).join(', ') || 'žádné') +
+        '</strong> · Výstupy: <strong>' + (outs.map(function (n) { return esc(n.name || '?'); }).join(', ') || 'žádné') + '</strong>';
+    byId('chip-name-input').value = circuit.name && circuit.name !== 'Nový obvod' ? circuit.name : '';
+    byId('dlg-chip-err').hidden = true;
+    byId('dlg-chip').classList.add('open');
+    byId('chip-name-input').focus();
+}
+
+function saveChip() {
+    var name = byId('chip-name-input').value.trim();
+    var err = byId('dlg-chip-err');
+    function fail(m) { err.textContent = m; err.hidden = false; }
+    if (!name) return fail('Zadejte název čipu.');
+    if (!ifaceIn(circuit).length) return fail('Čip potřebuje alespoň jeden vypínač jako vstup.');
+    if (!ifaceOut(circuit).length) return fail('Čip potřebuje alespoň jednu žárovku jako výstup.');
+
+    var existing = null;
+    LIB.forEach(function (d) { if (!d.builtin && d.name.toLowerCase() === name.toLowerCase()) existing = d; });
+    if (existing && !confirm('Čip „' + name + '“ už existuje. Přepsat ho? Změna se projeví všude, kde je použitý.')) return;
+    if (existing && usesChip(circuit, existing.id)) return fail('Čip nemůže obsahovat sám sebe.');
+
+    var def = {
+        id: existing ? existing.id : nid('chip'),
+        name: name, color: chipColor, builtin: false, desc: 'Vlastní čip.',
+        nodes: deepCopy(circuit.nodes), wires: deepCopy(circuit.wires)
+    };
+    LIB.set(def.id, def);
+    circuit.name = name;
+    byId('circuit-name').textContent = name;
+    byId('dlg-chip').classList.remove('open');
+    renderPalette(); renderLibraryTab(); rebuild();
+    flash('Čip „' + name + '“ uložen do palety.');
+}
+
+function deleteChip(id) {
+    var d = LIB.get(id);
+    if (!d) return;
+    var usedBy = [];
+    LIB.forEach(function (o) { if (o.id !== id && usesChip(o, id)) usedBy.push(o.name); });
+    if (usesChip(circuit, id)) usedBy.push('rozdělaný obvod');
+    if (usedBy.length && !confirm('Čip „' + d.name + '“ používá: ' + usedBy.join(', ') + '. Opravdu smazat?')) return;
+    if (!usedBy.length && !confirm('Smazat čip „' + d.name + '“?')) return;
+    LIB.delete(id);
+    circuit.nodes = circuit.nodes.filter(function (n) { return !(n.t === 'CHIP' && n.def === id); });
+    circuit.wires = circuit.wires.filter(function (w) { return nodeById(w.f) && nodeById(w.t); });
+    renderPalette(); renderLibraryTab(); rebuild();
+}
+
+var flashUntil = 0;
+function flash(msg) {
+    flashUntil = 0;
+    byId('sim-badge').textContent = msg;
+    flashUntil = Date.now() + 2600;
+    setTimeout(function () { paint(true); }, 2700);
+}
+
+/* ====================================================================
+   PRAVDIVOSTNÍ TABULKA
+   ==================================================================== */
+
+function truthTable() {
+    var panel = byId('tt-panel'), body = byId('tt-body');
+    var ins = ifaceIn(circuit), outs = ifaceOut(circuit);
+    var disps = circuit.nodes.filter(function (n) { return n.t === 'DISP'; });
+    panel.classList.add('open');
+
+    if (!ins.length || (!outs.length && !disps.length)) {
+        body.innerHTML = '<p class="muted">Tabulku spočítám, až bude v obvodu aspoň jeden vypínač a jedna žárovka (nebo displej).</p>';
+        return;
+    }
+    if (ins.length > 8) {
+        body.innerHTML = '<p class="muted">Obvod má ' + ins.length + ' vypínačů, to je ' +
+            Math.pow(2, ins.length) + ' řádků. Tabulku vypisuji nejvýš pro 8 vstupů.</p>';
+        return;
+    }
+
+    var snapshot = sim.prims.map(function (p) { return { q: p.q, pipe: p.pipe.slice(), val: p.val }; });
+    var savedClock = clockHigh;
+    clockHigh = false;
+
+    var rows = [], combos = Math.pow(2, ins.length);
+    for (var c = 0; c < combos; c++) {
+        ins.forEach(function (n, i) {
+            var bit = (c >> (ins.length - 1 - i)) & 1;
+            var pi = sim.switchOf.get(n.id);
+            if (pi != null) sim.prims[pi].val = bit;
+        });
+        powerOn();
+        var row = { in: [], out: [], disp: [] };
+        ins.forEach(function (n, i) { row.in.push((c >> (ins.length - 1 - i)) & 1); });
+        outs.forEach(function (n) { row.out.push(inVal(n.id, 0)); });
+        disps.forEach(function (n) {
+            var v = 0;
+            for (var k = 0; k < 4; k++) v = (v << 1) | inVal(n.id, k);
+            row.disp.push(v);
+        });
+        rows.push(row);
+    }
+
+    // obnovení původního stavu
+    sim.prims.forEach(function (p, i) { p.q = snapshot[i].q; p.pipe = snapshot[i].pipe; p.val = snapshot[i].val; });
+    ins.forEach(function (n) {
+        var pi = sim.switchOf.get(n.id);
+        if (pi != null) sim.prims[pi].val = n.val ? 1 : 0;
+    });
+    clockHigh = savedClock;
+    paint(true);
+
+    var h = '';
+    if (sim.cyclic) {
+        h += '<div class="callout callout--warn">Obvod obsahuje zpětnou vazbu (paměť). Každý řádek se proto počítá ' +
+            'z vynulovaného stavu — u klopných obvodů tabulka ukazuje, kam se obvod ustálí, ne co si pamatuje.</div>';
+    }
+    h += '<div class="table-wrap"><table class="notion-table tt-table"><thead><tr>';
+    ins.forEach(function (n) { h += '<th class="center">' + esc(n.name || '?') + '</th>'; });
+    outs.forEach(function (n) { h += '<th class="center">' + esc(n.name || '?') + '</th>'; });
+    disps.forEach(function (n, i) { h += '<th class="center">displej ' + (i + 1) + '</th>'; });
+    h += '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+        h += '<tr>';
+        r.in.forEach(function (v) { h += '<td class="center tt-in">' + v + '</td>'; });
+        r.out.forEach(function (v) { h += '<td class="center' + (v ? ' tt-one' : '') + '">' + v + '</td>'; });
+        r.disp.forEach(function (v) { h += '<td class="center">' + v + '</td>'; });
+        h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+    body.innerHTML = h;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ====================================================================
+   UKLÁDÁNÍ
+   ==================================================================== */
+
+var STORE = 'va-hradla-v3';
+var saveTimer = null;
+
+function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+        try {
+            var mine = [];
+            LIB.forEach(function (d) { if (!d.builtin) mine.push(d); });
+            localStorage.setItem(STORE, JSON.stringify({ v: 3, chips: mine, circuit: circuit, view: view }));
+        } catch (e) { /* plná nebo zakázaná storage — nevadí */ }
+    }, 400);
+}
+
+function load() {
+    try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return false;
+        var d = JSON.parse(raw);
+        if (!d || d.v !== 3) return false;
+        (d.chips || []).forEach(function (c) { c.builtin = false; LIB.set(c.id, c); });
+        if (d.circuit && d.circuit.nodes) circuit = d.circuit;
+        if (d.view) view = d.view;
+        return true;
+    } catch (e) { return false; }
+}
+
+function exportJson() {
+    var mine = [];
+    LIB.forEach(function (d) { if (!d.builtin) mine.push(d); });
+    var blob = new Blob([JSON.stringify({ v: 3, chips: mine, circuit: circuit }, null, 1)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (circuit.name || 'obvod').replace(/[^\wÀ-ſ -]+/g, '') + '.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+}
+
+function importJson(file) {
+    var r = new FileReader();
+    r.onload = function () {
+        try {
+            var d = JSON.parse(r.result);
+            (d.chips || []).forEach(function (c) { c.builtin = false; LIB.set(c.id, c); });
+            if (d.circuit && d.circuit.nodes) {
+                circuit.nodes = d.circuit.nodes;
+                circuit.wires = d.circuit.wires || [];
+                circuit.name = d.circuit.name || 'Načtený obvod';
+                byId('circuit-name').textContent = circuit.name;
+            }
+            renderPalette(); renderLibraryTab(); rebuild(); zoomFit();
+        } catch (e) { alert('Soubor se nepodařilo načíst.'); }
+    };
+    r.readAsText(file);
+}
+
+/* ====================================================================
+   ZÁLOŽKY, KVÍZ, START
+   ==================================================================== */
+
+function goTab(id) {
+    var btn = byId('t-' + id);
+    document.querySelectorAll('.tab-content').forEach(function (p) {
+        var on = (p.id === id);
+        p.classList.toggle('active', on);
+        p.hidden = !on;
+    });
+    document.querySelectorAll('.tabs .tab').forEach(function (b) {
+        var on = (b === btn);
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+    });
+    if (id === 'simulator') applyView();
+}
+
+var quizData = [
+    {
+        q: '1. Vstup A je 1, vstup B je 0 a výstup je 1. Které hradlo to může být?',
+        options: ['AND', 'OR', 'NOR'], answer: 1,
+        why: 'OR dá 1, když je alespoň jeden vstup v 1. AND by potřeboval oba, NOR by dal 0.'
+    },
+    {
+        q: '2. Alarm se má spustit jen tehdy, když jsou porušené oba senzory současně. Které hradlo použijete?',
+        options: ['XOR', 'OR', 'AND'], answer: 2,
+        why: 'AND je 1 jen při obou vstupech v 1 — přesně „oba současně“.'
+    },
+    {
+        q: '3. Do hradla NAND přivedete A = 1 a B = 1. Co z něj vyjde?',
+        options: ['0', '1', 'Nedá se určit'], answer: 0,
+        why: 'NAND je obrácené AND: 1 AND 1 = 1, po negaci 0.'
+    },
+    {
+        q: '4. Půlsčítačka sečte 1 + 1. Jaké hodnoty budou na výstupech S a C?',
+        options: ['S = 1, C = 0', 'S = 0, C = 1', 'S = 1, C = 1'], answer: 1,
+        why: '1 + 1 = 10 dvojkově: součet S = 0 (XOR) a přenos C = 1 (AND).'
+    },
+    {
+        q: '5. Proč nestačí na sečtení dvou čtyřbitových čísel čtyři půlsčítačky?',
+        options: [
+            'Protože půlsčítačka neumí přijmout přenos z nižšího řádu',
+            'Protože půlsčítačka pracuje jen s nulami',
+            'Protože by to bylo příliš rychlé'
+        ], answer: 0,
+        why: 'Půlsčítačka má jen vstupy A a B. Přenos z nižšího řádu umí přijmout až úplná sčítačka se vstupem Cin.'
+    },
+    {
+        q: '6. Co dělá S/R klopný obvod, když jsou oba vstupy S i R v nule?',
+        options: ['Vynuluje se', 'Drží poslední hodnotu', 'Začne kmitat'], answer: 1,
+        why: 'Stav 0 0 je klidový — obvod si pamatuje poslední nastavenou hodnotu. To je jeden bit paměti.'
+    },
+    {
+        q: '7. K čemu je v registru hodinový signál?',
+        options: [
+            'Aby se všechny bity zapsaly ve stejný okamžik',
+            'Aby obvod spotřeboval méně energie',
+            'Aby se dal obvod vypnout'
+        ], answer: 0,
+        why: 'Klopné obvody řízené hranou převezmou data jen v okamžiku hrany hodin, takže se celý registr změní najednou.'
+    }
+];
+var quizState = [];
+
+function renderQuiz() {
+    var c = byId('quiz-container');
+    c.innerHTML = '';
+    quizState = new Array(quizData.length).fill(null);
+    byId('resultMsg').style.display = 'none';
+    quizData.forEach(function (item, qi) {
+        var card = document.createElement('div');
+        card.className = 'puzzle-card';
+        card.innerHTML = '<div class="puzzle-q">' + esc(item.q) + '</div>';
+        var opts = document.createElement('div');
+        opts.className = 'puzzle-options';
+        item.options.forEach(function (o, oi) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'puzzle-btn'; b.textContent = o;
+            b.addEventListener('click', function () { answer(qi, oi, b, card); });
+            opts.appendChild(b);
+        });
+        card.appendChild(opts);
+        c.appendChild(card);
+    });
+}
+
+function answer(qi, oi, btn, card) {
+    if (quizState[qi]) return;
+    if (oi === quizData[qi].answer) {
+        btn.classList.add('correct');
+        quizState[qi] = true;
+        var w = document.createElement('div');
+        w.className = 'puzzle-why';
+        w.textContent = quizData[qi].why;
+        card.appendChild(w);
+        if (quizState.every(Boolean)) setTimeout(function () { byId('resultMsg').style.display = 'block'; }, 300);
+    } else {
+        btn.classList.add('wrong');
+        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+    }
+}
+
+/* ------------------------------- Start -------------------------------- */
+
+function init() {
+    canvas = byId('canvas');
+    world = byId('world');
+    wireGroup = byId('wire-group');
+    tempWire = byId('temp-wire');
+    hint = byId('canvas-hint');
+
+    circuit = { name: 'Nový obvod', nodes: [], wires: [] };
+    buildBuiltins(LIB);          // z 04-library.js
+    var restored = load();
+    byId('circuit-name').textContent = circuit.name;
+
+    renderPalette();
+    renderLibraryTab();
+    initCanvas();
+    applyView();
+    rebuild();
+    if (!restored) { loadDef(LIB.get('demo_ha'), 'Půlsčítačka — ukázka'); }
+
+    // záložky
+    document.querySelectorAll('.tabs .tab').forEach(function (b) {
+        b.addEventListener('click', function () { goTab(b.getAttribute('aria-controls')); });
+    });
     document.querySelectorAll('.tabs[role="tablist"]').forEach(function (bar) {
         bar.addEventListener('keydown', function (e) {
             if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
@@ -857,13 +2309,481 @@
             var i = tabs.indexOf(document.activeElement);
             if (i === -1) return;
             e.preventDefault();
-            var next = e.key === 'Home' ? 0
-                : e.key === 'End' ? tabs.length - 1
+            var next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1
                 : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
-            tabs[next].focus();
-            tabs[next].click();
+            tabs[next].focus(); tabs[next].click();
         });
     });
+
+    // ovládání
+    byId('btn-run').addEventListener('click', function () { setRunning(!running); });
+    byId('btn-step').addEventListener('click', function () {
+        setRunning(false); tick(); paint(true);
+    });
+    byId('btn-tick').addEventListener('click', function () {
+        setRunning(false);
+        clockHigh = !clockHigh;
+        settle(600);
+        paint(true);
+    });
+    byId('clock-rate').addEventListener('input', function (e) {
+        clockIdx = +e.target.value;
+        byId('clock-rate-label').textContent = CLOCK_HZ[clockIdx] + ' Hz';
+    });
+    byId('btn-truth').addEventListener('click', truthTable);
+    byId('btn-savechip').addEventListener('click', openChipDialog);
+    byId('btn-clear').addEventListener('click', function () {
+        if (circuit.nodes.length && !confirm('Opravdu vyčistit celé plátno?')) return;
+        clearCircuit();
+    });
+    byId('btn-export').addEventListener('click', exportJson);
+    byId('btn-import').addEventListener('click', function () { byId('file-input').click(); });
+    byId('file-input').addEventListener('change', function (e) {
+        if (e.target.files[0]) importJson(e.target.files[0]);
+        e.target.value = '';
+    });
+    byId('zoom-in').addEventListener('click', function () { zoomBy(1.2); });
+    byId('zoom-out').addEventListener('click', function () { zoomBy(1 / 1.2); });
+    byId('zoom-fit').addEventListener('click', zoomFit);
+
+    // dialog čipu
+    var sw = byId('chip-colors');
+    COLORS.forEach(function (c) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'swatch' + (c === chipColor ? ' sel' : '');
+        b.style.background = 'var(--c-' + c + ')';
+        b.title = c;
+        b.addEventListener('click', function () {
+            chipColor = c;
+            sw.querySelectorAll('.swatch').forEach(function (x) { x.classList.remove('sel'); });
+            b.classList.add('sel');
+        });
+        sw.appendChild(b);
+    });
+    byId('dlg-chip-cancel').addEventListener('click', function () { byId('dlg-chip').classList.remove('open'); });
+    byId('dlg-chip-ok').addEventListener('click', saveChip);
+    byId('dlg-chip').addEventListener('click', function (e) {
+        if (e.target === byId('dlg-chip')) byId('dlg-chip').classList.remove('open');
+    });
+    byId('chip-name-input').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') saveChip();
+    });
+
+    renderQuiz();
+    byId('btn-quiz-reset').addEventListener('click', renderQuiz);
+
+    window.addEventListener('resize', applyView);
+    requestAnimationFrame(loop);
+
+    // testovací rozhraní (používá ho automatický test, uživatel ho nepotřebuje)
+    window.__sim = {
+        get circuit() { return circuit; },
+        LIB: LIB, loadDef: loadDef, compile: compile, settle: settle,
+        addNode: addNode, connect: connect, rebuild: rebuild,
+        setSwitch: function (name, v) {
+            var n = circuit.nodes.filter(function (x) { return x.t === 'SWITCH' && x.name === name; })[0];
+            if (!n) throw new Error('vypínač ' + name + ' nenalezen');
+            n.val = v ? 1 : 0;
+            var pi = sim.switchOf.get(n.id);
+            if (pi != null) sim.prims[pi].val = n.val;
+        },
+        read: function (name) {
+            var n = circuit.nodes.filter(function (x) { return x.t === 'BULB' && x.name === name; })[0];
+            if (!n) throw new Error('žárovka ' + name + ' nenalezena');
+            return inVal(n.id, 0);
+        },
+        readDisp: function (i) {
+            var ds = circuit.nodes.filter(function (x) { return x.t === 'DISP'; });
+            var n = ds[i || 0]; if (!n) return null;
+            var v = 0;
+            for (var k = 0; k < 4; k++) v = (v << 1) | inVal(n.id, k);
+            return v;
+        },
+        pulseClock: function () { clockHigh = true; settle(600); clockHigh = false; settle(600); },
+        setClock: function (v) { clockHigh = !!v; settle(600); },
+        pause: function () { running = false; },
+        run: function (v) { setRunning(v); },
+        powerOn: powerOn,
+        primCount: function () { return sim.prims.length; },
+        truthTable: truthTable,
+        saveChipAs: function (name) {
+            byId('chip-name-input').value = name;
+            saveChip();
+        }
+    };
+}
+
+/* ==================================================================== */
+
+/* =====================================================================
+   KNIHOVNA HOTOVÝCH OBVODŮ
+   Obvody se nepíší ručně po souřadnicích — skládají se pomocí malého
+   staviteleset a rozmístí se automaticky do sloupců podle hloubky.
+   ===================================================================== */
+
+function Builder(lib) {
+    this.lib = lib;
+    this.nodes = [];
+    this.wires = [];
+    this.k = 0;
+}
+
+Builder.prototype._id = function (p) { return (p || 'n') + (++this.k); };
+
+Builder.prototype._ref = function (n) {
+    return { id: n.id, node: n.id, pin: 0, o: function (j) { return { id: n.id, node: n.id, pin: j }; } };
+};
+
+Builder.prototype._add = function (t, opts, inputs) {
+    var n = { id: this._id(), t: t, x: 0, y: 0 };
+    if (opts) for (var kk in opts) n[kk] = opts[kk];
+    this.nodes.push(n);
+    var self = this;
+    (inputs || []).forEach(function (src, i) { if (src) self.wire(src, n.id, i); });
+    return this._ref(n);
+};
+
+Builder.prototype.wire = function (src, dst, pin) {
+    this.wires.push({
+        id: this._id('w'),
+        f: src.node, fo: src.pin || 0,
+        t: (typeof dst === 'string' ? dst : dst.node), ti: pin || 0
+    });
+};
+
+Builder.prototype.in = function (name) { return this._add('SWITCH', { name: name, val: 0 }); };
+Builder.prototype.out = function (name, src) { return this._add('BULB', { name: name }, [src]); };
+Builder.prototype.g = function (t, a, b) { return this._add(t, null, t === 'NOT' ? [a] : [a, b]); };
+Builder.prototype.clock = function () { return this._add('CLOCK', null); };
+Builder.prototype.num = function (v) { return this._add('NUM', { num: v || 0 }); };
+Builder.prototype.disp = function (a, b, c, d) { return this._add('DISP', null, [a, b, c, d]); };
+Builder.prototype.chip = function (defId) {
+    var ins = Array.prototype.slice.call(arguments, 1);
+    return this._add('CHIP', { def: defId }, ins);
+};
+
+/* Automatické rozmístění: sloupce podle hloubky, řádky podle pořadí. */
+Builder.prototype.layout = function () {
+    var nodes = this.nodes, wires = this.wires, lib = this.lib;
+    var map = {};
+    nodes.forEach(function (n) { map[n.id] = n; });
+
+    var isSrc = function (n) { return n.t === 'SWITCH' || n.t === 'NUM' || n.t === 'CLOCK'; };
+
+    // Zpětné vazby (hrany vedoucí „zpět“) se do hloubky nepočítají,
+    // jinak by se obvod s pamětí roztáhl do nekonečna sloupců.
+    var adj = {};
+    nodes.forEach(function (n) { adj[n.id] = []; });
+    wires.forEach(function (w, i) {
+        if (map[w.f] && map[w.t]) adj[w.f].push({ t: w.t, i: i });
+    });
+    var color = {}, back = {};
+    function dfs(u) {
+        color[u] = 1;
+        adj[u].forEach(function (e) {
+            if (color[e.t] === 1) back[e.i] = 1;
+            else if (!color[e.t]) dfs(e.t);
+        });
+        color[u] = 2;
+    }
+    nodes.forEach(function (n) { if (isSrc(n) && !color[n.id]) dfs(n.id); });
+    nodes.forEach(function (n) { if (!color[n.id]) dfs(n.id); });
+
+    var depth = {};
+    nodes.forEach(function (n) { depth[n.id] = 0; });
+    for (var it = 0; it < nodes.length + 2; it++) {
+        var ch = false;
+        for (var i = 0; i < wires.length; i++) {
+            var w = wires[i];
+            if (back[i] || !map[w.t] || !map[w.f]) continue;
+            if (isSrc(map[w.t])) continue;
+            var d = depth[w.f] + 1;
+            if (d > depth[w.t]) { depth[w.t] = d; ch = true; }
+        }
+        if (!ch) break;
+    }
+    var maxd = 0;
+    nodes.forEach(function (n) { if (depth[n.id] > maxd) maxd = depth[n.id]; });
+    nodes.forEach(function (n) {
+        if (isSrc(n)) depth[n.id] = 0;
+        if (n.t === 'BULB' || n.t === 'DISP') depth[n.id] = maxd;
+    });
+
+    var cols = {};
+    nodes.forEach(function (n) {
+        var d = depth[n.id];
+        (cols[d] = cols[d] || []).push(n);
+    });
+    var keys = Object.keys(cols).map(Number).sort(function (a, b) { return a - b; });
+    keys.forEach(function (d) { cols[d].forEach(function (n, i) { n.__row = i; }); });
+
+    // dvě kola vyrovnání: uzel se posune k průměru svých zdrojů
+    for (var pass = 0; pass < 2; pass++) {
+        keys.forEach(function (d) {
+            if (d === 0 || d === maxd) return;     // vstupy a výstupy drží pořadí
+            cols[d].forEach(function (n) {
+                var rows = [];
+                wires.forEach(function (w) { if (w.t === n.id && map[w.f]) rows.push(map[w.f].__row); });
+                n.__b = rows.length ? rows.reduce(function (a, b) { return a + b; }, 0) / rows.length : n.__row;
+            });
+            cols[d].sort(function (a, b) { return (a.__b - b.__b) || (a.__row - b.__row); });
+            cols[d].forEach(function (n, i) { n.__row = i; });
+        });
+    }
+
+    var CY = 300, GAP = 74;
+    var x = 30;
+    keys.forEach(function (d) {
+        var list = cols[d];
+        var wmax = 0, hmax = 0;
+        list.forEach(function (n) {
+            var s = estSize(n, lib);
+            if (s.w > wmax) wmax = s.w;
+            if (s.h > hmax) hmax = s.h;
+        });
+        var rowH = hmax + 26;
+        var total = list.length * rowH;
+        list.forEach(function (n, i) {
+            var s = estSize(n, lib);
+            n.x = Math.round(x + (wmax - s.w) / 2);
+            n.y = Math.round(CY - total / 2 + i * rowH + (rowH - s.h) / 2);
+            delete n.__row; delete n.__b;
+        });
+        x += wmax + GAP;
+    });
+
+    // posun do kladných souřadnic
+    var miny = 1e9;
+    nodes.forEach(function (n) { if (n.y < miny) miny = n.y; });
+    if (miny < 30) nodes.forEach(function (n) { n.y += (30 - miny); });
+};
+
+/* Rozměry bere ze stejné funkce jako vykreslování, aby se rozvržení
+   nerozešlo se skutečnou velikostí prvků na plátně. */
+function estSize(n) { return sizeOf(n); }
+
+var QB = 'Q̅';   // Q s pruhem
+
+function buildBuiltins(lib) {
+
+    function def(id, name, color, desc, fn, kind) {
+        var b = new Builder(lib);
+        fn(b);
+        b.layout();
+        lib.set(id, {
+            id: id, name: name, color: color, desc: desc,
+            builtin: true, kind: kind || 'chip',
+            nodes: b.nodes, wires: b.wires
+        });
+    }
+
+    /* ------------------------- Stavební čipy ------------------------- */
+
+    def('ha', 'Půlsčítačka', 'green',
+        'Sečte dva bity. Součet S = A XOR B, přenos do vyššího řádu C = A AND B.',
+        function (b) {
+            var A = b.in('A'), B = b.in('B');
+            b.out('S', b.g('XOR', A, B));
+            b.out('C', b.g('AND', A, B));
+        });
+
+    def('fa', 'Úplná sčítačka', 'green',
+        'Sečte A, B a přenos z nižšího řádu. Uvnitř jsou dvě půlsčítačky a jedno hradlo OR.',
+        function (b) {
+            var A = b.in('A'), B = b.in('B'), Ci = b.in('Cin');
+            var h1 = b.chip('ha', A, B);
+            var h2 = b.chip('ha', h1.o(0), Ci);
+            var co = b.g('OR', h1.o(1), h2.o(1));
+            b.out('S', h2.o(0));
+            b.out('Cout', co);
+        });
+
+    def('add4', 'Sčítačka 4b', 'green',
+        'Sečte dvě čtyřbitová čísla (0 až 15). Čtyři úplné sčítačky zřetězené přes přenos.',
+        function (b) {
+            var a = {}, bb = {};
+            [3, 2, 1, 0].forEach(function (k) { a[k] = b.in('A' + k); });
+            [3, 2, 1, 0].forEach(function (k) { bb[k] = b.in('B' + k); });
+            var carry = b.in('Cin'), s = {};
+            [0, 1, 2, 3].forEach(function (k) {
+                var f = b.chip('fa', a[k], bb[k], carry);
+                s[k] = f.o(0);
+                carry = f.o(1);
+            });
+            b.out('S3', s[3]); b.out('S2', s[2]); b.out('S1', s[1]); b.out('S0', s[0]);
+            b.out('Cout', carry);
+        });
+
+    def('sr', 'S/R klopný obvod', 'purple',
+        'Dvě hradla NOR do kříže — nejjednodušší paměť. S nastaví Q na 1, R na 0, kombinace 0 0 drží poslední hodnotu.',
+        function (b) {
+            var S = b.in('S'), R = b.in('R');
+            var q = b.g('NOR', R, null);
+            var qn = b.g('NOR', S, null);
+            b.wire(qn, q, 1);
+            b.wire(q, qn, 1);
+            b.out('Q', q); b.out(QB, qn);
+        });
+
+    def('dlatch', 'D latch', 'purple',
+        'Propouští hodnotu ze vstupu D, dokud je povolení EN v 1. Jakmile EN klesne na 0, hodnota se zamkne.',
+        function (b) {
+            var D = b.in('D'), EN = b.in('EN');
+            var nd = b.g('NOT', D);
+            var s = b.g('NAND', D, EN);
+            var r = b.g('NAND', nd, EN);
+            var q = b.g('NAND', s, null);
+            var qn = b.g('NAND', r, null);
+            b.wire(qn, q, 1);
+            b.wire(q, qn, 1);
+            b.out('Q', q); b.out(QB, qn);
+        });
+
+    def('dff', 'D klopný obvod', 'purple',
+        'Řízený náběžnou hranou: hodnotu z D převezme jen v okamžiku, kdy CLK přejde z 0 na 1. Uvnitř jsou dva D latche (master a slave).',
+        function (b) {
+            var D = b.in('D'), C = b.in('CLK');
+            var nc = b.g('NOT', C);
+            var m = b.chip('dlatch', D, nc);
+            var s = b.chip('dlatch', m.o(0), C);
+            b.out('Q', s.o(0)); b.out(QB, s.o(1));
+        });
+
+    def('mux2', 'Multiplexer 2:1', 'orange',
+        'Přepínač signálů. Když je S = 0, jde na výstup A, když S = 1, jde na výstup B.',
+        function (b) {
+            var A = b.in('A'), B = b.in('B'), S = b.in('S');
+            var ns = b.g('NOT', S);
+            b.out('Y', b.g('OR', b.g('AND', A, ns), b.g('AND', B, S)));
+        });
+
+    def('mux4', 'Multiplexer 4:1', 'orange',
+        'Vybere jeden ze čtyř vstupů podle dvoubitové adresy S1 S0. Poskládaný ze tří multiplexerů 2:1.',
+        function (b) {
+            var d0 = b.in('D0'), d1 = b.in('D1'), d2 = b.in('D2'), d3 = b.in('D3');
+            var s1 = b.in('S1'), s0 = b.in('S0');
+            var m1 = b.chip('mux2', d0, d1, s0);
+            var m2 = b.chip('mux2', d2, d3, s0);
+            b.out('Y', b.chip('mux2', m1.o(0), m2.o(0), s1));
+        });
+
+    def('dec24', 'Dekodér 2:4', 'orange',
+        'Ze dvou vstupních bitů udělá čtyři výstupy — v jedničce je vždy právě ten, jehož číslo odpovídá vstupu.',
+        function (b) {
+            var a1 = b.in('A1'), a0 = b.in('A0');
+            var n1 = b.g('NOT', a1), n0 = b.g('NOT', a0);
+            b.out('Y0', b.g('AND', n1, n0));
+            b.out('Y1', b.g('AND', n1, a0));
+            b.out('Y2', b.g('AND', a1, n0));
+            b.out('Y3', b.g('AND', a1, a0));
+        });
+
+    def('reg4', 'Registr 4b', 'blue',
+        'Uloží čtyři bity naráz při náběžné hraně hodin. Vstup EN povoluje zápis — při EN = 0 si registr drží starou hodnotu.',
+        function (b) {
+            var d = {};
+            [3, 2, 1, 0].forEach(function (k) { d[k] = b.in('D' + k); });
+            var C = b.in('CLK'), E = b.in('EN');
+            var ff = {};
+            [3, 2, 1, 0].forEach(function (k) {
+                var mux = b.chip('mux2', null, d[k], E);
+                var f = b.chip('dff', mux.o(0), C);
+                b.wire(f.o(0), mux, 0);        // A = zpětná vazba (drž hodnotu)
+                ff[k] = f;
+            });
+            [3, 2, 1, 0].forEach(function (k) { b.out('Q' + k, ff[k].o(0)); });
+        });
+
+    def('cnt4', 'Čítač 4b', 'pink',
+        'Počítá impulzy hodin od 0 do 15 a pak zase od začátku. Čtyři klopné obvody, každý dělí kmitočet na polovinu.',
+        function (b) {
+            var C = b.in('CLK');
+            var f = [], clk = C;
+            for (var k = 0; k < 4; k++) {
+                var ffk = b.chip('dff', null, clk);
+                b.wire(ffk.o(1), ffk, 0);       // D = Q s pruhem
+                f.push(ffk);
+                clk = ffk.o(1);                 // další stupeň hodinuje Q s pruhem
+            }
+            b.out('Q3', f[3].o(0));
+            b.out('Q2', f[2].o(0));
+            b.out('Q1', f[1].o(0));
+            b.out('Q0', f[0].o(0));
+        });
+
+    /* ------------------------ Ukázkové obvody ------------------------ */
+
+    def('demo_ha', 'Půlsčítačka z hradel', 'green',
+        'Dva vypínače, hradla XOR a AND a dvě žárovky. Ukazuje, jak z čisté logiky vznikne sčítání.',
+        function (b) {
+            var A = b.in('A'), B = b.in('B');
+            b.out('Součet', b.g('XOR', A, B));
+            b.out('Přenos', b.g('AND', A, B));
+        }, 'demo');
+
+    def('demo_dm', 'De Morgan', 'blue',
+        'Nahoře NOT (A AND B), dole (NOT A) OR (NOT B). Obě žárovky svítí za všech okolností stejně.',
+        function (b) {
+            var A = b.in('A'), B = b.in('B');
+            b.out('Levá', b.g('NOT', b.g('AND', A, B)));
+            b.out('Pravá', b.g('OR', b.g('NOT', A), b.g('NOT', B)));
+        }, 'demo');
+
+    def('demo_add4', 'Sčítačka 4b s displeji', 'green',
+        'Dvě čtyřbitová čísla, sčítačka a displej s výsledkem. Tlačítky + a − měňte vstupní čísla.',
+        function (b) {
+            var A = b.num(3), B = b.num(5);
+            var s = b.chip('add4',
+                A.o(0), A.o(1), A.o(2), A.o(3),
+                B.o(0), B.o(1), B.o(2), B.o(3), null);
+            b.disp(s.o(0), s.o(1), s.o(2), s.o(3));
+            b.out('Přenos', s.o(4));
+        }, 'demo');
+
+    def('demo_sr', 'S/R obvod z hradel', 'purple',
+        'Dvě hradla NOR do kříže. Zapněte S a zase vypněte — obvod si jedničku pamatuje. R ho vynuluje.',
+        function (b) {
+            var S = b.in('S'), R = b.in('R');
+            var q = b.g('NOR', R, null);
+            var qn = b.g('NOR', S, null);
+            b.wire(qn, q, 1);
+            b.wire(q, qn, 1);
+            b.out('Q', q); b.out(QB, qn);
+        }, 'demo');
+
+    def('demo_dff', 'D klopný obvod v akci', 'purple',
+        'Přepněte D, pak klepněte na Takt. Výstup se změní až v okamžiku hrany hodin, ne dřív.',
+        function (b) {
+            var D = b.in('D'), C = b.in('CLK');
+            var f = b.chip('dff', D, C);
+            b.out('Q', f.o(0));
+            b.out(QB, f.o(1));
+        }, 'demo');
+
+    def('demo_reg', 'Registr se vstupem a displejem', 'blue',
+        'Nastavte číslo, zapněte EN a pusťte jeden takt hodin — registr si číslo zapamatuje i po změně vstupu.',
+        function (b) {
+            var N = b.num(9);
+            var C = b.clock();
+            var E = b.in('EN');
+            var r = b.chip('reg4', N.o(0), N.o(1), N.o(2), N.o(3), C, E);
+            b.disp(r.o(0), r.o(1), r.o(2), r.o(3));
+        }, 'demo');
+
+    def('demo_cnt', 'Čítač s displejem', 'pink',
+        'Hodiny tikají, čítač počítá 0 až 15 a zase od začátku. Rychlost změníte posuvníkem v liště.',
+        function (b) {
+            var C = b.clock();
+            var c = b.chip('cnt4', C);
+            b.disp(c.o(0), c.o(1), c.o(2), c.o(3));
+        }, 'demo');
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+
+})();
 </script>
 </body>
 </html>
