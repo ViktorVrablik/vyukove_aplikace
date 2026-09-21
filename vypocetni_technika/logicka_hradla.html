@@ -173,6 +173,7 @@
             background-size: 22px 22px;
             touch-action: none;
         }
+        .sim-canvas { user-select: none; -webkit-user-select: none; }
         .sim-canvas.placing { cursor: copy; }
         .sim-canvas.panning { cursor: grabbing; }
 
@@ -207,6 +208,38 @@
             z-index: 30;
         }
         .sim-zoom .btn { background: var(--surface); box-shadow: var(--shadow-md); }
+
+        .sim-marquee {
+            position: absolute;
+            z-index: 35;
+            background: var(--accent-soft);
+            border: 1.5px dashed var(--accent);
+            border-radius: var(--radius-sm);
+            opacity: 0.55;
+            pointer-events: none;
+        }
+        .sim-marquee[hidden] { display: none; }
+
+        .sim-selbar {
+            position: absolute;
+            left: var(--space-3);
+            top: var(--space-3);
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+        .sim-selbar[hidden] { display: none; }
+
+        .sim-canvas.selecting { cursor: crosshair; }
 
         .sim-badge {
             position: absolute;
@@ -262,7 +295,7 @@
             cursor: pointer;
             z-index: 30;
         }
-        .node:hover .del, .node.selected .del { display: flex; }
+        .node:hover .del { display: flex; }
 
         .node-label {
             position: absolute;
@@ -472,7 +505,7 @@
         /* --- Karty knihovny --- */
         .lib-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
             gap: var(--space-3);
         }
         .lib-card {
@@ -489,52 +522,7 @@
         .lib-card h4 { margin: 0; font-size: var(--fs-md); }
         .lib-card p { margin: 0; font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-normal); }
         .lib-card .lib-io { font-size: var(--fs-xs); font-family: var(--font-mono); color: var(--text-faint); }
-        .lib-card .lib-actions { display: flex; gap: var(--space-2); margin-top: auto; padding-top: var(--space-1); }
-
-        /* --- Hádanky --- */
-        .puzzle-card {
-            padding: var(--space-5);
-            margin-bottom: var(--space-4);
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-        }
-        .puzzle-q { font-size: var(--fs-lg); font-weight: 600; margin-bottom: var(--space-4); }
-        .puzzle-options { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-        .puzzle-btn {
-            flex: 1 1 120px;
-            min-height: 46px;
-            padding: var(--space-3);
-            font-size: var(--fs-md);
-            font-weight: 600;
-            color: var(--text);
-            background: var(--surface);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: border-color var(--dur-fast) var(--ease),
-                        background var(--dur-fast) var(--ease),
-                        color var(--dur-fast) var(--ease);
-        }
-        .puzzle-btn:hover { border-color: var(--accent); background: var(--hover-bg); }
-        .puzzle-btn.correct {
-            color: var(--c-green);
-            background: var(--c-green-bg);
-            border-color: var(--c-green);
-            pointer-events: none;
-        }
-        .puzzle-btn.wrong {
-            color: var(--c-red);
-            background: var(--c-red-bg);
-            border-color: var(--c-red);
-        }
-        .puzzle-why {
-            margin-top: var(--space-3);
-            font-size: var(--fs-sm);
-            color: var(--text-muted);
-            line-height: var(--lh-normal);
-        }
+        .lib-card .lib-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: auto; padding-top: var(--space-1); }
 
         /* --- Pravdivostní tabulky v teorii --- */
         .gate-table .spacer td {
@@ -610,7 +598,6 @@
         <button class="tab active" type="button" role="tab" id="t-theory" aria-controls="theory" aria-selected="true" tabindex="0">Teorie a tabulky</button>
         <button class="tab" type="button" role="tab" id="t-simulator" aria-controls="simulator" aria-selected="false" tabindex="-1">Simulátor</button>
         <button class="tab" type="button" role="tab" id="t-library" aria-controls="library" aria-selected="false" tabindex="-1">Knihovna obvodů</button>
-        <button class="tab" type="button" role="tab" id="t-puzzles" aria-controls="puzzles" aria-selected="false" tabindex="-1">Logické hádanky</button>
     </div>
 
     <!-- =============================== TEORIE =============================== -->
@@ -751,8 +738,8 @@
 
     <!-- =============================== SIMULÁTOR =============================== -->
     <div id="simulator" class="tab-content" role="tabpanel" aria-labelledby="t-simulator" hidden>
-        <h2>Pískoviště obvodů</h2>
         <p>Na počítači prvek <strong>přetáhněte</strong> z nabídky na plátno, na dotykovém zařízení ho <strong>klepnutím vyberte</strong> a pak klepněte na plátno. Spoj vytvoříte klepnutím na výstupní kolečko (vpravo) a pak na vstupní kolečko (vlevo). <strong>Kliknutím na vodič ho smažete.</strong> Prázdnou plochu lze táhnout a kolečkem myši přibližovat.</p>
+        <p class="muted">Víc prvků najednou označíte tažením se Shiftem (nebo zapnutým tlačítkem <strong>Výběr</strong>), po jednom pak Shift&nbsp;+&nbsp;klepnutí. Označené prvky se posouvají i mažou dohromady. Klávesami <kbd>+</kbd>, <kbd>−</kbd> a <kbd>0</kbd> obraz přiblížíte, oddálíte a přizpůsobíte obsahu.</p>
 
         <div class="sim-shell">
             <div class="sim-topbar">
@@ -782,6 +769,10 @@
 
                 <span class="sep" aria-hidden="true"></span>
 
+                <button class="btn btn--sm" type="button" id="btn-select" aria-pressed="false" title="Režim výběru: tažením po ploše označíte více prvků najednou (jde i Shift + tažení)">
+                    <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                    Výběr
+                </button>
                 <button class="btn btn--sm" type="button" id="btn-truth" title="Vypsat pravdivostní tabulku obvodu">Tabulka</button>
                 <button class="btn btn--sm btn--primary" type="button" id="btn-savechip" title="Uložit obvod jako znovupoužitelný čip">Uložit jako čip…</button>
             </div>
@@ -798,6 +789,12 @@
                             <g id="wire-group"></g>
                             <path id="temp-wire" class="wire temp-wire" d="" style="display:none"></path>
                         </svg>
+                    </div>
+                    <div class="sim-marquee" id="marquee" hidden></div>
+                    <div class="sim-selbar" id="sim-selbar" hidden>
+                        <span id="selbar-count">0</span>
+                        <button class="btn btn--sm btn--danger" type="button" id="btn-del-sel">Smazat vybrané</button>
+                        <button class="btn btn--sm btn--ghost" type="button" id="btn-clear-sel">Zrušit výběr</button>
                     </div>
                     <div class="sim-badge" id="sim-badge">—</div>
                     <div class="sim-zoom">
@@ -832,7 +829,7 @@
     <!-- =============================== KNIHOVNA =============================== -->
     <div id="library" class="tab-content" role="tabpanel" aria-labelledby="t-library" hidden>
         <h2>Knihovna hotových obvodů</h2>
-        <p>Každý obvod je poskládaný jen ze základních hradel (a z jednodušších obvodů z této knihovny). <strong>Otevřít</strong> ho rozloží na plátně, abyste viděli, jak je udělaný. <strong>Vložit</strong> ho přidá do vašeho obvodu jako jeden čip.</p>
+        <p>Každý obvod je poskládaný jen ze základních hradel (a z jednodušších obvodů z této knihovny). <strong>Otevřít</strong> ho rozloží na plátně, abyste viděli, jak je udělaný. <strong>Vložit čip</strong> ho přidá do rozdělaného obvodu jako jeden zapouzdřený blok, <strong>Vložit rozložené</strong> jako hromádku základních hradel, se kterou jde dál pracovat.</p>
 
         <h3>Ukázkové obvody</h3>
         <p class="muted">Hotové zapojení včetně vypínačů, hodin a displejů — stačí otevřít a hrát si.</p>
@@ -844,17 +841,6 @@
 
         <h2>Moje čipy</h2>
         <div class="lib-grid" id="mine-grid"></div>
-    </div>
-
-    <!-- =============================== HÁDANKY =============================== -->
-    <div id="puzzles" class="tab-content" role="tabpanel" aria-labelledby="t-puzzles" hidden>
-        <h2>Logické hádanky</h2>
-        <p>Odpovědi si můžete kdykoli ověřit v simulátoru.</p>
-        <div id="quiz-container"></div>
-        <div id="resultMsg" class="result-overlay">
-            <h3>Výborně! Všechny hádanky jsou správně.</h3>
-            <button class="btn btn--primary" type="button" id="btn-quiz-reset">Zkusit znovu</button>
-        </div>
     </div>
 
 </main>
@@ -1262,7 +1248,8 @@ function inVal(id, i) { return valOf(sim.inRef.get(id + '|' + i)); }
    ==================================================================== */
 
 var canvas, world, wireGroup, tempWire, hint, els = new Map(), wireEls = new Map();
-var selected = null;
+var selection = new Set();
+var selectMode = false;
 
 function applyView() {
     world.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.s + ')';
@@ -1405,6 +1392,10 @@ function rebuild() {
     sim = compile(circuit);
     powerOn();
     hint.style.display = circuit.nodes.length ? 'none' : 'block';
+    var alive = {};
+    circuit.nodes.forEach(function (n) { alive[n.id] = 1; });
+    Array.from(selection).forEach(function (id) { if (!alive[id]) selection.delete(id); });
+    markSel();
     paint(true);
     save();
 }
@@ -1561,7 +1552,7 @@ function nextName(kind) {
 function deleteNode(id) {
     circuit.wires = circuit.wires.filter(function (w) { return w.f !== id && w.t !== id; });
     circuit.nodes = circuit.nodes.filter(function (n) { return n.id !== id; });
-    if (selected === id) selected = null;
+    selection.delete(id);
     rebuild();
 }
 
@@ -1578,11 +1569,118 @@ function connect(fromId, fromPin, toId, toPin) {
 }
 
 function clearCircuit(keepName) {
-    circuit.nodes = []; circuit.wires = [];
+    circuit.nodes = []; circuit.wires = []; selection.clear();
     if (!keepName) circuit.name = 'Nový obvod';
     byId('circuit-name').textContent = circuit.name;
     byId('tt-panel').classList.remove('open');
     rebuild();
+}
+
+/* Rozloží definici na základní hradla — všechny vnořené čipy se nahradí
+   svým obsahem. Nepřipojený vstup čipu zůstane jako vypínač, nevyužitý
+   výstup jako žárovka, aby si s blokem šlo hrát hned po vložení. */
+function flattenDef(def) {
+    var nodes = deepCopy(def.nodes), wires = deepCopy(def.wires);
+    var map = {};
+    nodes.forEach(function (n) { var i = nid(); map[n.id] = i; n.id = i; });
+    wires.forEach(function (w) { w.id = nid('w'); w.f = map[w.f]; w.t = map[w.t]; });
+
+    for (var guard = 0; guard < 400; guard++) {
+        var c = null;
+        for (var i = 0; i < nodes.length; i++) if (nodes[i].t === 'CHIP') { c = nodes[i]; break; }
+        if (!c) break;
+
+        var d = LIB.get(c.def);
+        if (!d) {
+            nodes = nodes.filter(function (n) { return n !== c; });
+            wires = wires.filter(function (w) { return w.f !== c.id && w.t !== c.id; });
+            continue;
+        }
+
+        var sub = deepCopy(d);
+        var m2 = {};
+        sub.nodes.forEach(function (n) { var i2 = nid(); m2[n.id] = i2; n.id = i2; });
+        sub.wires.forEach(function (w) { w.id = nid('w'); w.f = m2[w.f]; w.t = m2[w.t]; });
+
+        var sx = 1e9, sy = 1e9;
+        sub.nodes.forEach(function (n) { sx = Math.min(sx, n.x); sy = Math.min(sy, n.y); });
+        sub.nodes.forEach(function (n) { n.x += c.x - sx; n.y += c.y - sy; });
+
+        var subIn = ifaceIn(sub), subOut = ifaceOut(sub);
+        var drop = {};
+
+        subIn.forEach(function (pin, k) {
+            var feed = null;
+            wires.forEach(function (w) { if (w.t === c.id && w.ti === k) feed = w; });
+            if (!feed) return;                       // nepřipojeno → vypínač zůstane
+            sub.wires.forEach(function (w) {
+                if (w.f === pin.id) { w.f = feed.f; w.fo = feed.fo; }
+            });
+            drop[pin.id] = 1;
+        });
+
+        subOut.forEach(function (pin, k) {
+            var users = wires.filter(function (w) { return w.f === c.id && w.fo === k; });
+            if (!users.length) return;               // nevyužito → žárovka zůstane
+            var srcW = null;
+            sub.wires.forEach(function (w) { if (w.t === pin.id) srcW = w; });
+            users.forEach(function (w) {
+                if (srcW) { w.f = srcW.f; w.fo = srcW.fo; }
+            });
+            sub.wires = sub.wires.filter(function (w) { return w.t !== pin.id; });
+            drop[pin.id] = 1;
+        });
+
+        sub.nodes = sub.nodes.filter(function (n) { return !drop[n.id]; });
+        nodes = nodes.filter(function (n) { return n !== c; }).concat(sub.nodes);
+        wires = wires.filter(function (w) { return w.t !== c.id && w.f !== c.id; }).concat(sub.wires);
+    }
+
+    // zahodit vodiče, kterým chybí konec
+    var live = {};
+    nodes.forEach(function (n) { live[n.id] = 1; });
+    wires = wires.filter(function (w) { return live[w.f] && live[w.t]; });
+    return { nodes: nodes, wires: wires };
+}
+
+/* Vloží obvod z knihovny — buď jako jeden čip, nebo rozložený na hradla. */
+function insertDef(def, flat) {
+    var wasEmpty = circuit.nodes.length === 0;
+    if (!flat) {
+        var r = canvas.getBoundingClientRect();
+        var w = toWorld(r.left + r.width / 2, r.top + r.height / 2);
+        var n = addNode('CHIP', clamp(w.x - 50, 10, 3800), clamp(w.y - 25, 10, 2400), { def: def.id });
+        selectOnly(n.id);
+        goTab('simulator');
+        return;
+    }
+
+    var f = flattenDef(def);
+    layoutNodes(f.nodes, f.wires);
+    var minx = 1e9, miny = 1e9;
+    f.nodes.forEach(function (n2) { minx = Math.min(minx, n2.x); miny = Math.min(miny, n2.y); });
+
+    var ox = 30, oy = 30;
+    if (!wasEmpty) {
+        var maxY = 0, minX = 1e9;
+        circuit.nodes.forEach(function (n2) {
+            var s = sizeOf(n2);
+            maxY = Math.max(maxY, n2.y + s.h);
+            minX = Math.min(minX, n2.x);
+        });
+        ox = minX; oy = maxY + 90;
+    }
+    f.nodes.forEach(function (n2) { n2.x += ox - minx; n2.y += oy - miny; });
+
+    circuit.nodes = circuit.nodes.concat(f.nodes);
+    circuit.wires = circuit.wires.concat(f.wires);
+    rebuild();
+    selection.clear();
+    f.nodes.forEach(function (n2) { selection.add(n2.id); });
+    markSel();
+    if (wasEmpty) zoomFit();
+    goTab('simulator');
+    flash('Vloženo rozložené na ' + plural(f.nodes.length, 'prvek', 'prvky', 'prvků'));
 }
 
 function loadDef(def, asName) {
@@ -1591,7 +1689,7 @@ function loadDef(def, asName) {
     circuit.name = asName || c.name || 'Obvod';
     byId('circuit-name').textContent = circuit.name;
     byId('tt-panel').classList.remove('open');
-    selected = null;
+    selection.clear();
     rebuild();
     zoomFit();
 }
@@ -1604,6 +1702,7 @@ var pending = null;              // typ vybraný v paletě: {t:'AND'} nebo {t:'C
 var drag = null;                 // {node, dx, dy, moved}
 var pan = null;                  // {x0,y0,vx,vy}
 var wiring = null;               // {node, pin, el}
+var marquee = null;              // výběrová gumička
 var pointers = new Map();
 var pinchStart = null;
 
@@ -1627,8 +1726,13 @@ function cancelWiring() {
 
 function initCanvas() {
     canvas.addEventListener('pointerdown', function (e) {
+        // Ovládací prvky ležící nad plátnem si musí klik obsloužit samy —
+        // jinak by jim ho sebral pointer capture plátna.
+        if (e.target.closest('.sim-zoom') || e.target.closest('.sim-selbar')) return;
+
+        if (e.pointerType !== 'touch') pointers.clear();
         pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        if (pointers.size === 2) {
+        if (e.pointerType === 'touch' && pointers.size === 2) {
             var p = Array.from(pointers.values());
             pinchStart = {
                 d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), s: view.s,
@@ -1654,19 +1758,34 @@ function initCanvas() {
             paint(true); save();
             return;
         }
+        if (!e.target.closest('input')) e.preventDefault();   // ať tažení neoznačuje text stránky
+
+        var additive = e.shiftKey || e.ctrlKey || e.metaKey;
         var nodeEl = e.target.closest('.node');
         if (nodeEl) {
             if (e.target.closest('.node-label input')) return;
             var n = nodeById(nodeEl.dataset.id);
             if (!n) return;
+            if (additive || selectMode) { toggleSel(n.id); return; }
+            if (!selection.has(n.id)) selectOnly(n.id);
             var w = toWorld(e.clientX, e.clientY);
-            drag = { n: n, dx: w.x - n.x, dy: w.y - n.y, moved: false, el: nodeEl };
-            select(n.id);
+            drag = { n: n, dx: w.x - n.x, dy: w.y - n.y, moved: false, el: nodeEl, group: [] };
+            selection.forEach(function (id) {
+                var o = nodeById(id), oe = els.get(id);
+                if (o && oe && o !== n) drag.group.push({ n: o, el: oe, ox: o.x - n.x, oy: o.y - n.y });
+            });
             canvas.setPointerCapture(e.pointerId);
             return;
         }
-        // prázdná plocha
-        select(null);
+
+        // prázdná plocha: se Shiftem (nebo v režimu výběru) gumička, jinak posun
+        if (additive || selectMode) {
+            if (!additive) selectNone();
+            marquee = { x0: e.clientX, y0: e.clientY, add: additive, moved: false };
+            canvas.setPointerCapture(e.pointerId);
+            return;
+        }
+        selectNone();
         pan = { x0: e.clientX, y0: e.clientY, vx: view.x, vy: view.y, moved: false };
         canvas.setPointerCapture(e.pointerId);
     });
@@ -1695,6 +1814,19 @@ function initCanvas() {
             drag.el.style.left = drag.n.x + 'px';
             drag.el.style.top = drag.n.y + 'px';
             repathAround(drag.n.id);
+            drag.group.forEach(function (o) {
+                o.n.x = Math.round(clamp(drag.n.x + o.ox, 0, 3900));
+                o.n.y = Math.round(clamp(drag.n.y + o.oy, 0, 2500));
+                o.el.style.left = o.n.x + 'px';
+                o.el.style.top = o.n.y + 'px';
+                repathAround(o.n.id);
+            });
+            return;
+        }
+        if (marquee) {
+            marquee.x1 = e.clientX; marquee.y1 = e.clientY;
+            if (Math.abs(e.clientX - marquee.x0) + Math.abs(e.clientY - marquee.y0) > 3) marquee.moved = true;
+            drawMarquee();
             return;
         }
         if (pan) {
@@ -1726,6 +1858,12 @@ function initCanvas() {
             if (!drag.moved && drag.n.t === 'SWITCH') toggleSwitch(drag.n);
             else if (drag.moved) save();
             drag = null;
+            return;
+        }
+        if (marquee) {
+            if (marquee.moved) applyMarquee();
+            marquee = null;
+            byId('marquee').hidden = true;
             return;
         }
         if (pan) {
@@ -1768,10 +1906,17 @@ function initCanvas() {
 
     document.addEventListener('keydown', function (e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        if (e.key === 'Escape') { cancelWiring(); setPending(null); select(null); }
-        if ((e.key === 'Delete' || e.key === 'Backspace') && selected) {
-            e.preventDefault(); deleteNode(selected);
+        if (byId('simulator').hidden) return;
+        if (e.key === 'Escape') { cancelWiring(); setPending(null); selectNone(); }
+        if ((e.key === 'a' || e.key === 'A') && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault(); selectAll();
         }
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size) {
+            e.preventDefault(); deleteSelected();
+        }
+        if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1.2); }
+        if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomBy(1 / 1.2); }
+        if (e.key === '0') { e.preventDefault(); zoomFit(); }
     });
 }
 
@@ -1796,10 +1941,60 @@ function toggleSwitch(n) {
     save();
 }
 
-function select(id) {
-    if (selected && els.get(selected)) els.get(selected).classList.remove('selected');
-    selected = id;
-    if (id && els.get(id)) els.get(id).classList.add('selected');
+/* ---------------------------- Výběr prvků ---------------------------- */
+
+function markSel() {
+    els.forEach(function (el, id) { el.classList.toggle('selected', selection.has(id)); });
+    var bar = byId('sim-selbar');
+    if (!bar) return;
+    bar.hidden = selection.size === 0;
+    if (selection.size) {
+        byId('selbar-count').textContent =
+            plural(selection.size, 'prvek vybrán', 'prvky vybrány', 'prvků vybráno');
+    }
+}
+function selectOnly(id) { selection.clear(); if (id) selection.add(id); markSel(); }
+function selectNone() { if (selection.size) { selection.clear(); markSel(); } }
+function toggleSel(id) {
+    if (selection.has(id)) selection.delete(id); else selection.add(id);
+    markSel();
+}
+function selectAll() {
+    selection.clear();
+    circuit.nodes.forEach(function (n) { selection.add(n.id); });
+    markSel();
+}
+function deleteSelected() {
+    if (!selection.size) return;
+    var ids = selection;
+    circuit.wires = circuit.wires.filter(function (w) { return !ids.has(w.f) && !ids.has(w.t); });
+    circuit.nodes = circuit.nodes.filter(function (n) { return !ids.has(n.id); });
+    selection.clear();
+    rebuild();
+}
+
+function drawMarquee() {
+    var el = byId('marquee');
+    var r = canvas.getBoundingClientRect();
+    var x1 = Math.min(marquee.x0, marquee.x1) - r.left;
+    var y1 = Math.min(marquee.y0, marquee.y1) - r.top;
+    var x2 = Math.max(marquee.x0, marquee.x1) - r.left;
+    var y2 = Math.max(marquee.y0, marquee.y1) - r.top;
+    el.hidden = false;
+    el.style.left = x1 + 'px';
+    el.style.top = y1 + 'px';
+    el.style.width = (x2 - x1) + 'px';
+    el.style.height = (y2 - y1) + 'px';
+}
+
+function applyMarquee() {
+    var a = toWorld(Math.min(marquee.x0, marquee.x1), Math.min(marquee.y0, marquee.y1));
+    var b = toWorld(Math.max(marquee.x0, marquee.x1), Math.max(marquee.y0, marquee.y1));
+    circuit.nodes.forEach(function (n) {
+        var s = sizeOf(n);
+        if (n.x + s.w >= a.x && n.x <= b.x && n.y + s.h >= a.y && n.y <= b.y) selection.add(n.id);
+    });
+    markSel();
 }
 
 function zoomBy(f) {
@@ -1811,8 +2006,11 @@ function zoomBy(f) {
     view.s = ns; applyView(); save();
 }
 
+var needsFit = false;
 function zoomFit() {
     if (!circuit.nodes.length) { view = { x: 40, y: 30, s: 1 }; applyView(); return; }
+    if (!canvas.getBoundingClientRect().width) { needsFit = true; return; }  // skrytá záložka
+    needsFit = false;
     var x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
     circuit.nodes.forEach(function (n) {
         var s = sizeOf(n);
@@ -1841,6 +2039,7 @@ function paletteItem(label, type, defId, io) {
         var def = LIB.get(defId);
         d.style.borderLeftColor = 'var(--c-' + (def.color || 'blue') + ')';
     }
+    d.title = label + (defId ? ' — přetažením nebo klepnutím vložíte jako čip' : '');
     d.innerHTML = '<span class="palette-item__name">' + esc(label) + '</span>' +
         (io ? '<span class="palette-item__io">' + io + '</span>' : '');
     d.addEventListener('dragstart', function (e) {
@@ -1854,6 +2053,19 @@ function paletteItem(label, type, defId, io) {
     d.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); d.click(); }
     });
+    if (defId) {
+        var ex = document.createElement('button');
+        ex.type = 'button';
+        ex.className = 'palette-item__open';
+        ex.title = 'Vložit rozložené na základní hradla';
+        ex.innerHTML = icon('<line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle>' +
+            '<circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path>');
+        ex.addEventListener('click', function (e) {
+            e.stopPropagation();
+            insertDef(LIB.get(defId), true);
+        });
+        d.appendChild(ex);
+    }
     return d;
 }
 
@@ -1925,17 +2137,19 @@ function libCard(d) {
     });
     act.appendChild(open);
     if (d.kind !== 'demo') {
-        var ins2 = document.createElement('button');
-        ins2.type = 'button'; ins2.className = 'btn btn--sm btn--primary';
-        ins2.textContent = 'Vložit';
-        ins2.title = 'Přidá čip do rozdělaného obvodu';
-        ins2.addEventListener('click', function () {
-            var r = canvas.getBoundingClientRect();
-            var w = toWorld(r.left + r.width / 2, r.top + r.height / 2);
-            addNode('CHIP', w.x - 50, w.y - 25, { def: d.id });
-            goTab('simulator');
-        });
-        act.appendChild(ins2);
+        var insChip = document.createElement('button');
+        insChip.type = 'button'; insChip.className = 'btn btn--sm btn--primary';
+        insChip.textContent = 'Vložit čip';
+        insChip.title = 'Přidá do obvodu jeden zapouzdřený blok';
+        insChip.addEventListener('click', function () { insertDef(d, false); });
+        act.appendChild(insChip);
+
+        var insFlat = document.createElement('button');
+        insFlat.type = 'button'; insFlat.className = 'btn btn--sm';
+        insFlat.textContent = 'Vložit rozložené';
+        insFlat.title = 'Přidá obvod rozebraný až na základní hradla';
+        insFlat.addEventListener('click', function () { insertDef(d, true); });
+        act.appendChild(insFlat);
     }
     card.appendChild(act);
     return card;
@@ -2189,92 +2403,7 @@ function goTab(id) {
         b.setAttribute('aria-selected', on ? 'true' : 'false');
         b.setAttribute('tabindex', on ? '0' : '-1');
     });
-    if (id === 'simulator') applyView();
-}
-
-var quizData = [
-    {
-        q: '1. Vstup A je 1, vstup B je 0 a výstup je 1. Které hradlo to může být?',
-        options: ['AND', 'OR', 'NOR'], answer: 1,
-        why: 'OR dá 1, když je alespoň jeden vstup v 1. AND by potřeboval oba, NOR by dal 0.'
-    },
-    {
-        q: '2. Alarm se má spustit jen tehdy, když jsou porušené oba senzory současně. Které hradlo použijete?',
-        options: ['XOR', 'OR', 'AND'], answer: 2,
-        why: 'AND je 1 jen při obou vstupech v 1 — přesně „oba současně“.'
-    },
-    {
-        q: '3. Do hradla NAND přivedete A = 1 a B = 1. Co z něj vyjde?',
-        options: ['0', '1', 'Nedá se určit'], answer: 0,
-        why: 'NAND je obrácené AND: 1 AND 1 = 1, po negaci 0.'
-    },
-    {
-        q: '4. Půlsčítačka sečte 1 + 1. Jaké hodnoty budou na výstupech S a C?',
-        options: ['S = 1, C = 0', 'S = 0, C = 1', 'S = 1, C = 1'], answer: 1,
-        why: '1 + 1 = 10 dvojkově: součet S = 0 (XOR) a přenos C = 1 (AND).'
-    },
-    {
-        q: '5. Proč nestačí na sečtení dvou čtyřbitových čísel čtyři půlsčítačky?',
-        options: [
-            'Protože půlsčítačka neumí přijmout přenos z nižšího řádu',
-            'Protože půlsčítačka pracuje jen s nulami',
-            'Protože by to bylo příliš rychlé'
-        ], answer: 0,
-        why: 'Půlsčítačka má jen vstupy A a B. Přenos z nižšího řádu umí přijmout až úplná sčítačka se vstupem Cin.'
-    },
-    {
-        q: '6. Co dělá S/R klopný obvod, když jsou oba vstupy S i R v nule?',
-        options: ['Vynuluje se', 'Drží poslední hodnotu', 'Začne kmitat'], answer: 1,
-        why: 'Stav 0 0 je klidový — obvod si pamatuje poslední nastavenou hodnotu. To je jeden bit paměti.'
-    },
-    {
-        q: '7. K čemu je v registru hodinový signál?',
-        options: [
-            'Aby se všechny bity zapsaly ve stejný okamžik',
-            'Aby obvod spotřeboval méně energie',
-            'Aby se dal obvod vypnout'
-        ], answer: 0,
-        why: 'Klopné obvody řízené hranou převezmou data jen v okamžiku hrany hodin, takže se celý registr změní najednou.'
-    }
-];
-var quizState = [];
-
-function renderQuiz() {
-    var c = byId('quiz-container');
-    c.innerHTML = '';
-    quizState = new Array(quizData.length).fill(null);
-    byId('resultMsg').style.display = 'none';
-    quizData.forEach(function (item, qi) {
-        var card = document.createElement('div');
-        card.className = 'puzzle-card';
-        card.innerHTML = '<div class="puzzle-q">' + esc(item.q) + '</div>';
-        var opts = document.createElement('div');
-        opts.className = 'puzzle-options';
-        item.options.forEach(function (o, oi) {
-            var b = document.createElement('button');
-            b.type = 'button'; b.className = 'puzzle-btn'; b.textContent = o;
-            b.addEventListener('click', function () { answer(qi, oi, b, card); });
-            opts.appendChild(b);
-        });
-        card.appendChild(opts);
-        c.appendChild(card);
-    });
-}
-
-function answer(qi, oi, btn, card) {
-    if (quizState[qi]) return;
-    if (oi === quizData[qi].answer) {
-        btn.classList.add('correct');
-        quizState[qi] = true;
-        var w = document.createElement('div');
-        w.className = 'puzzle-why';
-        w.textContent = quizData[qi].why;
-        card.appendChild(w);
-        if (quizState.every(Boolean)) setTimeout(function () { byId('resultMsg').style.display = 'block'; }, 300);
-    } else {
-        btn.classList.add('wrong');
-        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
-    }
+    if (id === 'simulator') { applyView(); if (needsFit) requestAnimationFrame(zoomFit); }
 }
 
 /* ------------------------------- Start -------------------------------- */
@@ -2330,6 +2459,15 @@ function init() {
         clockIdx = +e.target.value;
         byId('clock-rate-label').textContent = CLOCK_HZ[clockIdx] + ' Hz';
     });
+    byId('btn-select').addEventListener('click', function () {
+        selectMode = !selectMode;
+        var b = byId('btn-select');
+        b.classList.toggle('btn--solid', selectMode);
+        b.setAttribute('aria-pressed', selectMode ? 'true' : 'false');
+        canvas.classList.toggle('selecting', selectMode);
+    });
+    byId('btn-del-sel').addEventListener('click', deleteSelected);
+    byId('btn-clear-sel').addEventListener('click', selectNone);
     byId('btn-truth').addEventListener('click', truthTable);
     byId('btn-savechip').addEventListener('click', openChipDialog);
     byId('btn-clear').addEventListener('click', function () {
@@ -2370,9 +2508,6 @@ function init() {
         if (e.key === 'Enter') saveChip();
     });
 
-    renderQuiz();
-    byId('btn-quiz-reset').addEventListener('click', renderQuiz);
-
     window.addEventListener('resize', applyView);
     requestAnimationFrame(loop);
 
@@ -2407,6 +2542,12 @@ function init() {
         powerOn: powerOn,
         primCount: function () { return sim.prims.length; },
         truthTable: truthTable,
+        flattenDef: flattenDef,
+        insertDef: insertDef,
+        selection: function () { return Array.from(selection); },
+        selectAll: selectAll,
+        deleteSelected: deleteSelected,
+        view: function () { return { x: view.x, y: view.y, s: view.s }; },
         saveChipAs: function (name) {
             byId('chip-name-input').value = name;
             saveChip();
@@ -2463,9 +2604,10 @@ Builder.prototype.chip = function (defId) {
     return this._add('CHIP', { def: defId }, ins);
 };
 
+Builder.prototype.layout = function () { layoutNodes(this.nodes, this.wires); };
+
 /* Automatické rozmístění: sloupce podle hloubky, řádky podle pořadí. */
-Builder.prototype.layout = function () {
-    var nodes = this.nodes, wires = this.wires, lib = this.lib;
+function layoutNodes(nodes, wires) {
     var map = {};
     nodes.forEach(function (n) { map[n.id] = n; });
 
@@ -2538,14 +2680,14 @@ Builder.prototype.layout = function () {
         var list = cols[d];
         var wmax = 0, hmax = 0;
         list.forEach(function (n) {
-            var s = estSize(n, lib);
+            var s = estSize(n);
             if (s.w > wmax) wmax = s.w;
             if (s.h > hmax) hmax = s.h;
         });
         var rowH = hmax + 26;
         var total = list.length * rowH;
         list.forEach(function (n, i) {
-            var s = estSize(n, lib);
+            var s = estSize(n);
             n.x = Math.round(x + (wmax - s.w) / 2);
             n.y = Math.round(CY - total / 2 + i * rowH + (rowH - s.h) / 2);
             delete n.__row; delete n.__b;
@@ -2557,7 +2699,7 @@ Builder.prototype.layout = function () {
     var miny = 1e9;
     nodes.forEach(function (n) { if (n.y < miny) miny = n.y; });
     if (miny < 30) nodes.forEach(function (n) { n.y += (30 - miny); });
-};
+}
 
 /* Rozměry bere ze stejné funkce jako vykreslování, aby se rozvržení
    nerozešlo se skutečnou velikostí prvků na plátně. */
