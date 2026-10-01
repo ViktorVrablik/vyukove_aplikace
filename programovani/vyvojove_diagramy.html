@@ -284,11 +284,11 @@ a{color:var(--text);}
   <div id="hbox">
     <header><h2>Nápověda — Vývojové diagramy</h2><button class="tbtn" id="btn-hclose"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></header>
     <div id="hbody">
-      <h3>1. Ovládání a Klávesové Zkratky</h3>
+      <h3>1. Ovládání a klávesové zkratky</h3>
       <ul>
         <li><b>Přidat blok:</b> Kliknutí nebo přetažení myší z levého panelu na plátno.</li>
         <li><b>Přesun bloku:</b> Stiskněte levé tlačítko myši na bloku a táhněte.</li>
-        <li><b>Editovat text:</b> Dvojklik na blok (Operace, Podmínka, Komentář).</li>
+        <li><b>Editovat text:</b> Dvojklik na blok (Operace, Podmínka, Komentář); <code>Enter</code> změnu potvrdí, <code>Esc</code> ji zruší.</li>
         <li><b>Propojení bloků:</b> Táhněte z výstupního bodu (kolečka) na okraji jednoho bloku a pusťte kdekoli na druhém bloku. Tažením z již zapojeného bodu spoj přepojíte.</li>
         <li><b>Změna True/False větví:</b> Označte blok Podmínky a klikněte na tlačítko <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> nad ním. Už připojené spoje se přesunou s větví, takže význam True/False zůstane zachován.</li>
         <li><b>Zlomový bod spoje:</b> Dvojklik na spoj přidá bod, který lze táhnout (tlačítko <i>Edit path</i>).</li>
@@ -307,70 +307,106 @@ a{color:var(--text);}
         <code>Esc</code> — Zavřít editor textu / Zavřít nápovědu
       </div>
 
-      <h3>2. Základní Práce a Proměnné</h3>
+      <h3>2. Horní lišta a levý panel</h3>
+      <ul>
+        <li><b>Run</b> — spustí program od bloku Start. Rychlost (Velmi rychlá až Velmi pomalá) nastavíte v rozbalovacím seznamu vedle.</li>
+        <li><b>Debug / Step</b> — krokování: první klik program připraví, každý další provede jeden blok. Právě prováděný blok je zeleně.</li>
+        <li><b>Stop</b> — okamžitě zastaví běh (i při čekání na vstup).</li>
+        <li><b>Grid</b> — zobrazí/skryje mřížku · <b>Snap</b> — přichytávání bloků k mřížce · <b>Kolečko</b> — zapne/vypne zoom kolečkem myši.</li>
+        <li><b>Lupy</b> — přiblížit / oddálit · <b>Fit</b> — zobrazí celý diagram.</li>
+        <li><b>Smazat</b> — odstraní označené bloky a spoje · <b>Edit path</b> — (u označeného spoje) zobrazí jeho zlomové body · <b>Zpět</b> — vrátí poslední změnu.</li>
+        <li><b>Motiv</b> — světlý / tmavý režim · <b>Nápověda</b> — tato stránka.</li>
+        <li><b>Levý panel:</b> bloky Start (jen jeden), Stop, Operace, Podmínka, Komentář (jen poznámka, při běhu se nevykonává); <i>Nový diagram</i>, <i>Export XML</i>, <i>Import XML</i>, <i>Export PNG</i>; pod nimi ID a otisk diagramu.</li>
+        <li><b>Pravý panel:</b> Konzole (výpisy, vstupy, chyby), Proměnné a Pole s aktuálními hodnotami.</li>
+      </ul>
+
+      <h3>3. Proměnné a přiřazení</h3>
       <div class="info-blk">
-        <b>Přiřazení hodnoty:</b> <code>x = 5</code> · <code>text = "Ahoj svet"</code><br/>
-        <b>Aritmetické výrazy:</b> <code>y = x + 10</code> · <code>z = (x + y) * 2</code><br/>
-        <b>Inkrementace / Dekrementace:</b> <code>x++</code> (přičte 1) · <code>x--</code> (odečte 1)<br/>
-        <b>Složené přiřazení:</b> <code>x += 5</code> · <code>x -= 2</code> · <code>x *= 3</code> · <code>x /= 2</code> · <code>x %= 3</code><br/>
-        <b>Náhodné číslo:</b> <code>x = random(1, 6)</code> (celé číslo od 1 do 6)<br/>
-        <b>Více příkazů v 1 bloku:</b> Oddělujte středníkem <code>;</code><br/>
-        <i>Příklad:</i> <code>x = 10; y = 20; print(x + y)</code>
+        <b>Přiřazení hodnoty:</b> <code>x = 5</code> · <code>cena = 12.5</code> · <code>text = "Ahoj svete"</code> · <code>hotovo = true</code><br/>
+        <b>Název proměnné:</b> písmena (i s diakritikou), číslice a <code>_</code>; nesmí začínat číslicí. Velikost písmen se rozlišuje (<code>x</code> a <code>X</code> jsou dvě proměnné).<br/>
+        <b>Hodnoty:</b> čísla (celá i desetinná, s tečkou), texty v uvozovkách <code>"…"</code> nebo <code>'…'</code>, logické <code>true</code> / <code>false</code>.<br/>
+        <i>V textu:</i> <code>\n</code> nový řádek · <code>\t</code> tabulátor · <code>\"</code> uvozovka.<br/>
+        <b>Inkrementace / dekrementace:</b> <code>x++</code> nebo <code>++x</code> (přičte 1) · <code>x--</code> nebo <code>--x</code> (odečte 1)<br/>
+        <b>Složené přiřazení:</b> <code>x += 5</code> · <code>x -= 2</code> · <code>x *= 3</code> · <code>x /= 2</code> · <code>x //= 2</code> · <code>x %= 3</code><br/>
+        <i>Text lze prodlužovat:</i> <code>s += "!"</code><br/>
+        <b>Více příkazů v 1 bloku:</b> oddělujte středníkem <code>;</code> — <code>x = 10; y = 20; print(x + y)</code><br/>
+        Proměnná musí mít hodnotu dřív, než ji použijete — jinak program ohlásí chybu.
       </div>
 
-      <h3>3. Vstup a Výpis (Konzole)</h3>
+      <h3>4. Vstup a výpis (konzole)</h3>
       <div class="info-blk">
-        <b>Výpis na konzoli:</b> <code>print(x)</code> nebo <code>write(x)</code> · více hodnot oddělte čárkou <code>print("x =", x)</code><br/>
-        <i>Spojení textu a proměnné:</i> <code>print("Vysledek je: " + x)</code><br/>
-        <b>Načtení vstupu od uživatele:</b> <code>x = read()</code><br/>
+        <b>Výpis:</b> <code>print(x)</code> nebo <code>write(x)</code> (obojí funguje stejně)<br/>
+        <i>Více hodnot</i> oddělte čárkou, vypíšou se s mezerou: <code>print("x =", x)</code> &rarr; <code>x = 5</code><br/>
+        <i>Spojení textu a čísla:</i> <code>print("Výsledek je: " + x)</code><br/>
+        <i>Výpis celého pole:</i> <code>print(a)</code> &rarr; <code>[1, 2, 3]</code><br/>
+        <b>Načtení vstupu:</b> <code>x = read()</code> — program počká na zadání v konzoli (potvrďte Enterem).<br/>
+        Zadané číslo se uloží jako číslo, cokoli jiného jako text.<br/>
         <i>Načtení přímo do prvku pole:</i> <code>a[i] = read()</code>
       </div>
 
-      <h3>4. Aritmetika a Modulo (%)</h3>
+      <h3>5. Aritmetika a dělení</h3>
       <div class="info-blk">
-        <b>Základní operátory:</b> <code>+</code> (sčítání / spojení), <code>-</code> (odčítání), <code>*</code> (násobení), <code>/</code> (celočíselné dělení)<br/>
-        <b>Dělení <code>/</code> je vždy celočíselné:</b> výsledek je celé číslo, desetinná část se zahodí (zaokrouhlení k nule).<br/>
-        <i>Příklad:</i> <code>7 / 2</code> &rarr; <code>3</code> · <code>-7 / 2</code> &rarr; <code>-3</code> · <code>7 % 2</code> &rarr; <code>1</code><br/>
-        <i>Dělení nulou</i> zastaví program s chybou.<br/>
-        <b>Modulo (zbytek po celočíselném dělení):</b> <code>%</code><br/>
-        <i>Příklad:</i> <code>10 % 3</code> &rarr; výsledek je <code>1</code><br/>
-        <i>Test sudosti čísla:</i> <code>x % 2 == 0</code> (vrátí true pro sudé číslo)<br/>
-        <i>Test dělitelnosti 5:</i> <code>x % 5 == 0</code>
+        <b>Operátory:</b> <code>+</code> sčítání (u textu spojení) · <code>-</code> odčítání · <code>*</code> násobení · <code>/</code> dělení · <code>//</code> celočíselné dělení · <code>%</code> zbytek po dělení (modulo) · <code>-x</code> opačné číslo<br/>
+        <b><code>/</code> — klasické dělení</b> s desetinnou částí: <code>7 / 2</code> &rarr; <code>3.5</code> · <code>1 / 4</code> &rarr; <code>0.25</code><br/>
+        <b><code>//</code> — celočíselné dělení:</b> výsledek je vždy celé číslo, desetinná část se zahodí (zaokrouhlení k nule):
+        <code>7 // 2</code> &rarr; <code>3</code> · <code>-7 // 2</code> &rarr; <code>-3</code> · <code>7.9 // 1</code> &rarr; <code>7</code><br/>
+        <b><code>%</code> — zbytek po celočíselném dělení:</b> <code>10 % 3</code> &rarr; <code>1</code> · <code>-7 % 2</code> &rarr; <code>-1</code><br/>
+        <i>Platí:</i> <code>a == (a // b) * b + a % b</code><br/>
+        <i>Test sudosti:</i> <code>x % 2 == 0</code> · <i>test dělitelnosti 5:</i> <code>x % 5 == 0</code> · <i>poslední číslice:</i> <code>x % 10</code> · <i>číslo bez poslední číslice:</i> <code>x // 10</code><br/>
+        <b>Pořadí operací:</b> závorky &rarr; <code>!</code> a <code>-x</code> &rarr; <code>* / // %</code> &rarr; <code>+ -</code> &rarr; porovnání &rarr; <code>&amp;&amp;</code> &rarr; <code>||</code><br/>
+        <i>Dělení nulou</i> (<code>/</code>, <code>//</code> i <code>%</code>) zastaví program s chybou.<br/>
+        Desetinná čísla se vypisují zaokrouhlená na 12 platných číslic, takže <code>0.1 + 0.2</code> se zobrazí jako <code>0.3</code>.
       </div>
 
-      <h3>5. Podmínky a Logické Operátory</h3>
+      <h3>6. Funkce</h3>
+      <div class="info-blk">
+        <code>random(a, b)</code> — náhodné celé číslo od <code>a</code> do <code>b</code> včetně: <code>x = random(1, 6)</code> (bez mezí od −100 do 100)<br/>
+        <code>abs(x)</code> — absolutní hodnota: <code>abs(-5)</code> &rarr; <code>5</code><br/>
+        <code>sqrt(x)</code> — druhá odmocnina: <code>sqrt(16)</code> &rarr; <code>4</code><br/>
+        <code>pow(a, b)</code> — mocnina a<sup>b</sup>: <code>pow(2, 10)</code> &rarr; <code>1024</code><br/>
+        <code>min(a, b, …)</code> / <code>max(a, b, …)</code> — nejmenší / největší z hodnot: <code>max(3, 9, 4)</code> &rarr; <code>9</code><br/>
+        <code>round(x)</code> — zaokrouhlení: <code>round(2.5)</code> &rarr; <code>3</code><br/>
+        <code>floor(x)</code> — zaokrouhlení dolů: <code>floor(2.7)</code> &rarr; <code>2</code> · <code>floor(-2.5)</code> &rarr; <code>-3</code><br/>
+        <code>ceil(x)</code> — zaokrouhlení nahoru: <code>ceil(2.1)</code> &rarr; <code>3</code><br/>
+        <code>Math.…</code> — vše z JavaScriptového objektu Math, např. <code>Math.PI</code>, <code>Math.sin(x)</code>, <code>Math.trunc(x)</code><br/>
+        Funkce lze vnořovat a kombinovat: <code>d = sqrt(pow(x, 2) + pow(y, 2))</code>
+      </div>
+
+      <h3>7. Podmínky a logické operátory</h3>
       <div class="info-blk">
         <b>Porovnání:</b> <code>==</code> (rovná se), <code>!=</code> (nerovná se), <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code><br/>
-        <b>Logický AND (A zároveň):</b> <code>&amp;&amp;</code> — platí obě podmínky<br/>
-        <i>Příklad:</i> <code>x &gt;= 10 &amp;&amp; x &lt;= 20</code> (číslo x je v rozmezí 10 až 20)<br/>
-        <b>Logický OR (Nebo):</b> <code>||</code> — platí alespoň jedna podmínka<br/>
-        <i>Příklad:</i> <code>x == 0 || y == 0</code> (alespoň jedna proměnná je 0)<br/>
-        <b>Logický NOT (Negace):</b> <code>!</code> — obrátí pravdivost<br/>
-        <i>Příklad:</i> <code>!(x &gt; 5)</code><br/>
+        <i>Přísné porovnání</i> (musí sedět i typ, číslo 5 ≠ text "5"): <code>===</code>, <code>!==</code><br/>
+        <b>Logický AND (a zároveň):</b> <code>&amp;&amp;</code> — platí obě podmínky: <code>x &gt;= 10 &amp;&amp; x &lt;= 20</code><br/>
+        <b>Logický OR (nebo):</b> <code>||</code> — platí alespoň jedna: <code>x == 0 || y == 0</code><br/>
+        <b>Logický NOT (negace):</b> <code>!</code> — obrátí pravdivost: <code>!(x &gt; 5)</code><br/>
+        <b>Větve:</b> podmínka má výstupy True a False. Jejich rozložení (vlevo / vpravo / dole) měníte tlačítkem nad označenou podmínkou.<br/>
         <b>Pozor:</b> v podmínce se porovnává <code>==</code>, jedno <code>=</code> je přiřazení a program ho ohlásí jako chybu.
       </div>
 
-      <h3>6. Práce s Polem (Array)</h3>
+      <h3>8. Pole a texty</h3>
       <div class="info-blk">
-        <b>Vytvoření pole (velikost):</b> <code>a = array[10]</code> (vytvoří pole o 10 prvcích)<br/>
-        <b>Přímá inicializace:</b> <code>a = {1, 2, 3, 4, 5}</code> nebo <code>a = {10; 20; 30}</code><br/>
-        <b>Generování náhodných čísel:</b> <code>a = random(-10, 10)</code> (naplní existující pole čísly od -10 do 10)<br/>
-        <b>Práce s prvky:</b> <code>a[0] = 5</code> · <code>a[i] = read()</code> · <code>a[i]++</code> · <code>a[i] += 2</code><br/>
-        <b>Délka pole:</b> <code>a.length</code> (např. v podmínce cyklu <code>i &lt; a.length</code>)
+        <b>Vytvoření pole dané velikosti:</b> <code>a = array[10]</code> (10 prvků s hodnotou 0, indexy 0–9; nejvýše 10 000 prvků)<br/>
+        <b>Přímá inicializace:</b> <code>a = {1, 2, 3, 4, 5}</code> nebo <code>a = {10; 20; 30}</code> (i výrazy: <code>{x, x * 2}</code>)<br/>
+        <b>Naplnění náhodnými čísly:</b> <code>a = random(-10, 10)</code> — pokud je <code>a</code> už pole, naplní každý prvek číslem od −10 do 10<br/>
+        <b>Práce s prvky:</b> <code>a[0] = 5</code> · <code>a[i] = read()</code> · <code>a[i]++</code> · <code>a[i] += 2</code> · <code>x = a[i - 1]</code><br/>
+        <b>Délka pole:</b> <code>a.length</code> (např. v podmínce cyklu <code>i &lt; a.length</code>)<br/>
+        <b>Texty:</b> <code>s.length</code> je počet znaků, <code>s[0]</code> první znak.<br/>
+        Index musí být celé číslo od 0 do <code>length − 1</code>, jinak program ohlásí chybu.
       </div>
 
-      <h3>7. Chyby, ukládání a export</h3>
+      <h3>9. Chyby, ukládání a export</h3>
       <div class="info-blk">
         <b>Chyby:</b> neznámý příkaz, nedefinovaná proměnná, index mimo pole nebo dělení nulou program zastaví. Chybný blok se zbarví červeně a v konzoli je popis chyby.<br/>
         <b>Nezapojené bloky:</b> když z bloku nevede spoj (nebo podmínce chybí větev), program skončí s upozorněním, že nedošel do bloku Stop.<br/>
         <b>Zacyklení:</b> po 10 000 krocích se běh zastaví — nejspíš jde o nekonečnou smyčku.<br/>
         <b>Automatické ukládání:</b> diagram se průběžně ukládá v prohlížeči a po obnovení stránky se vrátí. Čistou plochu založí <i>Nový diagram</i>.<br/>
+        <b>Export XML</b> uloží diagram do souboru, <b>Import XML</b> ho znovu načte. <b>Export PNG</b> uloží obrázek diagramu (dvojnásobné rozlišení, bílé pozadí).<br/>
         <b>ID a otisk:</b> každý diagram má trvalé <i>ID</i> (vzniká při založení a zůstává i po exportu a importu) a <i>otisk</i> — kontrolní součet SHA-256 z obsahu.
         Jakákoli změna diagramu změní otisk. Obojí je vidět v levém panelu, v názvu exportovaného souboru, v XML (atributy <code>id</code> a <code>hash</code>)
         a v PNG (patička obrázku a metadata). Při importu XML editor otisk ověří a upozorní, pokud byl soubor upraven mimo editor.
       </div>
 
-      <h3>8. Ukázkové Příklady Algoritmu</h3>
+      <h3>10. Ukázkové příklady algoritmů</h3>
       <div class="info-blk">
         <b>Příklad 1: Kontrola sudosti</b><br/>
         1. Operace: <code>x = read()</code><br/>
@@ -380,7 +416,15 @@ a{color:var(--text);}
         1. Operace: <code>a = array[5]; i = 0</code><br/>
         2. Podmínka: <code>i &lt; a.length</code><br/>
         3. True větev (Operace): <code>a[i] = (i + 1) * 10; i++</code> (zpět na podmínku)<br/>
-        4. False větev (Operace): <code>print(a)</code>
+        4. False větev (Operace): <code>print(a)</code><br/><br/>
+        <b>Příklad 3: Ciferný součet</b><br/>
+        1. Operace: <code>x = read(); s = 0</code><br/>
+        2. Podmínka: <code>x &gt; 0</code><br/>
+        3. True větev (Operace): <code>s += x % 10; x = x // 10</code> (zpět na podmínku)<br/>
+        4. False větev (Operace): <code>print("Ciferný součet:", s)</code><br/><br/>
+        <b>Příklad 4: Rozdíl mezi / a //</b><br/>
+        1. Operace: <code>a = {4, 5, 4}; soucet = a[0] + a[1] + a[2]</code><br/>
+        2. Operace: <code>print("Průměr:", soucet / a.length, "celá část:", soucet // a.length)</code> &rarr; <code>Průměr: 4.33333333333 celá část: 4</code>
       </div>
     </div>
   </div>
@@ -1209,7 +1253,13 @@ const escH = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/
 function fmtVal(v){
   if(typeof v==='string') return '"'+v+'"';
   if(Array.isArray(v)) return '['+v.map(fmtVal).join(', ')+']';
+  if(typeof v==='number') return fmtNum(v);
   return String(v);
+}
+// Zobrazí číslo bez šumu plovoucí čárky (0.1 + 0.2 → 0.3, 1/3 → 0.333333333333).
+function fmtNum(v){
+  if(!isFinite(v)||Number.isInteger(v)) return String(v);
+  return String(Number(v.toPrecision(12)));
 }
 function updVars(v){
   const sc=Object.entries(v).filter(([,x])=>!Array.isArray(x)),ar=Object.entries(v).filter(([,x])=>Array.isArray(x));
@@ -1220,7 +1270,7 @@ function updVars(v){
 /* ---------- Lexer ---------- */
 const ID_START = /[\p{L}_]/u, ID_PART = /[\p{L}\p{N}_]/u;
 const NAME_RE = /^[\p{L}_][\p{L}\p{N}_]*$/u;
-const OPS3 = ['===','!=='], OPS2 = ['==','!=','<=','>=','&&','||'], OPS1 = '+-*/%<>!()[],.';
+const OPS3 = ['===','!=='], OPS2 = ['//','==','!=','<=','>=','&&','||'], OPS1 = '+-*/%<>!()[],.';
 
 function tokenize(src){
   const t=[]; let i=0;
@@ -1258,7 +1308,7 @@ function tokenize(src){
 }
 
 /* ---------- Parser (precedenční) ---------- */
-const BIN_PREC = {'||':1,'&&':2,'==':3,'!=':3,'===':3,'!==':3,'<':4,'>':4,'<=':4,'>=':4,'+':5,'-':5,'*':6,'/':6,'%':6};
+const BIN_PREC = {'||':1,'&&':2,'==':3,'!=':3,'===':3,'!==':3,'<':4,'>':4,'<=':4,'>=':4,'+':5,'-':5,'*':6,'/':6,'//':6,'%':6};
 const astCache = new Map();
 
 function parseExpr(src){
@@ -1372,6 +1422,8 @@ function binOp(o,l,r){
   switch(o){
     case '+': {
       if(Array.isArray(l)||Array.isArray(r)) fail('Pole nelze sčítat — pracuj s jednotlivými prvky a[i].');
+      if(typeof l==='string'&&typeof r==='number') return l+fmtNum(r);
+      if(typeof l==='number'&&typeof r==='string') return fmtNum(l)+r;
       return l+r;
     }
     case '-': case '*': {
@@ -1379,10 +1431,12 @@ function binOp(o,l,r){
       if(typeof l==='string'||typeof r==='string'||isNaN(a)||isNaN(b)) fail(`Operátor ${o} lze použít jen na čísla (${fmtVal(l)} ${o} ${fmtVal(r)}).`);
       return o==='-'?a-b:a*b;
     }
-    case '/': case '%': {
+    case '/': case '//': case '%': {
       if(typeof l!=='number'||typeof r!=='number'||isNaN(l)||isNaN(r)) fail(`Operátor ${o} lze použít jen na čísla (${fmtVal(l)} ${o} ${fmtVal(r)}).`);
-      if(r===0) fail(o==='/'?'Dělení nulou.':'Zbytek po dělení nulou (x % 0) nelze spočítat.');
-      return o==='/' ? Math.trunc(l/r) : l%r;   // / = celočíselné dělení (zaokrouhlení k nule)
+      if(r===0) fail(o==='%'?'Zbytek po dělení nulou (x % 0) nelze spočítat.':'Dělení nulou.');
+      if(o==='/') return l/r;                  // běžné dělení s desetinnou částí
+      if(o==='//') return Math.trunc(l/r);     // celočíselné dělení (zaokrouhlení k nule, ladí s %)
+      return l%r;
     }
     case '==': return l==r;   case '!=': return l!=r;
     case '===': return l===r; case '!==': return l!==r;
@@ -1424,6 +1478,7 @@ function findAssign(t){
       const prev=t[i-1]||'', next=t[i+1]||'';
       if(next==='='){ i++; while(t[i+1]==='=') i++; continue; }  // == nebo ===
       if('=!<>'.includes(prev)) continue;                          // !=, <=, >=
+      if(prev==='/'&&t[i-2]==='/'&&i>2) return {i:i-2, op:'//=', end:i+1};
       if('+-*/%'.includes(prev)&&i>1) return {i:i-1, op:prev+'=', end:i+1};
       return {i, op:'=', end:i+1};
     }
@@ -1543,7 +1598,7 @@ async function execOp(op, vars, tok){
   const tg=resolveTarget(left,vars);
   const cur=tg.get();
   const val=evaluate(rhs,vars);
-  tg.set(binOp(as.op[0],cur,val)); updVars(vars);
+  tg.set(binOp(as.op.slice(0,-1),cur,val)); updVars(vars);
 }
 
 /* ---------- Běh programu ---------- */
