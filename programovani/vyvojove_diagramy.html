@@ -83,6 +83,10 @@ select.tbtn{appearance:none;padding-right:20px;cursor:pointer;
 .pal-item:hover{background:var(--hover-bg);}
 .pal-item.disabled{opacity:.35;cursor:not-allowed;}
 .sb-div{border:none;border-top:1px solid var(--border);margin:var(--space-2) var(--space-3);}
+#doc-meta{display:flex;flex-direction:column;gap:1px;margin:var(--space-1) var(--space-3) 0;padding:6px 8px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-sunken);
+  font-family:var(--font-mono);font-size:11px;color:var(--text-muted);cursor:default;}
+#doc-meta b{color:var(--text);font-weight:600;}
 #sb-footer{margin-top:auto;border-top:1px solid var(--border);padding:var(--space-3);
   font-size:var(--fs-xs);color:var(--text-muted);line-height:1.7;}
 #sb-footer a{color:var(--text-muted);}
@@ -96,6 +100,7 @@ svg#cvs{position:absolute;inset:0;width:100%;height:100%;display:block;}
 .blk-shape.sel{stroke:var(--accent);stroke-width:2;fill:var(--accent-soft);}
 .blk-shape.exec{fill:var(--c-green-bg);stroke:var(--c-green);stroke-width:2;}
 .blk-shape.editing{stroke:var(--accent);stroke-width:2;}
+.blk-shape.err{fill:var(--c-red-bg);stroke:var(--c-red);stroke-width:2;}
 .blk-txt{font-size:var(--fs-sm);fill:var(--text);pointer-events:none;dominant-baseline:middle;
   text-anchor:middle;font-family:var(--font-sans);}
 .conn-dot{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.5;cursor:crosshair;}
@@ -147,7 +152,7 @@ svg#cvs{position:absolute;inset:0;width:100%;height:100%;display:block;}
   background:#1e1e1e;border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-2);}
 .cl{font-size:11px;font-family:var(--font-mono);
   line-height:1.65;white-space:pre-wrap;word-break:break-all;}
-.c-out{color:#4ec9b0;}.c-in{color:#9cdcfe;}.c-sys{color:#569cd6;}.c-err{color:#f48771;}
+.c-out{color:#4ec9b0;}.c-in{color:#9cdcfe;}.c-sys{color:#569cd6;}.c-err{color:#f48771;}.c-warn{color:#dcdcaa;}
 #inp-row{display:none;flex-direction:column;gap:3px;padding:6px var(--space-2);
   border-top:1px solid var(--border);flex-shrink:0;}
 #inp-row label{font-size:11px;color:var(--c-orange);font-weight:600;}
@@ -235,13 +240,15 @@ a{color:var(--text);}
     <div class="pal-item" data-type="comment"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Komentář</div>
     <hr class="sb-div"/>
     <div class="sb-head">Soubor</div>
+    <div class="pal-item" id="pal-new"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>Nový diagram</div>
     <div class="pal-item" id="pal-export-xml"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Export XML</div>
     <div class="pal-item" id="pal-import-xml"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import XML<input type="file" id="xml-file" accept=".xml" style="display:none"/></div>
     <div class="pal-item" id="pal-export-png"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>Export PNG</div>
+    <div id="doc-meta" title="ID diagramu a otisk jeho obsahu — stejné údaje se zapisují do exportu XML i PNG"></div>
     <div id="sb-footer"><strong>Ing. Viktor Vráblík</strong>
       <br> <a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a> 
       <br><span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
-      <br> <span>Vytvořeno pomocí <b>Gemini AI</b></span>
+      <br> <span>Vytvořeno s pomocí <b>Claude</b> a <b>Gemini AI</b></span>
     </div>
   </div>
   <div id="cw">
@@ -275,24 +282,26 @@ a{color:var(--text);}
 </div>
 <div id="hmodal">
   <div id="hbox">
-    <header><h2>Nápověda k aplikaci Flowchart Editor</h2><button class="tbtn" id="btn-hclose"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></header>
+    <header><h2>Nápověda — Vývojové diagramy</h2><button class="tbtn" id="btn-hclose"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></header>
     <div id="hbody">
       <h3>1. Ovládání a Klávesové Zkratky</h3>
       <ul>
         <li><b>Přidat blok:</b> Kliknutí nebo přetažení myší z levého panelu na plátno.</li>
         <li><b>Přesun bloku:</b> Stiskněte levé tlačítko myši na bloku a táhněte.</li>
         <li><b>Editovat text:</b> Dvojklik na blok (Operace, Podmínka, Komentář).</li>
-        <li><b>Propojení bloků:</b> Táhněte z bodu (kolečka) na okraji jednoho bloku do druhého bloku.</li>
-        <li><b>Změna True/False větví:</b> Označte blok Podmínky a klikněte na tlačítko <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> nad ním.</li>
+        <li><b>Propojení bloků:</b> Táhněte z výstupního bodu (kolečka) na okraji jednoho bloku a pusťte kdekoli na druhém bloku. Tažením z již zapojeného bodu spoj přepojíte.</li>
+        <li><b>Změna True/False větví:</b> Označte blok Podmínky a klikněte na tlačítko <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> nad ním. Už připojené spoje se přesunou s větví, takže význam True/False zůstane zachován.</li>
+        <li><b>Zlomový bod spoje:</b> Dvojklik na spoj přidá bod, který lze táhnout (tlačítko <i>Edit path</i>).</li>
         <li><b>Výběr více prvků:</b> Tažením vytvořte výběrový rámeček nebo držením <code>Shift + klik</code>.</li>
         <li><b>Posun plátna (Pan):</b> Pravé tlačítko myši + tažení po plátně.</li>
         <li><b>Přiblížení/Oddálení (Zoom):</b> Kolečko myši nebo tlačítka v horní liště.</li>
       </ul>
       <div class="info-blk">
         <b>Klávesové zkratky:</b><br/>
-        <code>Ctrl + C</code> / <code>Cmd + C</code> — Kopírovat vybrané bloky<br/>
+        <code>Ctrl + C</code> / <code>Cmd + C</code> — Kopírovat vybrané bloky (i se spoji mezi nimi)<br/>
         <code>Ctrl + X</code> / <code>Cmd + X</code> — Vyjmout vybrané bloky<br/>
         <code>Ctrl + V</code> / <code>Cmd + V</code> — Vložit zkopírované bloky na pozici kurzoru<br/>
+        <code>Ctrl + A</code> / <code>Cmd + A</code> — Označit vše<br/>
         <code>Ctrl + Z</code> / <code>Cmd + Z</code> — Zpět (Undo)<br/>
         <code>Delete</code> / <code>Backspace</code> — Odstranit všechna označená data (bloky i čáry naráz)<br/>
         <code>Esc</code> — Zavřít editor textu / Zavřít nápovědu
@@ -303,14 +312,15 @@ a{color:var(--text);}
         <b>Přiřazení hodnoty:</b> <code>x = 5</code> · <code>text = "Ahoj svet"</code><br/>
         <b>Aritmetické výrazy:</b> <code>y = x + 10</code> · <code>z = (x + y) * 2</code><br/>
         <b>Inkrementace / Dekrementace:</b> <code>x++</code> (přičte 1) · <code>x--</code> (odečte 1)<br/>
-        <b>Složené přiřazení:</b> <code>x += 5</code> · <code>x -= 2</code> · <code>x *= 3</code><br/>
+        <b>Složené přiřazení:</b> <code>x += 5</code> · <code>x -= 2</code> · <code>x *= 3</code> · <code>x /= 2</code> · <code>x %= 3</code><br/>
+        <b>Náhodné číslo:</b> <code>x = random(1, 6)</code> (celé číslo od 1 do 6)<br/>
         <b>Více příkazů v 1 bloku:</b> Oddělujte středníkem <code>;</code><br/>
         <i>Příklad:</i> <code>x = 10; y = 20; print(x + y)</code>
       </div>
 
       <h3>3. Vstup a Výpis (Konzole)</h3>
       <div class="info-blk">
-        <b>Výpis na konzoli:</b> <code>print(x)</code> nebo <code>write(x)</code><br/>
+        <b>Výpis na konzoli:</b> <code>print(x)</code> nebo <code>write(x)</code> · více hodnot oddělte čárkou <code>print("x =", x)</code><br/>
         <i>Spojení textu a proměnné:</i> <code>print("Vysledek je: " + x)</code><br/>
         <b>Načtení vstupu od uživatele:</b> <code>x = read()</code><br/>
         <i>Načtení přímo do prvku pole:</i> <code>a[i] = read()</code>
@@ -318,7 +328,10 @@ a{color:var(--text);}
 
       <h3>4. Aritmetika a Modulo (%)</h3>
       <div class="info-blk">
-        <b>Základní operátory:</b> <code>+</code> (sčítání / spojení), <code>-</code> (odčítání), <code>*</code> (násobení), <code>/</code> (dělení)<br/>
+        <b>Základní operátory:</b> <code>+</code> (sčítání / spojení), <code>-</code> (odčítání), <code>*</code> (násobení), <code>/</code> (celočíselné dělení)<br/>
+        <b>Dělení <code>/</code> je vždy celočíselné:</b> výsledek je celé číslo, desetinná část se zahodí (zaokrouhlení k nule).<br/>
+        <i>Příklad:</i> <code>7 / 2</code> &rarr; <code>3</code> · <code>-7 / 2</code> &rarr; <code>-3</code> · <code>7 % 2</code> &rarr; <code>1</code><br/>
+        <i>Dělení nulou</i> zastaví program s chybou.<br/>
         <b>Modulo (zbytek po celočíselném dělení):</b> <code>%</code><br/>
         <i>Příklad:</i> <code>10 % 3</code> &rarr; výsledek je <code>1</code><br/>
         <i>Test sudosti čísla:</i> <code>x % 2 == 0</code> (vrátí true pro sudé číslo)<br/>
@@ -333,19 +346,31 @@ a{color:var(--text);}
         <b>Logický OR (Nebo):</b> <code>||</code> — platí alespoň jedna podmínka<br/>
         <i>Příklad:</i> <code>x == 0 || y == 0</code> (alespoň jedna proměnná je 0)<br/>
         <b>Logický NOT (Negace):</b> <code>!</code> — obrátí pravdivost<br/>
-        <i>Příklad:</i> <code>!(x &gt; 5)</code>
+        <i>Příklad:</i> <code>!(x &gt; 5)</code><br/>
+        <b>Pozor:</b> v podmínce se porovnává <code>==</code>, jedno <code>=</code> je přiřazení a program ho ohlásí jako chybu.
       </div>
 
       <h3>6. Práce s Polem (Array)</h3>
       <div class="info-blk">
         <b>Vytvoření pole (velikost):</b> <code>a = array[10]</code> (vytvoří pole o 10 prvcích)<br/>
         <b>Přímá inicializace:</b> <code>a = {1, 2, 3, 4, 5}</code> nebo <code>a = {10; 20; 30}</code><br/>
-        <b>Generování náhodných čísel:</b> <code>a = random(-10, 10)</code> (naplní pole čísly od -10 do 10)<br/>
+        <b>Generování náhodných čísel:</b> <code>a = random(-10, 10)</code> (naplní existující pole čísly od -10 do 10)<br/>
         <b>Práce s prvky:</b> <code>a[0] = 5</code> · <code>a[i] = read()</code> · <code>a[i]++</code> · <code>a[i] += 2</code><br/>
         <b>Délka pole:</b> <code>a.length</code> (např. v podmínce cyklu <code>i &lt; a.length</code>)
       </div>
 
-      <h3>7. Ukázkové Příklady Algoritmu</h3>
+      <h3>7. Chyby, ukládání a export</h3>
+      <div class="info-blk">
+        <b>Chyby:</b> neznámý příkaz, nedefinovaná proměnná, index mimo pole nebo dělení nulou program zastaví. Chybný blok se zbarví červeně a v konzoli je popis chyby.<br/>
+        <b>Nezapojené bloky:</b> když z bloku nevede spoj (nebo podmínce chybí větev), program skončí s upozorněním, že nedošel do bloku Stop.<br/>
+        <b>Zacyklení:</b> po 10 000 krocích se běh zastaví — nejspíš jde o nekonečnou smyčku.<br/>
+        <b>Automatické ukládání:</b> diagram se průběžně ukládá v prohlížeči a po obnovení stránky se vrátí. Čistou plochu založí <i>Nový diagram</i>.<br/>
+        <b>ID a otisk:</b> každý diagram má trvalé <i>ID</i> (vzniká při založení a zůstává i po exportu a importu) a <i>otisk</i> — kontrolní součet SHA-256 z obsahu.
+        Jakákoli změna diagramu změní otisk. Obojí je vidět v levém panelu, v názvu exportovaného souboru, v XML (atributy <code>id</code> a <code>hash</code>)
+        a v PNG (patička obrázku a metadata). Při importu XML editor otisk ověří a upozorní, pokud byl soubor upraven mimo editor.
+      </div>
+
+      <h3>8. Ukázkové Příklady Algoritmu</h3>
       <div class="info-blk">
         <b>Příklad 1: Kontrola sudosti</b><br/>
         1. Operace: <code>x = read()</code><br/>
@@ -366,14 +391,14 @@ let blocks=[], conns=[], wpts={}, cLayouts={}, bId=2;
 let panX=0, panY=0, zoom=1;
 let showGrid=true, snapOn=true, wheelScrollEnabled=true;
 let selBlocks=new Set(), selConn=null;
-let hist=[], clip=[];
+let hist=[], clip=null;
 let dragging=null, dOff={x:0,y:0};
 let panning=false, panSt={x:0,y:0};
 let boxing=false, boxSt={x:0,y:0};
 let linking=false, linkSt=null;
 let editId=null, editConn=null, wpDrag=null;
 let running=false, debugging=false, dbgState=null;
-let goOn=true, resolveIn=null, execVars={};
+let resolveIn=null, execVars=Object.create(null);
 let mw={x:400,y:300}, exId=null, execSpd=500, palType=null;
 let lastClick={id:-1,time:0};
 let lastConnClick={id:null,time:0};
@@ -398,10 +423,40 @@ function wc(cx,cy){ const r=cwEl.getBoundingClientRect(); return{x:(cx-r.left-pa
 function bdim(b){ const w=Math.ceil(Math.max(100,b.text.length*8+(b.type==='condition'?60:40))/GRID)*GRID; return{w,h:b.type==='condition'?GRID*4:40}; }
 function cpos(b,s){ const{w,h}=bdim(b); return({top:{x:b.x,y:b.y-h/2},bottom:{x:b.x,y:b.y+h/2},left:{x:b.x-w/2,y:b.y},right:{x:b.x+w/2,y:b.y},input:{x:b.x,y:b.y-h/2},output:{x:b.x,y:b.y+h/2}})[s]||{x:b.x,y:b.y}; }
 
-function save(){ hist.push(JSON.stringify({blocks,conns,wpts,cLayouts})); if(hist.length>30)hist.shift(); document.getElementById('btn-undo').disabled=false; }
-function undo(){ if(!hist.length)return; const s=JSON.parse(hist.pop()); blocks=s.blocks;conns=s.conns;wpts=s.wpts;cLayouts=s.cLayouts; selBlocks.clear();selConn=null;editConn=null; if(!hist.length)document.getElementById('btn-undo').disabled=true; render(); }
+const LAYOUTS=[{left:'True',right:'False'},{left:'True',bottom:'False'},{right:'True',bottom:'False'},{left:'False',right:'True'},{left:'False',bottom:'True'},{right:'False',bottom:'True'}];
+let diagramId=newDiagramId(), pendingSnap=null, cSeq=0;
+const newConnId=()=>'c'+Date.now().toString(36)+'_'+(cSeq++);
 
-function render(){ renderGrid();renderConns();renderBlocks();applyT();ui(); }
+function newDiagramId(){
+  const b=new Uint8Array(16);
+  try{ crypto.getRandomValues(b); }catch(e){ for(let i=0;i<16;i++) b[i]=Math.floor(Math.random()*256); }
+  b[6]=(b[6]&0x0f)|0x40; b[8]=(b[8]&0x3f)|0x80;
+  const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
+
+/* --- Historie (Zpět) ---
+   save() uloží stav hned (pro okamžité akce), beginChange()/commitChange()
+   obalí tažení: do historie se zapíše jen tehdy, když se opravdu něco změnilo. */
+function snap(){ return JSON.stringify({blocks,conns,wpts,cLayouts,diagramId}); }
+function pushHist(s){ hist.push(s); if(hist.length>30)hist.shift(); document.getElementById('btn-undo').disabled=false; }
+function save(){ pendingSnap=null; pushHist(snap()); }
+function beginChange(){ if(pendingSnap===null) pendingSnap=snap(); }
+function commitChange(){ if(pendingSnap!==null&&pendingSnap!==snap()) pushHist(pendingSnap); pendingSnap=null; }
+function undo(){
+  if(running||debugging) return;
+  if(editId!==null) closeEditor(true);
+  commitChange();
+  if(!hist.length)return;
+  const s=JSON.parse(hist.pop());
+  blocks=s.blocks;conns=s.conns;wpts=s.wpts;cLayouts=s.cLayouts; if(s.diagramId) diagramId=s.diagramId;
+  bId=Math.max(bId,...blocks.map(b=>b.id+1));
+  selBlocks.clear();selConn=null;editConn=null;errId=null;
+  if(!hist.length)document.getElementById('btn-undo').disabled=true;
+  render();
+}
+
+function render(){ renderGrid();renderConns();renderBlocks();applyT();ui();scheduleAutosave(); }
 function applyT(){ gBlk.setAttribute('transform',`translate(${panX},${panY}) scale(${zoom})`); gConn.setAttribute('transform',`translate(${panX},${panY}) scale(${zoom})`); }
 
 function renderGrid(){
@@ -442,7 +497,8 @@ function closeEditor(apply){
   if(editId !== null){
     if(apply){
       const b = blocks.find(b=>b.id===editId);
-      if(b) b.text = edEl.value.trim() || b.text;
+      const nt = edEl.value.trim();
+      if(b && nt && nt!==b.text){ save(); b.text = nt; if(errId===b.id) errId=null; }
     }
     editId = null;
   }
@@ -481,7 +537,7 @@ function renderBlocks(){
     const isEditing = editId===b.id;
     const isSel = selBlocks.has(b.id);
     const isExec = exId===b.id;
-    const cls='blk-shape'+(isEditing?' editing':isSel?' sel':'')+(isExec?' exec':'');
+    const cls='blk-shape'+(isEditing?' editing':isSel?' sel':'')+(isExec?' exec':'')+(errId===b.id&&!isExec?' err':'');
     let sh;
     if(b.type==='start'||b.type==='stop'){
       sh=mkS('ellipse',{cx:b.x,cy:b.y,rx:w/2,ry:h/2,class:cls});
@@ -503,17 +559,15 @@ function renderBlocks(){
     };
     if(b.type!=='start'&&b.type!=='comment') addC(cpos(b,'input').x,cpos(b,'input').y,'input',null);
     if(b.type==='condition'){
-      const lay=cLayouts[b.id]||0;
-      const M=[{l:'True',r:'False',b:null},{l:'True',r:null,b:'False'},{l:null,r:'True',b:'False'},{l:'False',r:'True',b:null},{l:'False',r:null,b:'True'},{l:null,r:'False',b:'True'}][lay];
-      if(M.l!==null)addC(cpos(b,'left').x,cpos(b,'left').y,'left',M.l);
-      if(M.r!==null)addC(cpos(b,'right').x,cpos(b,'right').y,'right',M.r);
-      if(M.b!==null)addC(cpos(b,'bottom').x,cpos(b,'bottom').y,'bottom',M.b);
-      if(isSel&&!conns.some(c=>c.from===b.id)){
+      const L=LAYOUTS[cLayouts[b.id]||0];
+      ['left','right','bottom'].forEach(sd=>{ if(L[sd]) addC(cpos(b,sd).x,cpos(b,sd).y,sd,L[sd]); });
+      if(isSel&&selBlocks.size===1&&!running&&!debugging){
         const bx=b.x+w/2-15,by=b.y-55;
         const bg=mkS('rect',{x:bx,y:by,width:26,height:26,rx:4,class:'swap-bg'});
         const bt=mkS('g',{class:'swap-ic',transform:`translate(${bx+5},${by+5}) scale(0.6667)`});
         bt.innerHTML='<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>';
-        [bg,bt].forEach(el=>{el.style.cursor='pointer';el.addEventListener('mousedown',e=>{e.stopPropagation();save();cLayouts[b.id]=((cLayouts[b.id]||0)+1)%6;render();});});
+        [bg,bt].forEach(el=>{el.style.cursor='pointer';el.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();swapBranches(b.id);});});
+        bg.appendChild(mkS('title')).textContent='Změnit rozložení větví True/False';
         g.appendChild(bg);g.appendChild(bt);
       }
     } else if(b.type!=='stop'&&b.type!=='comment'){ addC(cpos(b,'output').x,cpos(b,'output').y,'output',null); }
@@ -521,6 +575,21 @@ function renderBlocks(){
     g.addEventListener('mousedown',e=>onBMD(e,b.id));
     gBlk.appendChild(g);
   });
+}
+
+// Otočí rozložení větví podmínky. Připojené spoje si ponechají svůj význam
+// (True zůstane True), jen se přesunou na novou stranu bloku.
+function swapBranches(bid){
+  save();
+  const oldL=LAYOUTS[cLayouts[bid]||0], nl=((cLayouts[bid]||0)+1)%6, newL=LAYOUTS[nl];
+  cLayouts[bid]=nl;
+  conns.forEach(c=>{
+    if(c.from!==bid) return;
+    const branch=oldL[c.fc]; if(!branch) return;
+    const ns=Object.keys(newL).find(k=>newL[k]===branch);
+    if(ns&&ns!==c.fc){ c.fc=ns; delete wpts[c.id]; }
+  });
+  render();
 }
 
 function orthogonalize(pts){
@@ -604,6 +673,8 @@ function renderConns(){
     hit.addEventListener('mousedown',e=>{
       if(e.button!==0)return;
       e.stopPropagation();
+      if(running||debugging)return;
+      if(editId!==null) closeEditor(true);
       const now=Date.now();
       const isDouble=lastConnClick.id===c.id&&now-lastConnClick.time<400;
       lastConnClick={id:c.id,time:now};
@@ -621,13 +692,14 @@ function renderConns(){
     });
     gConn.appendChild(hit);
 
-    if(editConn===c.id)(wpts[c.id]||[]).forEach((wp,i)=>{const d2=mkS('circle',{cx:wp.x,cy:wp.y,r:7,class:'wp-dot'});d2.addEventListener('mousedown',e=>{e.stopPropagation();wpDrag={id:c.id,i};});gConn.appendChild(d2);});
+    if(editConn===c.id)(wpts[c.id]||[]).forEach((wp,i)=>{const d2=mkS('circle',{cx:wp.x,cy:wp.y,r:7,class:'wp-dot'});d2.addEventListener('mousedown',e=>{if(e.button!==0)return;e.stopPropagation();beginChange();wpDrag={id:c.id,i};});gConn.appendChild(d2);});
   });
   if(linking&&linkSt){const fb=blocks.find(b=>b.id===linkSt.bid);if(fb){const s=cpos(fb,linkSt.side);gConn.appendChild(mkS('line',{x1:s.x,y1:s.y,x2:mw.x,y2:mw.y,class:'tmp-ln'}));}}
 }
 
 function ui(){
-  document.getElementById('btn-del').disabled=selBlocks.size===0&&!selConn;
+  document.getElementById('btn-del').disabled=(selBlocks.size===0&&!selConn)||running||debugging;
+  document.getElementById('btn-undo').disabled=!hist.length||running||debugging;
   const ep=document.getElementById('btn-editpath');ep.style.display=selConn?'':'none';ep.classList.toggle('active',editConn===selConn&&!!selConn);
   document.getElementById('pal-start').classList.toggle('disabled',blocks.some(b=>b.type==='start'));
 }
@@ -642,7 +714,6 @@ function onBMD(e,id){
     lastClick={id:-1,time:0};
     const b=blocks.find(b=>b.id===id);
     if(b&&b.type!=='start'&&b.type!=='stop'){
-      save();
       if(editId!==null && editId!==id) closeEditor(true);
       openEditor(b);
       return;
@@ -653,7 +724,7 @@ function onBMD(e,id){
   if(editId!==null && editId!==id){ closeEditor(true); }
 
   const b=blocks.find(b=>b.id===id),p=wc(e.clientX,e.clientY);
-  save();dragging=id;dOff={x:p.x-b.x,y:p.y-b.y};
+  beginChange();dragging=id;dOff={x:p.x-b.x,y:p.y-b.y};
   if(e.shiftKey){selBlocks.has(id)?selBlocks.delete(id):selBlocks.add(id);}
   else if(!selBlocks.has(id)){selBlocks.clear();selBlocks.add(id);selConn=null;}
   render();
@@ -685,11 +756,11 @@ cwEl.addEventListener('mousemove',e=>{
   if(linking){renderConns();applyT();return;}
   if(boxing){const x=Math.min(boxSt.x,p.x)*zoom+panX,y=Math.min(boxSt.y,p.y)*zoom+panY,w=Math.abs(p.x-boxSt.x)*zoom,h=Math.abs(p.y-boxSt.y)*zoom;selEl.setAttribute('x',x);selEl.setAttribute('y',y);selEl.setAttribute('width',w);selEl.setAttribute('height',h);selEl.style.display='block';}
 });
-cwEl.addEventListener('mouseup',e=>{
+window.addEventListener('mouseup',e=>{
   if(panning){panning=false;cwEl.style.cursor='default';return;}
-  if(dragging!==null){dragging=null;render();return;}
-  if(wpDrag){wpDrag=null;return;}
-  if(linking){linking=false;linkSt=null;cwEl.style.cursor='default';render();return;}
+  if(dragging!==null){dragging=null;commitChange();render();return;}
+  if(wpDrag){wpDrag=null;commitChange();render();return;}
+  if(linking){linking=false;linkSt=null;cwEl.style.cursor='default';commitChange();render();return;}
   if(boxing){boxing=false;selEl.style.display='none';const p=wc(e.clientX,e.clientY);const mnX=Math.min(boxSt.x,p.x),mxX=Math.max(boxSt.x,p.x),mnY=Math.min(boxSt.y,p.y),mxY=Math.max(boxSt.y,p.y);blocks.forEach(b=>{if(b.x>=mnX&&b.x<=mxX&&b.y>=mnY&&b.y<=mxY)selBlocks.add(b.id);});
     conns.forEach(c=>{const fb=blocks.find(b=>b.id===c.from),tb=blocks.find(b=>b.id===c.to);if(fb&&tb){const s=cpos(fb,c.fc),en=cpos(tb,'input');if(s.x>=mnX&&s.x<=mxX&&s.y>=mnY&&s.y<=mxY&&en.x>=mnX&&en.x<=mxX&&en.y>=mnY&&en.y<=mxY)selConn=c.id;}});
     render();}
@@ -708,17 +779,26 @@ cwEl.addEventListener('wheel',e=>{
 
 gBlk.addEventListener('mousedown',e=>{
   const c=e.target.closest('.conn-dot');if(!c)return;
+  if(c.dataset.side==='input') return;  // spoj se vede vždy z výstupu; vstupní bod jen posune blok
   e.stopPropagation();if(running||debugging)return;
   const bid=+c.dataset.bid,side=c.dataset.side;
+  e.preventDefault();
+  if(editId!==null) closeEditor(true);
+  beginChange();
   const ex=conns.findIndex(cn=>cn.from===bid&&cn.fc===side);
-  if(ex>=0){save();delete wpts[conns[ex].id];conns.splice(ex,1);render();}
+  if(ex>=0){delete wpts[conns[ex].id];conns.splice(ex,1);render();}
   linking=true;linkSt={bid,side};cwEl.style.cursor='crosshair';
 },true);
 gBlk.addEventListener('mouseup',e=>{
   if(!linking||!linkSt)return;
-  const c=e.target.closest('.conn-dot');
-  if(c){e.stopPropagation();const tid=+c.dataset.bid;if(tid!==linkSt.bid){save();conns.push({id:`c${Date.now()}`,from:linkSt.bid,to:tid,fc:linkSt.side});}}
-  linking=false;linkSt=null;cwEl.style.cursor='default';render();
+  // Spoj stačí pustit kamkoli na cílový blok (nejen na jeho kolečko).
+  const g=e.target.closest('g[data-bid]');
+  const tb=g?blockById(+g.dataset.bid):null;
+  if(tb){
+    e.stopPropagation();
+    if(tb.id!==linkSt.bid&&tb.type!=='start'&&tb.type!=='comment') conns.push({id:newConnId(),from:linkSt.bid,to:tb.id,fc:linkSt.side});
+  }
+  linking=false;linkSt=null;cwEl.style.cursor='default';commitChange();render();
 },true);
 
 document.querySelectorAll('.pal-item[data-type]').forEach(el=>{
@@ -744,8 +824,9 @@ function delSel(){
     editConn=null;
   }
   if(selBlocks.size > 0){
-    conns=conns.filter(c=>!selBlocks.has(c.from)&&!selBlocks.has(c.to));
+    conns=conns.filter(c=>{ const keep=!selBlocks.has(c.from)&&!selBlocks.has(c.to); if(!keep) delete wpts[c.id]; return keep; });
     blocks=blocks.filter(b=>!selBlocks.has(b.id));
+    selBlocks.forEach(id=>{ delete cLayouts[id]; if(errId===id) errId=null; });
     selBlocks.clear();
   }
   render();
@@ -808,66 +889,169 @@ document.getElementById('pal-import-xml').addEventListener('click',()=>document.
 document.getElementById('xml-file').addEventListener('change',impXML);
 document.getElementById('pal-export-png').addEventListener('click',expPNG);
 
+// --- Schránka: kopíruje bloky i spoje mezi nimi (Start se nekopíruje) ---
+function copySel(){
+  const ids=new Set([...selBlocks].filter(id=>{const b=blockById(id);return b&&b.type!=='start';}));
+  if(!ids.size) return false;
+  clip={
+    blocks:blocks.filter(b=>ids.has(b.id)).map(b=>({...b})),
+    conns:conns.filter(c=>ids.has(c.from)&&ids.has(c.to)).map(c=>({...c,wp:(wpts[c.id]||[]).map(p=>({...p}))})),
+    layouts:Object.fromEntries([...ids].filter(id=>cLayouts[id]).map(id=>[id,cLayouts[id]]))
+  };
+  return true;
+}
+function pasteClip(){
+  if(!clip||!clip.blocks||!clip.blocks.length) return;
+  save();
+  const mnX=Math.min(...clip.blocks.map(b=>b.x)), mnY=Math.min(...clip.blocks.map(b=>b.y));
+  const dx=sn(mw.x-mnX), dy=sn(mw.y-mnY);
+  const map={}, ns=new Set();
+  clip.blocks.forEach(b=>{
+    const nb={...b,id:bId++,x:b.x+dx,y:b.y+dy};
+    map[b.id]=nb.id; blocks.push(nb); ns.add(nb.id);
+    if(clip.layouts[b.id]) cLayouts[nb.id]=clip.layouts[b.id];
+  });
+  clip.conns.forEach(c=>{
+    const id=newConnId();
+    conns.push({id,from:map[c.from],to:map[c.to],fc:c.fc});
+    if(c.wp&&c.wp.length) wpts[id]=c.wp.map(p=>({x:p.x+dx,y:p.y+dy}));
+  });
+  selBlocks=ns; selConn=null; editConn=null;
+  render();
+}
+
 document.addEventListener('keydown',e=>{
   if(e.target===inpEl||e.target===edEl)return;
   const tag=e.target.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
 
+  if(e.key==='Escape'){
+    document.getElementById('hmodal').classList.remove('open');
+    if(editId!==null) closeEditor(false);
+    return;
+  }
+  if(running||debugging) return;          // během běhu se diagram neupravuje
+  if(document.getElementById('hmodal').classList.contains('open')) return;
+
   const isCmdOrCtrl = e.ctrlKey || e.metaKey;
   const keyLower = e.key.toLowerCase();
 
-  if(isCmdOrCtrl && keyLower === 'z'){
-    e.preventDefault();
-    undo();
-    return;
-  }
-  if(isCmdOrCtrl && keyLower === 'c'){
-    if(selBlocks.size) clip = blocks.filter(b=>selBlocks.has(b.id)).map(b=>({...b}));
-    return;
-  }
+  if(isCmdOrCtrl && keyLower === 'z'){ e.preventDefault(); undo(); return; }
+  if(isCmdOrCtrl && keyLower === 'c'){ if(copySel()) e.preventDefault(); return; }
   if(isCmdOrCtrl && keyLower === 'x'){
-    if(selBlocks.size || selConn){
-      e.preventDefault();
-      if(selBlocks.size) clip = blocks.filter(b=>selBlocks.has(b.id)).map(b=>({...b}));
-      delSel();
-    }
+    if(selBlocks.size || selConn){ e.preventDefault(); copySel(); delSel(); }
     return;
   }
-  if(isCmdOrCtrl && keyLower === 'v'){
-    if(!clip.length)return;
-    e.preventDefault();
-    save();
-    const mnX = Math.min(...clip.map(b=>b.x)), mnY = Math.min(...clip.map(b=>b.y));
-    const ns = new Set();
-    clip.forEach(b=>{
-      const nb = {...b, id:bId++, x:sn(mw.x+(b.x-mnX)), y:sn(mw.y+(b.y-mnY))};
-      blocks.push(nb);
-      ns.add(nb.id);
-    });
-    selBlocks = ns;
-    selConn = null;
-    render();
-    return;
-  }
+  if(isCmdOrCtrl && keyLower === 'v'){ if(clip&&clip.blocks&&clip.blocks.length){ e.preventDefault(); pasteClip(); } return; }
+  if(isCmdOrCtrl && keyLower === 'a'){ e.preventDefault(); selBlocks=new Set(blocks.map(b=>b.id)); selConn=null; render(); return; }
   if((e.key==='Delete'||e.key==='Backspace')&&(selBlocks.size||selConn)){
     e.preventDefault();
     delSel();
     return;
   }
-  if(e.key==='Escape'){
-    document.getElementById('hmodal').classList.remove('open');
-    if(editId!==null) closeEditor(false);
-  }
 });
 
+/* ==========================================================================
+   Identita diagramu: trvalé ID + otisk obsahu (SHA-256)
+   ID vzniká při založení diagramu a putuje s ním přes export/import.
+   Otisk se počítá z obsahu (bloky, texty, pozice, spoje, rozložení větví),
+   takže každá změna dá jiný otisk a dva shodné diagramy dají stejný.
+   ========================================================================== */
+function sha256(str){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const bytes=new TextEncoder().encode(str);
+  const l=bytes.length, nb=((l+9+63)>>6)<<6;
+  const m=new Uint8Array(nb); m.set(bytes); m[l]=0x80;
+  const dv=new DataView(m.buffer);
+  dv.setUint32(nb-8,Math.floor(l/0x20000000)); dv.setUint32(nb-4,(l<<3)>>>0);
+  let h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const w=new Uint32Array(64), rr=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let o=0;o<nb;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){
+      const s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3), s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0;
+    }
+    let [a,b,c,d,e,f,g,hh]=h;
+    for(let i=0;i<64;i++){
+      const t1=(hh+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+w[i])>>>0;
+      const t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))>>>0;
+      hh=g; g=f; f=e; e=(d+t1)>>>0; d=c; c=b; b=a; a=(t1+t2)>>>0;
+    }
+    h=h.map((x,i)=>(x+[a,b,c,d,e,f,g,hh][i])>>>0);
+  }
+  return h.map(x=>x.toString(16).padStart(8,'0')).join('');
+}
+
+// Kanonický zápis obsahu — nezávisí na pořadí v polích ani na interních ID spojů.
+function canonicalContent(){
+  const bl=[...blocks].sort((a,b)=>a.id-b.id).map(b=>[b.id,b.type,b.x,b.y,b.text]);
+  const key=c=>`${c.from}|${c.to}|${c.fc}`;
+  const cn=[...conns].sort((a,b)=>key(a)<key(b)?-1:key(a)>key(b)?1:0)
+    .map(c=>[c.from,c.to,c.fc,(wpts[c.id]||[]).map(p=>[p.x,p.y])]);
+  const ly=blocks.filter(b=>b.type==='condition'&&cLayouts[b.id]).sort((a,b)=>a.id-b.id).map(b=>[b.id,+cLayouts[b.id]]);
+  return JSON.stringify({v:1,blocks:bl,conns:cn,layouts:ly});
+}
+const fingerprint = () => sha256(canonicalContent());
+
+function updateMeta(){
+  const el=document.getElementById('doc-meta'); if(!el) return;
+  const fp=fingerprint();
+  el.innerHTML=`<span title="ID diagramu: ${diagramId}">ID <b>${diagramId.slice(0,8)}</b></span><span title="Otisk obsahu SHA-256: ${fp}">Otisk <b>${fp.slice(0,8)}</b></span>`;
+}
+
+/* --- Automatické ukládání do prohlížeče --- */
+const STORE='va-diagramy-v1';
+let autosaveTimer=null;
+function scheduleAutosave(){ clearTimeout(autosaveTimer); autosaveTimer=setTimeout(autosave,250); }
+function autosave(){
+  clearTimeout(autosaveTimer);
+  updateMeta();
+  try{ localStorage.setItem(STORE,JSON.stringify({v:1,diagramId,blocks,conns,wpts,cLayouts,bId,view:{panX,panY,zoom}})); }catch(e){}
+}
+function loadSaved(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE)||'null');
+    if(!d||!Array.isArray(d.blocks)||!Array.isArray(d.conns)) return false;
+    blocks=d.blocks; conns=d.conns; wpts=d.wpts||{}; cLayouts=d.cLayouts||{};
+    diagramId=d.diagramId||newDiagramId();
+    bId=Math.max(d.bId||2,...blocks.map(b=>b.id+1),2);
+    if(d.view&&isFinite(d.view.zoom)){ panX=d.view.panX; panY=d.view.panY; zoom=d.view.zoom; }
+    return true;
+  }catch(e){ return false; }
+}
+window.addEventListener('beforeunload',autosave);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') autosave(); });
+
+function newDiagram(){
+  if(running||debugging) return;
+  if(blocks.length>1&&!confirm('Začít nový diagram? Současný diagram se smaže (export si můžeš udělat předem).')) return;
+  if(editId!==null) closeEditor(false);
+  blocks=[{id:1,type:'start',x:400,y:120,text:'Start'}]; conns=[]; wpts={}; cLayouts={}; bId=2;
+  diagramId=newDiagramId(); hist=[]; document.getElementById('btn-undo').disabled=true;
+  selBlocks.clear(); selConn=null; editConn=null; errId=null; panX=0; panY=0; zoom=1;
+  conBox.innerHTML=''; execVars=Object.create(null); updVars(execVars);
+  render(); autosave();
+}
+
+const shortName = () => `vyvojovy_diagram_${diagramId.slice(0,8)}_${fingerprint().slice(0,8)}`;
+function download(href,name){ const a=document.createElement('a'); a.href=href; a.download=name; document.body.appendChild(a); a.click(); a.remove(); }
+
+/* --- Export / import XML --- */
 function expXML(){
+  if(editId!==null) closeEditor(true);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  let x=`<?xml version="1.0" encoding="UTF-8"?>\n<fc>\n<blocks>\n`;
-  blocks.forEach(b=>x+=`<block id="${b.id}" type="${b.type}" x="${b.x}" y="${b.y}"><text>${esc(b.text)}</text></block>\n`);
+  const fp=fingerprint();
+  let x=`<?xml version="1.0" encoding="UTF-8"?>\n`;
+  x+=`<!-- Vývojový diagram | ID ${diagramId} | otisk SHA-256 ${fp} -->\n`;
+  x+=`<fc version="2" id="${diagramId}" hash="sha256:${fp}" exported="${new Date().toISOString()}">\n<blocks>\n`;
+  [...blocks].sort((a,b)=>a.id-b.id).forEach(b=>x+=`<block id="${b.id}" type="${b.type}" x="${b.x}" y="${b.y}"><text>${esc(b.text)}</text></block>\n`);
   x+=`</blocks>\n<conns>\n`;conns.forEach(c=>x+=`<conn id="${esc(c.id)}" from="${c.from}" to="${c.to}" fc="${c.fc}"/>\n`);
-  x+=`</conns>\n<wpts>\n`;Object.entries(wpts).forEach(([cid,pts])=>{if(pts?.length)x+=`<wpt cid="${esc(cid)}">${pts.map(p=>`<p x="${p.x}" y="${p.y}"/>`).join('')}</wpt>\n`;});
-  x+=`</wpts>\n<layouts>\n`;Object.entries(cLayouts).forEach(([bid,v])=>x+=`<l bid="${bid}" v="${v}"/>\n`);x+=`</layouts>\n</fc>`;
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([x],{type:'application/xml'}));a.download='flowchart.xml';a.click();
+  x+=`</conns>\n<wpts>\n`;Object.entries(wpts).forEach(([cid,pts])=>{if(pts?.length&&conns.some(c=>c.id===cid))x+=`<wpt cid="${esc(cid)}">${pts.map(p=>`<p x="${p.x}" y="${p.y}"/>`).join('')}</wpt>\n`;});
+  x+=`</wpts>\n<layouts>\n`;Object.entries(cLayouts).forEach(([bid,v])=>{if(v&&blocks.some(b=>b.id===+bid))x+=`<l bid="${bid}" v="${v}"/>\n`;});x+=`</layouts>\n</fc>\n`;
+  const url=URL.createObjectURL(new Blob([x],{type:'application/xml'}));
+  download(url,shortName()+'.xml');
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function impXML(e){
   const file=e.target.files[0];if(!file)return;
@@ -875,359 +1059,646 @@ function impXML(e){
   rd.onload=ev=>{
     try{
       const doc=new DOMParser().parseFromString(ev.target.result,'text/xml');
-      if(doc.querySelector('parsererror')){alert('Chyba XML');return;}
-      blocks=[];conns=[];wpts={};cLayouts={};let mx=0;
-      doc.querySelectorAll('block').forEach(el=>{const id=+el.getAttribute('id');mx=Math.max(mx,id);blocks.push({id,type:el.getAttribute('type'),x:+el.getAttribute('x'),y:+el.getAttribute('y'),text:el.querySelector('text')?.textContent||''});});
-      doc.querySelectorAll('conn').forEach(el=>{conns.push({id:el.getAttribute('id'),from:+el.getAttribute('from'),to:+el.getAttribute('to'),fc:el.getAttribute('fc')});});
-      doc.querySelectorAll('wpt').forEach(el=>{wpts[el.getAttribute('cid')]=[...el.querySelectorAll('p')].map(p=>({x:+p.getAttribute('x'),y:+p.getAttribute('y')}));});
-      doc.querySelectorAll('l').forEach(el=>{cLayouts[+el.getAttribute('bid')]=+el.getAttribute('v');});
-      bId=mx+1;selBlocks.clear();selConn=null;render();
-    }catch(err){alert('Chyba: '+err.message);}
+      if(doc.querySelector('parsererror')){alert('Soubor není platné XML.');return;}
+      const root=doc.documentElement;
+      const TYPES=['start','stop','operation','condition','comment'];
+      const nb=[],nc=[],nw={},nl={};let mx=1;
+      doc.querySelectorAll('block').forEach(el=>{const id=+el.getAttribute('id'),type=el.getAttribute('type');if(!Number.isInteger(id)||!TYPES.includes(type))return;mx=Math.max(mx,id);nb.push({id,type,x:+el.getAttribute('x')||0,y:+el.getAttribute('y')||0,text:el.querySelector('text')?.textContent||''});});
+      if(!nb.length){alert('V souboru nejsou žádné bloky.');return;}
+      const ids=new Set(nb.map(b=>b.id));
+      doc.querySelectorAll('conn').forEach(el=>{const c={id:el.getAttribute('id')||newConnId(),from:+el.getAttribute('from'),to:+el.getAttribute('to'),fc:el.getAttribute('fc')};if(ids.has(c.from)&&ids.has(c.to))nc.push(c);});
+      doc.querySelectorAll('wpt').forEach(el=>{nw[el.getAttribute('cid')]=[...el.querySelectorAll('p')].map(p=>({x:+p.getAttribute('x'),y:+p.getAttribute('y')}));});
+      doc.querySelectorAll('l').forEach(el=>{const v=+el.getAttribute('v');if(v>=0&&v<6)nl[+el.getAttribute('bid')]=v;});
+      if(running||debugging) stopE();
+      if(editId!==null) closeEditor(false);
+      save();
+      blocks=nb;conns=nc;wpts=nw;cLayouts=nl;
+      bId=mx+1;selBlocks.clear();selConn=null;editConn=null;errId=null;
+      const fid=root.getAttribute('id'), fhash=(root.getAttribute('hash')||'').replace(/^sha256:/,'');
+      diagramId=fid&&/^[0-9a-f-]{8,64}$/i.test(fid)?fid:newDiagramId();
+      fitView();
+      const fp=fingerprint();
+      conBox.innerHTML='';
+      clog(`Načten soubor ${file.name}`,'sys');
+      clog(`ID diagramu: ${diagramId}${fid?'':' (soubor ID neměl, přiděleno nové)'}`,'sys');
+      if(!fhash) clog(`Soubor neobsahuje otisk (starší verze). Otisk obsahu: ${fp.slice(0,16)}…`,'warn');
+      else if(fhash.toLowerCase()===fp) clog(`Otisk souhlasí: ${fp.slice(0,16)}…`,'sys');
+      else clog(`Pozor: otisk v souboru (${fhash.slice(0,16)}…) nesouhlasí s obsahem (${fp.slice(0,16)}…) — soubor byl upraven mimo editor.`,'err');
+      autosave();
+    }catch(err){alert('Chyba při načítání: '+err.message);}
   };
   rd.readAsText(file);e.target.value='';
 }
 
 function escapeXml(unsafe){
-  return String(unsafe||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  return String(unsafe??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+/* --- PNG: textové bloky (tEXt) s ID a otiskem --- */
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xff]^(c>>>8);return(c^0xffffffff)>>>0;}
+function pngWithText(dataUrl,entries){
+  const bin=atob(dataUrl.split(',')[1]);
+  const src=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) src[i]=bin.charCodeAt(i);
+  const ascii=s=>Uint8Array.from(String(s).replace(/[^\x20-\x7e]/g,'?'),ch=>ch.charCodeAt(0));
+  const chunks=entries.map(([k,v])=>{
+    const data=new Uint8Array([...ascii(k),0,...ascii(v)]);
+    const type=ascii('tEXt'), body=new Uint8Array(4+data.length); body.set(type); body.set(data,4);
+    const out=new Uint8Array(12+data.length), dv=new DataView(out.buffer);
+    dv.setUint32(0,data.length); out.set(body,4); dv.setUint32(8+data.length,crc32(body));
+    return out;
+  });
+  const at=33; // 8 B podpis + 25 B IHDR
+  const total=src.length+chunks.reduce((s,c)=>s+c.length,0);
+  const res=new Uint8Array(total); res.set(src.subarray(0,at)); let o=at;
+  chunks.forEach(c=>{res.set(c,o);o+=c.length;}); res.set(src.subarray(at),o);
+  return new Blob([res],{type:'image/png'});
 }
 
 function expPNG(){
+  if(editId!==null) closeEditor(true);
   if(!blocks.length){alert('Žádné bloky');return;}
   let mnX=1e9,mnY=1e9,mxX=-1e9,mxY=-1e9;
   blocks.forEach(b=>{const{w,h}=bdim(b);mnX=Math.min(mnX,b.x-w/2);mnY=Math.min(mnY,b.y-h/2);mxX=Math.max(mxX,b.x+w/2);mxY=Math.max(mxY,b.y+h/2);});
   conns.forEach(c=>{
-    const fb=blocks.find(b=>b.id===c.from),tb=blocks.find(b=>b.id===c.to);
-    if(fb&&tb){
-      routeConn(fb,tb,c).forEach(p=>{
-        mnX=Math.min(mnX,p.x);mnY=Math.min(mnY,p.y);
-        mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);
-      });
-    }
+    const fb=blockById(c.from),tb=blockById(c.to);
+    if(fb&&tb) routeConn(fb,tb,c).forEach(p=>{mnX=Math.min(mnX,p.x);mnY=Math.min(mnY,p.y);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);});
   });
 
-  const pad=50;
-  const x0=mnX-pad, y0=mnY-pad;
-  const w=Math.ceil(mxX-mnX+2*pad);
-  const h=Math.ceil(mxY-mnY+2*pad);
+  const pad=50, FOOT=26, MINW=440;
+  let x0=mnX-pad;
+  const y0=mnY-pad;
+  let w=Math.ceil(mxX-mnX+2*pad);
+  if(w<MINW){ x0-=(MINW-w)/2; w=MINW; }
+  const hd=Math.ceil(mxY-mnY+2*pad), h=hd+FOOT;
 
   let connSvg='';
-  conns.forEach(c=>{
-    const d=buildPath(c);
-    if(d) connSvg+=`<path d="${d}" class="arrow" marker-end="url(#arr)"/>`;
-  });
+  conns.forEach(c=>{ const d=buildPath(c); if(d) connSvg+=`<path d="${d}" class="arrow" marker-end="url(#arr)"/>`; });
 
   let blkSvg='';
   blocks.forEach(b=>{
     const{w,h}=bdim(b);
-    let sh='';
-    if(b.type==='start'||b.type==='stop'){
-      sh=`<ellipse cx="${b.x}" cy="${b.y}" rx="${w/2}" ry="${h/2}" class="blk-shape"/>`;
-    }else if(b.type==='condition'){
-      sh=`<polygon points="${b.x},${b.y-h/2} ${b.x+w/2},${b.y} ${b.x},${b.y+h/2} ${b.x-w/2},${b.y}" class="blk-shape"/>`;
-    }else{
-      sh=`<rect x="${b.x-w/2}" y="${b.y-h/2}" width="${w}" height="${h}" rx="3" class="blk-shape${b.type==='comment'?' comment':''}"/>`;
-    }
-    blkSvg+=sh;
+    if(b.type==='start'||b.type==='stop') blkSvg+=`<ellipse cx="${b.x}" cy="${b.y}" rx="${w/2}" ry="${h/2}" class="blk-shape"/>`;
+    else if(b.type==='condition') blkSvg+=`<polygon points="${b.x},${b.y-h/2} ${b.x+w/2},${b.y} ${b.x},${b.y+h/2} ${b.x-w/2},${b.y}" class="blk-shape"/>`;
+    else blkSvg+=`<rect x="${b.x-w/2}" y="${b.y-h/2}" width="${w}" height="${h}" rx="3" class="blk-shape${b.type==='comment'?' comment':''}"/>`;
     blkSvg+=`<text x="${b.x}" y="${b.y}" class="blk-txt">${escapeXml(b.text)}</text>`;
-
     if(b.type==='condition'){
-      const lay=cLayouts[b.id]||0;
-      const M=[{l:'True',r:'False',b:null},{l:'True',r:null,b:'False'},{l:null,r:'True',b:'False'},{l:'False',r:'True',b:null},{l:'False',r:null,b:'True'},{l:null,r:'False',b:'True'}][lay];
-      const addL=(pos,side,lbl)=>{
-        if(!lbl)return'';
-        const lx=side==='bottom'?pos.x+25:pos.x;
-        const ly=side==='bottom'?pos.y:pos.y-13;
-        return `<text class="conn-lbl" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
-      };
-      if(M.l) blkSvg+=addL(cpos(b,'left'),'left',M.l);
-      if(M.r) blkSvg+=addL(cpos(b,'right'),'right',M.r);
-      if(M.b) blkSvg+=addL(cpos(b,'bottom'),'bottom',M.b);
+      const L=LAYOUTS[cLayouts[b.id]||0];
+      ['left','right','bottom'].forEach(sd=>{
+        if(!L[sd]) return;
+        const pos=cpos(b,sd), lx=sd==='bottom'?pos.x+25:pos.x, ly=sd==='bottom'?pos.y:pos.y-13;
+        blkSvg+=`<text class="conn-lbl" x="${lx}" y="${ly}" text-anchor="middle">${L[sd]}</text>`;
+      });
     }
   });
 
+  const fp=fingerprint();
+  const stamp=`ID ${diagramId.slice(0,8)} · otisk ${fp.slice(0,16)}`;
+  const font=`-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
   const fullSvg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x0} ${y0} ${w} ${h}">`+
     `<defs><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#37352f"/></marker></defs>`+
     `<style>`+
     `.blk-shape { fill:#ffffff; stroke:#d3d3d1; stroke-width:1.5; }`+
     `.blk-shape.comment { stroke-dasharray: 5,4; }`+
-    `.blk-txt { font-size:13px; fill:#37352f; dominant-baseline:middle; text-anchor:middle; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; }`+
-    `.conn-lbl { font-size:10px; fill:#9b9a97; dominant-baseline:middle; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; }`+
+    `.blk-txt { font-size:13px; fill:#37352f; dominant-baseline:middle; text-anchor:middle; font-family:${font}; }`+
+    `.conn-lbl { font-size:10px; fill:#9b9a97; dominant-baseline:middle; font-family:${font}; }`+
     `.arrow { fill:none; stroke:#d3d3d1; stroke-width:1.5; }`+
+    `.stamp { font-size:10px; fill:#9b9a97; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }`+
     `</style>`+
     `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#ffffff"/>`+
-    `<g id="g-conn">${connSvg}</g>`+
-    `<g id="g-blk">${blkSvg}</g>`+
+    `<g>${connSvg}</g><g>${blkSvg}</g>`+
+    `<line x1="${x0+12}" y1="${y0+hd}" x2="${x0+w-12}" y2="${y0+hd}" stroke="#ebebea" stroke-width="1"/>`+
+    `<text class="stamp" x="${x0+w-12}" y="${y0+hd+FOOT/2}" text-anchor="end" dominant-baseline="middle">${stamp}</text>`+
     `</svg>`;
 
-  const blob=new Blob([fullSvg],{type:'image/svg+xml;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
+  const url=URL.createObjectURL(new Blob([fullSvg],{type:'image/svg+xml;charset=utf-8'}));
   const img=new Image();
   img.onload=()=>{
-    const scale=2;
-    const cv2=document.createElement('canvas');
-    cv2.width=w*scale;
-    cv2.height=h*scale;
-    const ctx=cv2.getContext('2d');
-    ctx.scale(scale,scale);
-    ctx.drawImage(img,0,0,w,h);
+    const scale=2, cv2=document.createElement('canvas');
+    cv2.width=w*scale; cv2.height=h*scale;
+    const ctx=cv2.getContext('2d'); ctx.scale(scale,scale); ctx.drawImage(img,0,0,w,h);
     URL.revokeObjectURL(url);
-    const a=document.createElement('a');
-    a.href=cv2.toDataURL('image/png');
-    a.download='flowchart.png';
-    a.click();
+    const blob=pngWithText(cv2.toDataURL('image/png'),[
+      ['Title','Vyvojovy diagram'],
+      ['Software','Vyukove aplikace - Vyvojove diagramy'],
+      ['DiagramID',diagramId],
+      ['Fingerprint','sha256:'+fp],
+      ['Creation Time',new Date().toISOString()]
+    ]);
+    const u2=URL.createObjectURL(blob);
+    download(u2,shortName()+'.png');
+    setTimeout(()=>URL.revokeObjectURL(u2),1000);
   };
+  img.onerror=()=>{ URL.revokeObjectURL(url); alert('Export PNG se nepodařil.'); };
   img.src=url;
 }
 
+/* ==========================================================================
+   Interpret
+   Výrazy se vyhodnocují vlastním parserem (žádné eval / new Function), takže
+   lze hlásit srozumitelné chyby a operátor / může dělit celočíselně.
+   ========================================================================== */
+const MAX_STEPS = 10000;
+class StopSignal extends Error {}
+class EvalError2 extends Error {}
+const fail = msg => { throw new EvalError2(msg); };
+
 function clog(t,c='out'){const d=document.createElement('div');d.className='cl c-'+c;d.textContent=t;conBox.appendChild(d);conBox.scrollTop=conBox.scrollHeight;}
+
+const escH = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function fmtVal(v){
+  if(typeof v==='string') return '"'+v+'"';
+  if(Array.isArray(v)) return '['+v.map(fmtVal).join(', ')+']';
+  return String(v);
+}
 function updVars(v){
   const sc=Object.entries(v).filter(([,x])=>!Array.isArray(x)),ar=Object.entries(v).filter(([,x])=>Array.isArray(x));
-  vBox.innerHTML=sc.length?sc.map(([k,x])=>`<div class="var-row"><span class="vn">${k}</span><span class="vv">${x}</span></div>`).join(''):'<div class="empty">—</div>';
-  aBox.innerHTML=ar.length?ar.map(([k,x])=>`<div class="arr-blk"><div class="an">${k}[${x.length}]</div><div class="acells">${x.map((v,i)=>`<span class="acell">[${i}]:${v}</span>`).join('')}</div></div>`).join(''):'<div class="empty">—</div>';
+  vBox.innerHTML=sc.length?sc.map(([k,x])=>`<div class="var-row"><span class="vn">${escH(k)}</span><span class="vv">${escH(fmtVal(x))}</span></div>`).join(''):'<div class="empty">—</div>';
+  aBox.innerHTML=ar.length?ar.map(([k,x])=>`<div class="arr-blk"><div class="an">${escH(k)}[${x.length}]</div><div class="acells">${x.map((v,i)=>`<span class="acell">[${i}]:${escH(fmtVal(v))}</span>`).join('')}</div></div>`).join(''):'<div class="empty">—</div>';
 }
 
-function evalE(expr, vars){
-  try{
-    if(!expr || !expr.trim()) return null;
-    const keys = Object.keys(vars);
-    const vals = keys.map(k => vars[k]);
-    const fn = new Function(...keys, `"use strict"; return (${expr});`);
-    const res = fn(...vals);
-    return res !== undefined ? res : null;
-  }catch{
-    return null;
+/* ---------- Lexer ---------- */
+const ID_START = /[\p{L}_]/u, ID_PART = /[\p{L}\p{N}_]/u;
+const NAME_RE = /^[\p{L}_][\p{L}\p{N}_]*$/u;
+const OPS3 = ['===','!=='], OPS2 = ['==','!=','<=','>=','&&','||'], OPS1 = '+-*/%<>!()[],.';
+
+function tokenize(src){
+  const t=[]; let i=0;
+  while(i<src.length){
+    const c=src[i];
+    if(/\s/.test(c)){ i++; continue; }
+    if(/[0-9]/.test(c) || (c==='.' && /[0-9]/.test(src[i+1]||''))){
+      let j=i; while(j<src.length && /[0-9.]/.test(src[j])) j++;
+      const s=src.slice(i,j);
+      if((s.match(/\./g)||[]).length>1) fail(`Neplatné číslo „${s}“.`);
+      if(j<src.length && ID_START.test(src[j])) fail(`Neplatný zápis „${s}${src[j]}…“ — název nesmí začínat číslicí.`);
+      t.push({t:'num',v:parseFloat(s)}); i=j; continue;
+    }
+    if(ID_START.test(c)){
+      let j=i+1; while(j<src.length && ID_PART.test(src[j])) j++;
+      t.push({t:'id',v:src.slice(i,j)}); i=j; continue;
+    }
+    if(c==='"' || c==="'"){
+      let j=i+1, s='';
+      while(j<src.length && src[j]!==c){
+        if(src[j]==='\\' && j+1<src.length){ const n=src[j+1]; s+= n==='n'?'\n':n==='t'?'\t':n; j+=2; }
+        else s+=src[j++];
+      }
+      if(j>=src.length) fail('Neukončený řetězec — chybí uzavírací uvozovka.');
+      t.push({t:'str',v:s}); i=j+1; continue;
+    }
+    const three=src.substr(i,3), two=src.substr(i,2);
+    if(OPS3.includes(three)){ t.push({t:'op',v:three}); i+=3; continue; }
+    if(OPS2.includes(two)){ t.push({t:'op',v:two}); i+=2; continue; }
+    if(OPS1.includes(c)){ t.push({t:'op',v:c}); i++; continue; }
+    if(c==='=') fail('Znak = je přiřazení. Pro porovnání použij ==.');
+    fail(`Neznámý znak „${c}“.`);
   }
+  return t;
 }
 
-function splitC(t){const r=[];let c='',inS=false,sc='',br=0;for(const ch of t){if(!inS&&(ch==='"'||ch==="'")){inS=true;sc=ch;c+=ch;}else if(inS&&ch===sc){inS=false;c+=ch;}else if(!inS&&ch==='{'){br++;c+=ch;}else if(!inS&&ch==='}'){br--;c+=ch;}else if(!inS&&br===0&&ch===';'){const s=c.trim();if(s)r.push(s);c='';}else c+=ch;}const s=c.trim();if(s)r.push(s);return r;}
+/* ---------- Parser (precedenční) ---------- */
+const BIN_PREC = {'||':1,'&&':2,'==':3,'!=':3,'===':3,'!==':3,'<':4,'>':4,'<=':4,'>=':4,'+':5,'-':5,'*':6,'/':6,'%':6};
+const astCache = new Map();
 
-async function execOp(op, vars){
-  op = op.trim();
+function parseExpr(src){
+  if(astCache.has(src)) return astCache.get(src);
+  const tk=tokenize(src); let p=0;
+  if(!tk.length) fail('Chybí výraz.');
+  const peek=()=>tk[p], isOp=v=>tk[p]&&tk[p].t==='op'&&tk[p].v===v;
+  const expect=v=>{ if(!isOp(v)) fail(tk[p]?`Očekáváno „${v}“, nalezeno „${tk[p].v}“.`:`Chybí „${v}“.`); p++; };
+  function primary(){
+    const k=peek(); if(!k) fail('Výraz je neúplný.');
+    let n;
+    if(k.t==='num'||k.t==='str'){ p++; n={k:'lit',v:k.v}; }
+    else if(k.t==='id'){ p++; n = k.v==='true'?{k:'lit',v:true}:k.v==='false'?{k:'lit',v:false}:{k:'id',n:k.v}; }
+    else if(isOp('(')){ p++; n=binary(0); expect(')'); }
+    else fail(`Neočekávaný znak „${k.v}“.`);
+    for(;;){
+      if(isOp('[')){ p++; const i=binary(0); expect(']'); n={k:'idx',o:n,i}; }
+      else if(isOp('.')){ p++; const k2=peek(); if(!k2||k2.t!=='id') fail('Za tečkou chybí název vlastnosti.'); p++; n={k:'mem',o:n,n:k2.v}; }
+      else if(isOp('(')){ p++; const a=[]; if(!isOp(')')){ a.push(binary(0)); while(isOp(',')){ p++; a.push(binary(0)); } } expect(')'); n={k:'call',f:n,a}; }
+      else break;
+    }
+    return n;
+  }
+  function unary(){
+    if(isOp('!')||isOp('-')||isOp('+')){ const o=tk[p++].v; return {k:'un',o,a:unary()}; }
+    return primary();
+  }
+  function binary(min){
+    let l=unary();
+    for(;;){
+      const k=peek();
+      if(!k||k.t!=='op'||!(k.v in BIN_PREC)) break;
+      const pr=BIN_PREC[k.v];
+      if(pr<=min) break;
+      p++;
+      l={k:'bin',o:k.v,l,r:binary(pr)};
+    }
+    return l;
+  }
+  const ast=binary(0);
+  if(p<tk.length) fail(`Neočekávaný znak „${tk[p].v}“.`);
+  if(astCache.size>500) astCache.clear();
+  astCache.set(src,ast);
+  return ast;
+}
+
+/* ---------- Vestavěné funkce ---------- */
+const randInt=(mn,mx)=>Math.floor(Math.random()*(mx-mn+1))+mn;
+const needNum=(v,what)=>{ if(typeof v!=='number'||isNaN(v)) fail(`${what} musí být číslo (je ${fmtVal(v)}).`); return v; };
+const BUILTINS = {
+  Math,
+  abs:x=>Math.abs(needNum(x,'Argument abs()')),
+  sqrt:x=>Math.sqrt(needNum(x,'Argument sqrt()')),
+  pow:(a,b)=>Math.pow(needNum(a,'Základ pow()'),needNum(b,'Exponent pow()')),
+  min:(...a)=>Math.min(...a), max:(...a)=>Math.max(...a),
+  round:x=>Math.round(x), floor:x=>Math.floor(x), ceil:x=>Math.ceil(x),
+  random:(mn=-100,mx=100)=>{ needNum(mn,'Dolní mez random()'); needNum(mx,'Horní mez random()'); if(mn>mx)[mn,mx]=[mx,mn]; return randInt(Math.ceil(mn),Math.floor(mx)); },
+  read:()=>fail('read() se zapisuje samostatně: x = read()'),
+  array:()=>fail('Pole se vytváří zápisem a = array[10]'),
+  print:()=>fail('print() se zapisuje jako samostatný příkaz.'),
+  write:()=>fail('write() se zapisuje jako samostatný příkaz.'),
+};
+
+function checkIndex(i,len,name){
+  if(typeof i!=='number'||!Number.isInteger(i)) fail(`Index ${fmtVal(i)} u „${name}“ není celé číslo.`);
+  if(i<0||i>=len) fail(len?`Index ${i} je mimo rozsah „${name}“ (povoleno 0–${len-1}).`:`„${name}“ je prázdné — nemá žádný prvek s indexem ${i}.`);
+}
+const nodeName = n => n.k==='id'?n.n : n.k==='idx'?nodeName(n.o)+'[…]' : n.k==='mem'?nodeName(n.o)+'.'+n.n : 'výraz';
+
+function ev(n,vars){
+  switch(n.k){
+    case 'lit': return n.v;
+    case 'id':
+      if(n.n in vars) return vars[n.n];
+      if(Object.prototype.hasOwnProperty.call(BUILTINS,n.n)) return BUILTINS[n.n];
+      return fail(`Proměnná „${n.n}“ není definována.`);
+    case 'idx': {
+      const o=ev(n.o,vars), i=ev(n.i,vars), nm=nodeName(n.o);
+      if(!Array.isArray(o)&&typeof o!=='string') fail(`„${nm}“ není pole.`);
+      checkIndex(i,o.length,nm); return o[i];
+    }
+    case 'mem': {
+      const o=ev(n.o,vars);
+      if(n.n==='length'&&(Array.isArray(o)||typeof o==='string')) return o.length;
+      if(o===Math&&Object.prototype.hasOwnProperty.call(Math,n.n)) return Math[n.n];
+      return fail(`Neznámá vlastnost „.${n.n}“ u „${nodeName(n.o)}“.`);
+    }
+    case 'call': {
+      const f=ev(n.f,vars);
+      if(typeof f!=='function') fail(`„${nodeName(n.f)}“ není funkce.`);
+      return f(...n.a.map(a=>ev(a,vars)));
+    }
+    case 'un': {
+      const a=ev(n.a,vars);
+      if(n.o==='!') return !a;
+      const r = n.o==='-' ? -a : +a;
+      if(isNaN(r)) fail(`Unární ${n.o} lze použít jen na číslo (je ${fmtVal(a)}).`);
+      return r;
+    }
+    case 'bin': {
+      if(n.o==='&&'){ const l=ev(n.l,vars); return l ? ev(n.r,vars) : l; }
+      if(n.o==='||'){ const l=ev(n.l,vars); return l ? l : ev(n.r,vars); }
+      const l=ev(n.l,vars), r=ev(n.r,vars);
+      return binOp(n.o,l,r);
+    }
+  }
+  fail('Neplatný výraz.');
+}
+
+function binOp(o,l,r){
+  switch(o){
+    case '+': {
+      if(Array.isArray(l)||Array.isArray(r)) fail('Pole nelze sčítat — pracuj s jednotlivými prvky a[i].');
+      return l+r;
+    }
+    case '-': case '*': {
+      const a=Number(l), b=Number(r);
+      if(typeof l==='string'||typeof r==='string'||isNaN(a)||isNaN(b)) fail(`Operátor ${o} lze použít jen na čísla (${fmtVal(l)} ${o} ${fmtVal(r)}).`);
+      return o==='-'?a-b:a*b;
+    }
+    case '/': case '%': {
+      if(typeof l!=='number'||typeof r!=='number'||isNaN(l)||isNaN(r)) fail(`Operátor ${o} lze použít jen na čísla (${fmtVal(l)} ${o} ${fmtVal(r)}).`);
+      if(r===0) fail(o==='/'?'Dělení nulou.':'Zbytek po dělení nulou (x % 0) nelze spočítat.');
+      return o==='/' ? Math.trunc(l/r) : l%r;   // / = celočíselné dělení (zaokrouhlení k nule)
+    }
+    case '==': return l==r;   case '!=': return l!=r;
+    case '===': return l===r; case '!==': return l!==r;
+    case '<': return l<r; case '>': return l>r; case '<=': return l<=r; case '>=': return l>=r;
+  }
+  fail(`Neznámý operátor ${o}.`);
+}
+
+function evaluate(expr,vars){ return ev(parseExpr(expr.trim()),vars); }
+
+/* ---------- Pomocné rozdělování textu ---------- */
+// Rozdělí text podle oddělovačů jen na nejvyšší úrovni (mimo řetězce a závorky).
+function splitTop(t,seps){
+  const r=[]; let c='', q='', d=0;
+  for(let i=0;i<t.length;i++){
+    const ch=t[i];
+    if(q){ c+=ch; if(ch==='\\'&&i+1<t.length){ c+=t[++i]; } else if(ch===q) q=''; continue; }
+    if(ch==='"'||ch==="'"){ q=ch; c+=ch; continue; }
+    if('([{'.includes(ch)) d++;
+    else if(')]}'.includes(ch)) d--;
+    if(d===0&&seps.includes(ch)){ r.push(c); c=''; continue; }
+    c+=ch;
+  }
+  r.push(c);
+  return r;
+}
+function splitC(t){ return splitTop(t,';').map(s=>s.trim()).filter(Boolean); }
+
+// Najde přiřazovací = na nejvyšší úrovni. Vrací {i, op} nebo null.
+function findAssign(t){
+  let q='', d=0;
+  for(let i=0;i<t.length;i++){
+    const ch=t[i];
+    if(q){ if(ch==='\\') i++; else if(ch===q) q=''; continue; }
+    if(ch==='"'||ch==="'"){ q=ch; continue; }
+    if('([{'.includes(ch)) d++;
+    else if(')]}'.includes(ch)) d--;
+    else if(ch==='='&&d===0){
+      const prev=t[i-1]||'', next=t[i+1]||'';
+      if(next==='='){ i++; while(t[i+1]==='=') i++; continue; }  // == nebo ===
+      if('=!<>'.includes(prev)) continue;                          // !=, <=, >=
+      if('+-*/%'.includes(prev)&&i>1) return {i:i-1, op:prev+'=', end:i+1};
+      return {i, op:'=', end:i+1};
+    }
+  }
+  return null;
+}
+
+// Cíl přiřazení: proměnná nebo prvek pole.
+function resolveTarget(str,vars){
+  str=str.trim();
+  if(NAME_RE.test(str)){
+    if(['true','false','read','array','print','write'].includes(str))
+      fail(`„${str}“ nelze použít jako název proměnné.`);
+    return { label:str, has:()=>str in vars,
+      get:()=>{ if(!(str in vars)) fail(`Proměnná „${str}“ není definována.`); return vars[str]; },
+      set:v=>{ vars[str]=v; } };
+  }
+  const m=str.match(/^([\p{L}_][\p{L}\p{N}_]*)\s*\[([\s\S]+)\]$/u);
+  if(m){
+    const nm=m[1];
+    if(!(nm in vars)) fail(`Pole „${nm}“ není definováno.`);
+    const arr=vars[nm];
+    if(!Array.isArray(arr)) fail(`„${nm}“ není pole.`);
+    const idx=evaluate(m[2],vars);
+    checkIndex(idx,arr.length,nm);
+    return { label:`${nm}[${idx}]`, has:()=>true, get:()=>arr[idx], set:v=>{ arr[idx]=v; } };
+  }
+  fail(`„${str}“ nelze přiřadit hodnotu.`);
+}
+
+function parseInput(val){
+  const t=val.trim();
+  if(t!==''&&/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return Number(t);
+  return val;
+}
+
+/* ---------- Provedení jednoho příkazu ---------- */
+async function execOp(op, vars, tok){
+  op=op.trim();
   if(!op) return;
 
-  // 1. Vstup: x = read() nebo a[i] = read()
-  const rm = op.match(/^(.+?)\s*=\s*read\(\)$/i);
-  if(rm){
-    const target = rm[1].trim();
-    inpRow.style.display = 'flex';
-    inpLbl.textContent = `Zadej ${target}:`;
-    inpEl.value = '';
-    inpEl.focus();
-    const val = await new Promise(r => { resolveIn = r; });
-    resolveIn = null;
-    inpRow.style.display = 'none';
-    clog(`> ${val}`, 'in');
-    const num = parseFloat(val);
-    const parsedVal = (!isNaN(num) && num == val) ? num : val;
-    
-    const m = target.match(/^(\w+)\[(.+)\]$/);
-    if(m){
-      const arr = vars[m[1]];
-      const idx = evalE(m[2], vars);
-      if(Array.isArray(arr) && Number.isInteger(idx) && idx >= 0 && idx < arr.length){
-        arr[idx] = parsedVal;
-        updVars(vars);
-      } else {
-        clog(`Chyba: Neplatné pole nebo index u ${target}`, 'err');
-      }
-    } else if(/^\w+$/.test(target)){
-      vars[target] = parsedVal;
-      updVars(vars);
-    }
-    return;
-  }
-
-  // 2. Výstup: print(...) / write(...)
-  const pm = op.match(/^(?:print|write)\(([\s\S]*)\)$/i);
+  // Výstup: print(...) / write(...), více argumentů odděl čárkou
+  const pm=op.match(/^(print|write)\s*\(([\s\S]*)\)$/i);
   if(pm){
-    let ex = pm[1].trim();
-    let out = evalE(ex, vars);
-    clog(String(out ?? ''), 'out');
+    const inner=pm[2].trim();
+    const parts= inner ? splitTop(inner,',').map(s=>s.trim()) : [];
+    if(parts.some(s=>!s)) fail('Prázdný argument ve výpisu.');
+    clog(parts.map(s=>{ const v=evaluate(s,vars); return typeof v==='string'?v:fmtVal(v); }).join(' '),'out');
     return;
   }
 
-  // 3. Deklarace pole: a = array[10]
-  const ad = op.match(/^(\w+)\s*=\s*array\[(.+)\]$/i);
-  if(ad){
-    const n = evalE(ad[2], vars);
-    if(Number.isInteger(n) && n > 0){
-      vars[ad[1]] = new Array(n).fill(0);
-      updVars(vars);
+  const as=findAssign(op);
+  if(!as){
+    // x++ / x-- / ++x / --x
+    const inc=op.match(/^(.+?)\s*(\+\+|--)$/)||op.match(/^(\+\+|--)\s*(.+)$/);
+    if(inc){
+      const post=/^(\+\+|--)$/.test(inc[2]);
+      const target=post?inc[1]:inc[2], sign=(post?inc[2]:inc[1])==='++'?1:-1;
+      const tg=resolveTarget(target,vars), v=tg.get();
+      if(typeof v!=='number') fail(`${post?inc[2]:inc[1]} lze použít jen na číslo („${tg.label}“ je ${fmtVal(v)}).`);
+      tg.set(v+sign); updVars(vars); return;
     }
-    return;
+    if(/^(read)\s*\(\s*\)$/i.test(op)) fail('Načtenou hodnotu je potřeba uložit: x = read()');
+    // Ověř, že jde aspoň o platný výraz, ať je chyba přesnější.
+    parseExpr(op);
+    fail(`„${op}“ není příkaz. Chybí přiřazení (x = …) nebo výpis print(…)?`);
   }
 
-  // 4. Inicializace pole: a = {1; 2; 3} nebo {1, 2, 3}
-  const ai = op.match(/^(\w+)\s*=\s*\{([^}]+)\}$/);
-  if(ai){
-    vars[ai[1]] = ai[2].split(/[;,]/).map(v => {
-      const t = v.trim();
-      const n = evalE(t, vars);
-      return n !== null ? n : (parseFloat(t) || 0);
-    });
-    updVars(vars);
-    return;
-  }
+  const left=op.slice(0,as.i).trim(), rhs=op.slice(as.end).trim();
+  if(!left) fail('Chybí název proměnné před =.');
+  if(!rhs) fail(`Chybí hodnota za ${as.op}.`);
 
-  // 5. Náhodné hodnoty v poli: a = random(-10, 10)
-  const rnd = op.match(/^(\w+)\s*=\s*random\((-?\d+)?\s*(?:,\s*(-?\d+))?\)$/i);
-  if(rnd && Array.isArray(vars[rnd[1]])){
-    const mn = rnd[2] !== undefined ? +rnd[2] : -100;
-    const mx = rnd[3] !== undefined ? +rnd[3] : 100;
-    vars[rnd[1]] = vars[rnd[1]].map(() => Math.floor(Math.random() * (mx - mn + 1)) + mn);
-    updVars(vars);
-    return;
-  }
-
-  // 6. Inkrementace / Dekrementace: x++ nebo a[i]++
-  const inc = op.match(/^(.+?)(\+\+|--)$/);
-  if(inc){
-    const target = inc[1].trim();
-    const isInc = inc[2] === '++';
-    const m = target.match(/^(\w+)\[(.+)\]$/);
-    if(m){
-      const arr = vars[m[1]];
-      const idx = evalE(m[2], vars);
-      if(Array.isArray(arr) && Number.isInteger(idx) && idx >= 0 && idx < arr.length){
-        arr[idx] += isInc ? 1 : -1;
-        updVars(vars);
-      }
-    } else if(vars[target] !== undefined){
-      vars[target] += isInc ? 1 : -1;
-      updVars(vars);
+  if(as.op==='='){
+    // Vstup: x = read() / a[i] = read()
+    if(/^read\s*\(\s*\)$/i.test(rhs)){
+      const tg=resolveTarget(left,vars);
+      inpRow.style.display='flex';
+      inpLbl.textContent=`Zadej ${tg.label}:`;
+      inpEl.value=''; inpEl.focus();
+      const val=await new Promise(r=>{ resolveIn=r; });
+      resolveIn=null;
+      inpRow.style.display='none';
+      if(val===null||tok!==execToken) throw new StopSignal();
+      clog(`> ${val}`,'in');
+      tg.set(parseInput(val)); updVars(vars);
+      return;
     }
+    // Deklarace pole: a = array[10]
+    const ad=rhs.match(/^array\s*\[([\s\S]+)\]$/i);
+    if(ad){
+      if(!NAME_RE.test(left)) fail('Pole se ukládá do proměnné: a = array[10]');
+      const n=evaluate(ad[1],vars);
+      if(!Number.isInteger(n)||n<=0) fail(`Velikost pole musí být kladné celé číslo (je ${fmtVal(n)}).`);
+      if(n>10000) fail('Pole může mít nejvýše 10 000 prvků.');
+      vars[left]=new Array(n).fill(0); updVars(vars); return;
+    }
+    // Inicializace pole: a = {1, 2, 3} nebo {1; 2; 3}
+    const ai=rhs.match(/^\{([\s\S]*)\}$/);
+    if(ai){
+      if(!NAME_RE.test(left)) fail('Pole se ukládá do proměnné: a = {1, 2, 3}');
+      const items=ai[1].trim()?splitTop(ai[1],',;').map(s=>s.trim()):[];
+      if(items.some(s=>!s)) fail('Prázdná položka v seznamu hodnot pole.');
+      vars[left]=items.map(s=>evaluate(s,vars)); updVars(vars); return;
+    }
+    // Náhodné hodnoty: a = random(-10, 10) naplní pole, x = random(1, 6) dá jedno číslo
+    const rnd=rhs.match(/^random\s*\(([\s\S]*)\)$/i);
+    if(rnd && NAME_RE.test(left) && Array.isArray(vars[left])){
+      const args=rnd[1].trim()?splitTop(rnd[1],',').map(s=>evaluate(s,vars)):[];
+      vars[left]=vars[left].map(()=>BUILTINS.random(...args)); updVars(vars); return;
+    }
+    const tg=resolveTarget(left,vars);
+    tg.set(evaluate(rhs,vars)); updVars(vars);
     return;
   }
 
-  // 7. Složené přiřazení: x += 5 nebo a[i] += 5
-  const cmp = op.match(/^(.+?)\s*(\+=|-=|\*=)\s*(.+)$/);
-  if(cmp){
-    const target = cmp[1].trim();
-    const opType = cmp[2];
-    const val = evalE(cmp[3], vars);
-    if(val !== null){
-      const m = target.match(/^(\w+)\[(.+)\]$/);
-      if(m){
-        const arr = vars[m[1]];
-        const idx = evalE(m[2], vars);
-        if(Array.isArray(arr) && Number.isInteger(idx) && idx >= 0 && idx < arr.length){
-          if(opType === '+=') arr[idx] += val;
-          else if(opType === '-=') arr[idx] -= val;
-          else if(opType === '*=') arr[idx] *= val;
-          updVars(vars);
-        }
-      } else if(vars[target] !== undefined){
-        if(opType === '+=') vars[target] += val;
-        else if(opType === '-=') vars[target] -= val;
-        else if(opType === '*=') vars[target] *= val;
-        updVars(vars);
-      }
-    }
-    return;
-  }
-
-  // 8. Zápis do prvku pole: a[i] = 5 nebo a[i] = x + 1
-  const aas = op.match(/^(\w+)\[(.+)\]\s*=\s*(.+)$/);
-  if(aas){
-    const arr = vars[aas[1]];
-    const idx = evalE(aas[2], vars);
-    const val = evalE(aas[3], vars);
-    if(Array.isArray(arr) && Number.isInteger(idx) && idx >= 0 && idx < arr.length && val !== null){
-      arr[idx] = val;
-      updVars(vars);
-    }
-    return;
-  }
-
-  // 9. Běžné přiřazení: x = 5, x = a[i]
-  const as = op.match(/^(\w+)\s*=\s*(.+)$/);
-  if(as){
-    const v = evalE(as[2], vars);
-    if(v !== null){
-      vars[as[1]] = v;
-      updVars(vars);
-    }
-    return;
-  }
+  // Složené přiřazení: += -= *= /= %=
+  const tg=resolveTarget(left,vars);
+  const cur=tg.get();
+  const val=evaluate(rhs,vars);
+  tg.set(binOp(as.op[0],cur,val)); updVars(vars);
 }
 
-function nxt(bid,cr=null){const cs=conns.filter(c=>c.from===bid);if(!cs.length)return null;if(cr!==null){const b=blocks.find(b=>b.id===bid);if(b?.type==='condition'){const lay=cLayouts[b.id]||0;const TM=[['left'],['left'],['right'],['right'],['bottom'],['bottom']];const FM=[['right'],['bottom'],['bottom'],['left'],['left'],['right']];const br=cs.find(c=>(cr?TM:FM)[lay].includes(c.fc));return br?blocks.find(b=>b.id===br.to):null;}}return blocks.find(b=>b.id===cs[0].to)||null;}
-function setEB(on){document.getElementById('btn-run').disabled=on;document.getElementById('btn-debug').disabled=on&&!debugging;document.getElementById('btn-stop').disabled=!on;}
+/* ---------- Běh programu ---------- */
+let execToken=0, stepBusy=false, errId=null;
+const blockById = id => blocks.find(b=>b.id===id) || null;
+const sideFor = (bid,branch) => { const L=LAYOUTS[cLayouts[bid]||0]; return Object.keys(L).find(k=>L[k]===branch); };
+
+function nxt(bid,cr){
+  const b=blockById(bid); if(!b) return null;
+  const cs=conns.filter(c=>c.from===bid);
+  if(b.type==='condition'){
+    const side=sideFor(bid,cr?'True':'False');
+    const c=cs.find(c=>c.fc===side);
+    return c?blockById(c.to):null;
+  }
+  return cs.length?blockById(cs[0].to):null;
+}
+
+const quote = b => `„${b.text}“`;
+function missingMsg(b,cr){
+  if(b.type==='start') return 'Blok Start nemá výstupní spoj — není co spustit.';
+  if(b.type==='condition') return `Podmínka ${quote(b)} nemá připojenou větev ${cr?'True':'False'} — program skončil bez bloku Stop.`;
+  return `Z bloku ${quote(b)} nevede žádný spoj — program skončil bez bloku Stop.`;
+}
+
+function evalCond(b,vars){
+  if(findAssign(b.text)) fail('V podmínce se porovnává pomocí ==, ne =.');
+  const r=evaluate(b.text,vars);
+  if(r===null||r===undefined) fail('Podmínka nevrátila žádnou hodnotu.');
+  return !!r;
+}
+
+// Provede jeden blok. Vrací {next, cr}. Výjimky: StopSignal (zastaveno) nebo chyba.
+async function execBlock(b,tok){
+  if(b.type==='operation'){
+    for(const cmd of splitC(b.text)){
+      if(tok!==execToken) throw new StopSignal();
+      await execOp(cmd,execVars,tok);
+    }
+    return {next:nxt(b.id)};
+  }
+  if(b.type==='condition'){
+    const cr=evalCond(b,execVars);
+    return {next:nxt(b.id,cr), cr};
+  }
+  return {next:nxt(b.id)};
+}
+
+function setEB(on){
+  document.getElementById('btn-run').disabled=on;
+  document.getElementById('btn-debug').disabled=(on&&!debugging)||stepBusy;
+  document.getElementById('btn-stop').disabled=!on;
+}
+
+function startExec(){
+  if(editId!==null) closeEditor(true);
+  execToken++;
+  execVars=Object.create(null);
+  updVars(execVars);
+  errId=null; selBlocks.clear(); selConn=null; editConn=null;
+  conBox.innerHTML='';
+  return execToken;
+}
+
+function reportError(b,e){
+  errId=b?b.id:null;
+  clog(b&&b.type!=='start' ? `Chyba v bloku ${quote(b)}: ${e.message}` : `Chyba: ${e.message}`,'err');
+  if(!(e instanceof EvalError2)) console.error(e);
+}
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 async function runE(){
-  goOn = true;
-  execVars = {};
-  updVars(execVars);
-  running = true;
-  setEB(true);
-  conBox.innerHTML = '';
-  clog('Spuštění…', 'sys');
-  const st = blocks.find(b => b.type === 'start');
-  if(!st){ clog('Chyba: chybí Start', 'err'); endE(); return; }
-  let b = nxt(st.id);
-  while(b && b.type !== 'stop' && goOn){
-    exId = b.id;
-    renderBlocks();
-    applyT();
-    await new Promise(r => setTimeout(r, execSpd));
-    if(!goOn) break;
-    if(b.type === 'operation'){
-      try{
-        for(const cmd of splitC(b.text)){
-          if(!goOn) break;
-          await execOp(cmd, execVars);
-        }
-      }catch(er){
-        clog(`Chyba: ${er.message}`, 'err');
-        break;
-      }
-      b = nxt(b.id);
-    }else if(b.type === 'condition'){
-      b = nxt(b.id, evalE(b.text, execVars));
-    }else b = nxt(b.id);
+  if(running||debugging) return;
+  const tok=startExec();
+  running=true; setEB(true);
+  clog('Spuštění…','sys');
+  const st=blocks.find(b=>b.type==='start');
+  if(!st){ clog('Chyba: v diagramu chybí blok Start.','err'); endE(); return; }
+  let b=nxt(st.id);
+  if(!b){ clog(missingMsg(st),'warn'); endE(); return; }
+  let steps=0;
+  try{
+    while(b.type!=='stop'){
+      if(++steps>MAX_STEPS){ errId=b.id; clog(`Chyba: překročen limit ${MAX_STEPS.toLocaleString('cs-CZ')} kroků — program se nejspíš zacyklil.`,'err'); break; }
+      exId=b.id; renderBlocks(); applyT();
+      await sleep(execSpd);
+      if(tok!==execToken) return;
+      const cur=b;
+      let res;
+      try{ res=await execBlock(cur,tok); }
+      catch(e){ if(e instanceof StopSignal||tok!==execToken) return; reportError(cur,e); break; }
+      if(tok!==execToken) return;
+      if(!res.next){ clog(missingMsg(cur,res.cr),'warn'); break; }
+      b=res.next;
+    }
+    if(b.type==='stop'){ exId=b.id; renderBlocks(); applyT(); await sleep(Math.min(execSpd,300)); if(tok!==execToken) return; clog('Dokončeno.','sys'); }
+  }finally{
+    if(tok===execToken) endE();
   }
-  clog('Dokončeno.', 'sys');
-  endE();
 }
 
 async function dbgStep(){
+  if(stepBusy||running) return;
   if(!debugging){
-    execVars = {};
-    updVars(execVars);
-    debugging = true;
-    setEB(true);
-    document.getElementById('btn-debug').textContent = 'Step';
-    conBox.innerHTML = '';
-    clog('Debug…', 'sys');
-    const st = blocks.find(b => b.type === 'start');
-    if(!st){ clog('Chyba: chybí Start', 'err'); endE(); return; }
-    dbgState = { block: nxt(st.id) };
-    exId = dbgState.block?.id || null;
-    renderBlocks();
-    applyT();
+    startExec();
+    debugging=true; setEB(true);
+    document.getElementById('btn-debug').lastChild.textContent='Step';
+    clog('Debug — krokuj tlačítkem Step.','sys');
+    const st=blocks.find(b=>b.type==='start');
+    if(!st){ clog('Chyba: v diagramu chybí blok Start.','err'); endE(); return; }
+    const first=nxt(st.id);
+    if(!first){ clog(missingMsg(st),'warn'); endE(); return; }
+    dbgState={block:first, steps:0};
+    exId=first.id; renderBlocks(); applyT();
     return;
   }
-  const { block } = dbgState;
-  if(!block || block.type === 'stop'){ clog('Dokončeno.', 'sys'); endE(); return; }
-  let next;
-  if(block.type === 'operation'){
-    try{ for(const cmd of splitC(block.text)) await execOp(cmd, execVars); }catch(er){ clog(`Chyba: ${er.message}`, 'err'); }
-    next = nxt(block.id);
-  }else if(block.type === 'condition'){
-    next = nxt(block.id, evalE(block.text, execVars));
-  }else next = nxt(block.id);
-  dbgState = { block: next };
-  exId = next?.id || null;
-  renderBlocks();
-  applyT();
+  const {block}=dbgState;
+  if(block.type==='stop'){ clog('Dokončeno.','sys'); endE(); return; }
+  const tok=execToken;
+  stepBusy=true; setEB(true);
+  try{
+    const res=await execBlock(block,tok);
+    if(tok!==execToken) return;
+    if(!res.next){ clog(missingMsg(block,res.cr),'warn'); endE(); return; }
+    dbgState={block:res.next, steps:dbgState.steps+1};
+    exId=res.next.id; renderBlocks(); applyT();
+  }catch(e){
+    if(e instanceof StopSignal||tok!==execToken) return;
+    reportError(block,e); endE();
+  }finally{
+    if(tok===execToken){ stepBusy=false; if(debugging) setEB(true); }
+  }
 }
 
-function stopE(){goOn=false;if(resolveIn){resolveIn('');resolveIn=null;}inpRow.style.display='none';clog('Zastaveno.','sys');endE();}
-function endE(){running=false;debugging=false;dbgState=null;exId=null;document.getElementById('btn-debug').textContent='Debug';setEB(false);render();}
-inpEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&inpEl.value!==''&&resolveIn)resolveIn(inpEl.value);});
+function stopE(){
+  if(!running&&!debugging) return;
+  execToken++;
+  if(resolveIn){ const r=resolveIn; resolveIn=null; r(null); }
+  inpRow.style.display='none';
+  clog('Zastaveno.','sys');
+  endE();
+}
+function endE(){
+  running=false; debugging=false; dbgState=null; exId=null; stepBusy=false;
+  inpRow.style.display='none';
+  document.getElementById('btn-debug').lastChild.textContent='Debug';
+  setEB(false); render();
+}
+inpEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&inpEl.value!==''&&resolveIn){ const r=resolveIn; resolveIn=null; r(inpEl.value); } });
 
-blocks.push({id:1,type:'start',x:400,y:120,text:'Start'});
+if(!loadSaved()) blocks.push({id:1,type:'start',x:400,y:120,text:'Start'});
+document.getElementById('pal-new').addEventListener('click',newDiagram);
 render();
+updateMeta();
 window.addEventListener('resize',render);
 </script>
 <script src="../assets/theme.js"></script>
