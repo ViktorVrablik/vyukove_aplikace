@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kódování dat | Výukové aplikace</title>
-    <meta name="description" content="Jak počítač ukládá text, čísla, obraz a zvuk — bity a bajty, ASCII a UTF-8, dvojkový doplněk, IEEE 754, barevná hloubka, vzorkování, formáty souborů, komprese a detekce chyb. S interaktivními ukázkami a procvičováním.">
+    <meta name="description" content="Jak počítač ukládá text, čísla, obraz a zvuk — bity a bajty, ASCII a UTF-8, dvojkový doplněk, IEEE 754, barevná hloubka, vzorkování, formáty souborů a komprese. S interaktivními ukázkami.">
     <meta name="author" content="Ing. Viktor Vráblík">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#ffffff">
@@ -12,7 +12,7 @@
     <meta property="og:type" content="article">
     <meta property="og:locale" content="cs_CZ">
     <meta property="og:title" content="Kódování dat">
-    <meta property="og:description" content="Jak počítač ukládá text, čísla, obraz a zvuk — interaktivně, s řešenými příklady a procvičováním.">
+    <meta property="og:description" content="Jak počítač ukládá text, čísla, obraz a zvuk — interaktivně.">
     <link rel="stylesheet" href="../assets/style.css">
     <script>
         // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
@@ -136,42 +136,6 @@
             overflow-x: auto;
         }
         .formula b { color: var(--text); }
-
-        /* Řešené příklady — rozbalovací, ať si žák nejdřív zkusí sám */
-        .examples { margin-top: var(--space-10); }
-        details.example {
-            margin-bottom: var(--space-3);
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-        }
-        details.example > summary {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            padding: var(--space-3) var(--space-4);
-            font-weight: 600;
-            cursor: pointer;
-            list-style: none;
-        }
-        details.example > summary::-webkit-details-marker { display: none; }
-        details.example > summary::before {
-            content: "";
-            width: 0.45em; height: 0.45em;
-            border-right: 2px solid var(--text-muted);
-            border-bottom: 2px solid var(--text-muted);
-            transform: rotate(-45deg);
-            transition: transform var(--dur-fast) var(--ease);
-            flex-shrink: 0;
-        }
-        details.example[open] > summary::before { transform: rotate(45deg); }
-        details.example > summary:hover { background: var(--hover-bg); border-radius: var(--radius-md); }
-        .example__body {
-            padding: 0 var(--space-4) var(--space-4) calc(var(--space-4) + 1.1em);
-            line-height: var(--lh-relaxed);
-        }
-        .example__body .formula { margin-bottom: var(--space-3); }
-        .example__hint { color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: var(--space-2); }
 
         /* ---------- Bity ---------- */
         .bits {
@@ -421,38 +385,6 @@
         .lossy figcaption { font-size: var(--fs-sm); color: var(--text-muted); margin-top: var(--space-1); }
         .lossy .zoomed { image-rendering: pixelated; }
 
-        /* ---------- Detekce chyb ---------- */
-        .venn { width: min(100%, 300px); height: auto; }
-        .venn text { font-family: var(--font-mono); }
-        .venn-row { display: flex; flex-wrap: wrap; gap: var(--space-5); align-items: center; margin-bottom: var(--space-5); }
-        .venn-row > div { flex: 1 1 260px; min-width: 0; }
-        .bit-pos { font-size: 9px; color: var(--text-faint); text-align: center; display: block; }
-
-        /* ---------- Procvičení ---------- */
-        .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
-        .chip {
-            min-height: 30px;
-            padding: var(--space-1) var(--space-3);
-            font: inherit;
-            font-size: var(--fs-sm);
-            color: var(--text-muted);
-            background: var(--surface);
-            border: 1px solid var(--border-strong);
-            border-radius: var(--radius-full);
-            cursor: pointer;
-        }
-        .chip[aria-pressed="true"] { color: var(--text); background: var(--c-blue-bg); border-color: var(--c-blue); font-weight: 600; }
-        .quiz-panel { max-width: 680px; margin-inline: auto; }
-        .quiz-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); font-size: var(--fs-sm); color: var(--text-muted); margin-bottom: var(--space-3); }
-        .quiz-task { font-size: var(--fs-lg); font-weight: 600; text-align: center; margin-bottom: var(--space-5); line-height: var(--lh-normal); }
-        .quiz-task code { font-size: 0.9em; }
-        .quiz-input { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-bottom: var(--space-4); }
-        .quiz-input input { max-width: 300px; text-align: center; font-family: var(--font-mono); font-size: var(--fs-md); min-height: 42px; }
-        .quiz-unit { align-self: center; color: var(--text-muted); }
-        .quiz-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
-        .progress { height: 6px; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-full); overflow: hidden; margin-bottom: var(--space-4); }
-        .progress > span { display: block; height: 100%; background: var(--accent); width: 0; transition: width var(--dur-base) var(--ease); }
-        .steps-box.is-open { display: block; }
     </style>
 </head>
 <body>
@@ -472,7 +404,7 @@
             </nav>
             <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
             <h1>Kódování dat</h1>
-            <p class="subtitle">Jak počítač ukládá text, čísla, obraz a zvuk — a jak data zmenší a ochrání před chybou</p>
+            <p class="subtitle">Jak počítač ukládá text, čísla, obraz a zvuk — a jak data zmenší</p>
         </div>
         <div class="site-header__actions">
             <a class="btn" href="../index.html">
@@ -499,8 +431,6 @@
         <button class="tab" type="button" role="tab" id="t-zvuk" aria-controls="zvuk" aria-selected="false" tabindex="-1">Zvuk</button>
         <button class="tab" type="button" role="tab" id="t-soubory" aria-controls="soubory" aria-selected="false" tabindex="-1">Soubory v praxi</button>
         <button class="tab" type="button" role="tab" id="t-komprese" aria-controls="komprese" aria-selected="false" tabindex="-1">Komprese</button>
-        <button class="tab" type="button" role="tab" id="t-detekce-chyb" aria-controls="detekce-chyb" aria-selected="false" tabindex="-1">Detekce chyb</button>
-        <button class="tab" type="button" role="tab" id="t-procviceni" aria-controls="procviceni" aria-selected="false" tabindex="-1">Procvičení</button>
     </div>
 
     <!-- ================================================================
@@ -583,32 +513,6 @@
             </div>
         </div>
         <div class="stat-grid" id="sameOut"></div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Kolik bitů potřebuji na známky 1 až 5?</summary>
-                <div class="example__body">
-                    <p class="example__hint">Hledám nejmenší n, aby 2<sup>n</sup> ≥ 5.</p>
-                    <div class="formula">2² = 4 &lt; 5 &nbsp;→ nestačí<br>2³ = 8 ≥ 5 &nbsp;→ stačí</div>
-                    <p>Stačí <strong>3 bity</strong>. Například 1 = <code>001</code>, 2 = <code>010</code>, … 5 = <code>101</code>. Tři kombinace (<code>000</code>, <code>110</code>, <code>111</code>) zůstanou nevyužité.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Kolik různých čísel uložím do 12 bitů?</summary>
-                <div class="example__body">
-                    <div class="formula">2¹² = 2¹⁰ · 2² = 1024 · 4 = 4096</div>
-                    <p><strong>4096</strong> hodnot, tedy čísla 0 až 4095. Pomůcka: 2¹⁰ = 1024 ≈ tisíc.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Škola má 870 žáků. Kolik bitů zabere identifikační číslo žáka?</summary>
-                <div class="example__body">
-                    <div class="formula">2⁹ = 512 &lt; 870<br>2¹⁰ = 1024 ≥ 870</div>
-                    <p>Potřebuji <strong>10 bitů</strong>. Prakticky se ale ukládá po celých bajtech, takže v programu by číslo zabralo 2 bajty (16 bitů).</p>
-                </div>
-            </details>
-        </div>
     </section>
 
     <!-- ================================================================
@@ -704,45 +608,6 @@
                 <tbody></tbody>
             </table>
         </div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Jak se v ASCII zakóduje písmeno A a písmeno a?</summary>
-                <div class="example__body">
-                    <div class="formula">A = 65₁₀ = 41₁₆ = 0<b>1</b>0 0 0001₂<br>a = 97₁₀ = 61₁₆ = 0<b>1</b>1 0 0001₂</div>
-                    <p>Rozdíl je 97 − 65 = 32 = 2⁵. Velké a malé písmeno se liší jen <strong>šestým bitem zprava</strong>. Převod na velká písmena je proto pro počítač velmi jednoduchý.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Zakódujte znak č (U+010D) do UTF-8.</summary>
-                <div class="example__body">
-                    <div class="formula">
-                        1) 010D₁₆ = 269₁₀ = 1 0000 1101₂ (9 bitů)<br>
-                        2) U+0080 až U+07FF → 2 bajty, vzor 110xxxxx 10xxxxxx (11 volných míst)<br>
-                        3) doplním nuly zleva na 11 bitů: 00100 001101<br>
-                        4) <span class="u8-prefix">110</span>00100 <span class="u8-prefix">10</span>001101<br>
-                        5) = C4 8D
-                    </div>
-                    <p>Znak č zabere v UTF-8 <strong>2 bajty: <code>C4 8D</code></strong>. Ve Windows-1250 by to byl jediný bajt <code>E8</code>.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Kolik bajtů zabere text „Ahoj světe“ v UTF-8 a ve Windows-1250?</summary>
-                <div class="example__body">
-                    <div class="formula">A h o j ␣ s v ě t e → 10 znaků<br>
-                    UTF-8: 9 znaků z ASCII × 1 B + „ě“ × 2 B = <b>11 B</b><br>
-                    Windows-1250: 10 znaků × 1 B = <b>10 B</b></div>
-                    <p>Počet znaků a počet bajtů není totéž. Proto třeba SMS s diakritikou pojme méně znaků.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 4: Z e-mailu přišlo „PĹ™Ă­liĹˇ“. Co se stalo?</summary>
-                <div class="example__body">
-                    <p>Text byl uložen v <strong>UTF-8</strong>, ale program ho otevřel jako <strong>Windows-1250</strong>. Znak ř je v UTF-8 dvojice bajtů <code>C5 99</code>; Windows-1250 je přečte jako dva samostatné znaky <code>Ĺ</code> a <code>™</code>. Řešení: v programu přepnout kódování na UTF-8. Vyzkoušej si to v ukázce výše.</p>
-                </div>
-            </details>
-        </div>
     </section>
 
     <!-- ================================================================
@@ -821,36 +686,6 @@
         </div>
         <div class="callout callout--warn">
             <strong>Přetečení ve skutečnosti:</strong> raketa Ariane 5 explodovala v roce 1996, protože se 64bitové desetinné číslo převádělo na 16bitové celé a přeteklo. V roce 2014 musel YouTube přejít na 64bitové počítadlo, protože videoklip Gangnam Style překročil 2 147 483 647 zhlédnutí — maximum 32bitového čísla se znaménkem.
-        </div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Zapište −5 jako 8bitové číslo ve dvojkovém doplňku.</summary>
-                <div class="example__body">
-                    <div class="formula">
-                        +5 &nbsp;&nbsp;= 0000 0101<br>
-                        invertuj = 1111 1010<br>
-                        +1 &nbsp;&nbsp;&nbsp;= <b>1111 1011</b>
-                    </div>
-                    <p>Kontrola přes váhy: −128 + 64 + 32 + 16 + 8 + 2 + 1 = <strong>−5</strong>. ✔</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Jakou hodnotu má bajt 1111 1111?</summary>
-                <div class="example__body">
-                    <div class="formula">bez znaménka: 128 + 64 + 32 + 16 + 8 + 4 + 2 + 1 = <b>255</b><br>
-                    se znaménkem: −128 + 64 + 32 + 16 + 8 + 4 + 2 + 1 = <b>−1</b></div>
-                    <p>Stejné bity, dvě různé hodnoty. Co bajt znamená, určuje datový typ v programu.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Kolik je 100 + 50 v 8bitovém čísle se znaménkem?</summary>
-                <div class="example__body">
-                    <div class="formula">&nbsp;&nbsp;0110 0100 (100)<br>+ 0011 0010 (&nbsp;50)<br>= 1001 0110 → nejvyšší bit je 1 → −128 + 16 + 4 + 2 = <b>−106</b></div>
-                    <p>Správný výsledek 150 je větší než maximum 127, proto došlo k <strong>přetečení</strong>: 150 − 256 = −106.</p>
-                </div>
-            </details>
         </div>
     </section>
 
@@ -951,41 +786,6 @@
                 </tbody>
             </table>
         </div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Zakódujte 5,75 do formátu float.</summary>
-                <div class="example__body">
-                    <div class="formula">
-                        1) převod: 5 = 101₂, 0,75 = 0,11₂ → 5,75 = 101,11₂<br>
-                        2) normalizace: 101,11₂ = 1,0111₂ · 2²<br>
-                        3) S = 0 (kladné)<br>
-                        4) E = 2 + 127 = 129 = 1000 0001₂<br>
-                        5) M = 0111 a doplnit nulami na 23 bitů<br>
-                        → <span class="bit-sign">0</span> <span class="bit-exp">10000001</span> <span class="bit-mant">01110000000000000000000</span> = 0x40B80000
-                    </div>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Které číslo je uloženo jako 0xC1200000?</summary>
-                <div class="example__body">
-                    <div class="formula">
-                        C1200000₁₆ = <span class="bit-sign">1</span> <span class="bit-exp">10000010</span> <span class="bit-mant">01000000000000000000000</span><br>
-                        S = 1 → záporné<br>
-                        E = 130 → exponent 130 − 127 = 3<br>
-                        mantisa = 1,01₂ = 1,25<br>
-                        hodnota = −1,25 · 2³ = <b>−10</b>
-                    </div>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Proč float neuloží číslo 16 777 217 přesně?</summary>
-                <div class="example__body">
-                    <p>Mantisa má 23 uložených bitů + 1 skrytou jedničku = 24 bitů přesnosti. Celá čísla až do 2²⁴ = 16 777 216 se uloží přesně. Číslo 16 777 217 by potřebovalo 25 bitů, poslední jednička se nevejde a číslo se zaokrouhlí na <strong>16 777 216</strong>. Vyzkoušej to v rozkladu výše.</p>
-                </div>
-            </details>
-        </div>
     </section>
 
     <!-- ================================================================
@@ -1050,31 +850,6 @@
         </div>
         <div class="stat-grid" id="unixStats"></div>
         <div id="unixMsg" aria-live="polite"></div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Kolik paměti zabere pole 1000 čísel typu int a typu double?</summary>
-                <div class="example__body">
-                    <div class="formula">int: 1000 × 4 B = <b>4000 B</b> ≈ 4 kB<br>double: 1000 × 8 B = <b>8000 B</b> ≈ 8 kB</div>
-                    <p>Volba typu má vliv: milion měření v typu <code>double</code> zabere 8 MB, ve <code>float</code> polovinu.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Kolik bajtů zabere řetězec „Šárka“ v UTF-8 a v jazyce C?</summary>
-                <div class="example__body">
-                    <div class="formula">Š (2 B) + á (2 B) + r + k + a (3 × 1 B) = 7 B<br>v jazyce C navíc ukončovací bajt 00 → <b>8 B</b></div>
-                    <p>Pět znaků, ale osm bajtů.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Proč 32bitový Unixový čas skončí v roce 2038?</summary>
-                <div class="example__body">
-                    <div class="formula">největší int32 = 2³¹ − 1 = 2 147 483 647 s<br>2 147 483 647 s ÷ 86 400 s/den ÷ 365,25 ≈ 68,05 roku<br>1970 + 68 = <b>2038</b></div>
-                    <p>O sekundu později se číslo přetočí na −2 147 483 648, což odpovídá 13. prosinci 1901. Řešením je 64bitový čas, který vydrží asi 292 miliard let.</p>
-                </div>
-            </details>
-        </div>
     </section>
 
     <!-- ================================================================
@@ -1183,31 +958,6 @@
         </div>
         <div class="stat-grid" id="calcOut"></div>
         <p class="muted text-sm">Skutečné soubory jsou díky <a href="#komprese" data-tab>kompresi</a> mnohem menší — fotka JPEG z mobilu má místo 36 MB obvykle 3–5 MB.</p>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Kolik bajtů zabere nekomprimovaný obrázek 800 × 600 px ve 24bitových barvách?</summary>
-                <div class="example__body">
-                    <div class="formula">800 × 600 = 480 000 pixelů<br>480 000 × 24 b = 11 520 000 b<br>11 520 000 b ÷ 8 = <b>1 440 000 B ≈ 1,44 MB</b></div>
-                    <p>Zkratka: 24 bitů = 3 bajty, takže 480 000 × 3 B.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Obrázek má 200 různých barev. Jakou nejmenší barevnou hloubku potřebuje?</summary>
-                <div class="example__body">
-                    <div class="formula">2⁷ = 128 &lt; 200 ≤ 256 = 2⁸ → <b>8 bitů</b></div>
-                    <p>Obrázek se uloží s paletou 256 barev a každý pixel bude 8bitový index do palety.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Kolik by zabrala minuta videa Full HD, 30 snímků/s, bez komprese?</summary>
-                <div class="example__body">
-                    <div class="formula">snímek: 1920 × 1080 × 3 B = 6 220 800 B<br>1 s: 6 220 800 × 30 = 186 624 000 B<br>60 s: 186 624 000 × 60 = <b>11 197 440 000 B ≈ 11,2 GB</b></div>
-                    <p>Ve skutečnosti má taková minuta ve formátu MP4 asi 100 MB — komprese ji zmenší více než stokrát.</p>
-                </div>
-            </details>
-        </div>
     </section>
 
     <!-- ================================================================
@@ -1318,31 +1068,6 @@
             <button type="button" data-p="96000,24,2">studio</button>
         </div>
         <div class="stat-grid" id="aOut"></div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Kolik místa zabere tříminutová píseň v kvalitě CD?</summary>
-                <div class="example__body">
-                    <div class="formula">44 100 Hz × 16 b × 2 kanály × 180 s = 254 016 000 b<br>254 016 000 b ÷ 8 = <b>31 752 000 B ≈ 31,8 MB</b></div>
-                    <p>Datový tok CD je 44 100 × 16 × 2 = 1 411 200 b/s ≈ 1 411 kb/s. MP3 ve 128 kb/s je asi 11× menší.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Kolik úrovní rozliší převodník s bitovou hloubkou 3 bity?</summary>
-                <div class="example__body">
-                    <div class="formula">2³ = <b>8 úrovní</b> (kódy 000 až 111)</div>
-                    <p>Každý vzorek se zaokrouhlí na jednu z 8 hodnot. Rozdíl mezi skutečnou a zaokrouhlenou hodnotou je <strong>kvantizační chyba</strong> — v poslechu ji slyšíš jako šum nebo „chrčení“.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Telefon vzorkuje frekvencí 8 kHz. Jaký nejvyšší tón přenese?</summary>
-                <div class="example__body">
-                    <div class="formula">f<sub>max</sub> &lt; f<sub>vz</sub> ÷ 2 = 8 000 ÷ 2 = <b>4 000 Hz</b></div>
-                    <p>Na řeč to stačí, hudba ale v telefonu zní „plechově“ — chybí jí vysoké tóny.</p>
-                </div>
-            </details>
-        </div>
     </section>
 
     <!-- ================================================================
@@ -1402,29 +1127,6 @@
         </div>
         <div class="callout callout--info">
             <strong>Zajímavost:</strong> dokument Wordu <code>.docx</code> začíná bajty <code>PK</code> — je to ve skutečnosti ZIP archiv plný souborů XML. Zkus si kopii dokumentu přejmenovat na <code>.zip</code> a otevřít ji.
-        </div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: V hlavičce BMP je šířka zapsána bajty 20 03 00 00. Kolik pixelů to je?</summary>
-                <div class="example__body">
-                    <div class="formula">BMP používá little-endian → bajty čteme pozpátku: 00 00 03 20<br>0x00000320 = 3 · 256 + 2 · 16 = 768 + 32 = <b>800 px</b></div>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Kolik bajtů zabere jeden řádek 24bitového BMP obrázku širokého 3 px?</summary>
-                <div class="example__body">
-                    <div class="formula">3 px × 3 B = 9 B<br>délka řádku musí být násobkem 4 → zarovnání na <b>12 B</b> (3 bajty výplně)</div>
-                    <p>Procesor čte paměť nejrychleji po 4 bajtech, proto formát BMP každý řádek doplní nulami. V ukázce výše jsou výplňové bajty vyznačené červeně.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Soubor „fotka.jpg“ začíná bajty 25 50 44 46. Co je to doopravdy?</summary>
-                <div class="example__body">
-                    <p>25 50 44 46 je text <code>%PDF</code> — jde o <strong>dokument PDF</strong>, který někdo přejmenoval. Prohlížeč obrázků ho neotevře, prohlížeč PDF ano.</p>
-                </div>
-            </details>
         </div>
     </section>
 
@@ -1506,172 +1208,6 @@
             <figure><canvas id="jpgZoom" class="zoomed" width="40" height="25" style="width:320px;height:200px"></canvas><figcaption>výřez JPEG zvětšený 8×</figcaption></figure>
         </div>
         <div class="stat-grid" id="jpgStats"></div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Zakódujte metodou RLE řetězec WWWWWWBBBWWWW.</summary>
-                <div class="example__body">
-                    <div class="formula">WWWWWW | BBB | WWWW → <b>6W3B4W</b></div>
-                    <p>13 znaků → 6 znaků. Pozor: u textu bez opakování (např. <code>ABCD</code> → <code>1A1B1C1D</code>) by se data naopak zdvojnásobila.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Kolik bitů zabere slovo ABRAKADABRA po Huffmanově kódování?</summary>
-                <div class="example__body">
-                    <div class="formula">četnosti: A 5×, B 2×, R 2×, K 1×, D 1×<br>
-                    jeden z možných kódů: A = 0, B = 110, R = 111, K = 100, D = 101<br>
-                    5·1 + 2·3 + 2·3 + 1·3 + 1·3 = <b>23 bitů</b><br>
-                    ASCII: 11 znaků × 8 b = 88 bitů → úspora 74 %</div>
-                    <p>Při shodných četnostech lze strom sestavit různě, kódy se pak liší, ale celková délka vyjde vždy stejně.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Jaký je kompresní poměr MP3 se 128 kb/s oproti CD?</summary>
-                <div class="example__body">
-                    <div class="formula">CD: 44 100 × 16 × 2 = 1 411 200 b/s<br>1 411 200 ÷ 128 000 ≈ <b>11 : 1</b></div>
-                    <p>MP3 je jedenáctkrát menší. Zahodí hlavně tóny, které jsou přehlušené hlasitějšími zvuky, a frekvence, které člověk neslyší.</p>
-                </div>
-            </details>
-        </div>
-    </section>
-
-    <!-- ================================================================
-         10. DETEKCE CHYB
-         ================================================================ -->
-    <section id="detekce-chyb" class="tab-content" role="tabpanel" aria-labelledby="t-detekce-chyb" hidden>
-        <h2>Detekce a oprava chyb</h2>
-        <p class="lead">Při přenosu nebo ukládání se může bit „překlopit“ — rušením na kabelu, slabým Wi-Fi signálem, poškrábaným diskem nebo i kosmickým zářením. Aby to příjemce poznal, přidávají se k datům <strong>kontrolní (redundantní) bity</strong>.</p>
-
-        <div class="two-col">
-            <div class="callout callout--neutral mb-0"><strong>Detekce chyby</strong><br>Příjemce pozná, že je něco špatně, a požádá o nové poslání. Příklad: paritní bit, kontrolní součet, CRC.</div>
-            <div class="callout callout--neutral mb-0"><strong>Oprava chyby</strong><br>Příjemce pozná i to, <em>který</em> bit je špatně, a sám ho opraví. Příklad: Hammingův kód, QR kód, CD a DVD.</div>
-        </div>
-
-        <h3>Paritní bit</h3>
-        <p>K datům se přidá jeden bit tak, aby byl počet jedniček <strong>sudý</strong> (sudá parita) nebo <strong>lichý</strong> (lichá parita). Příjemce jedničky spočítá a když nesedí, ví, že nastala chyba.</p>
-        <div class="field--inline">
-            <div>
-                <label class="label" for="parInput">Znak k odeslání</label>
-                <input type="text" id="parInput" value="K" maxlength="1" style="width:5rem" autocomplete="off">
-            </div>
-            <div>
-                <span class="label">Typ parity</span>
-                <div class="seg" id="parType" role="group" aria-label="Typ parity">
-                    <button type="button" data-v="even" aria-pressed="true">sudá</button>
-                    <button type="button" data-v="odd" aria-pressed="false">lichá</button>
-                </div>
-            </div>
-        </div>
-        <span class="label">Odesílatel: 7 bitů ASCII + paritní bit</span>
-        <div class="bits" id="parSend"></div>
-        <span class="label">Příjemce — klepnutím na bit nasimuluješ chybu při přenosu</span>
-        <div class="bits" id="parRecv"></div>
-        <div id="parMsg" aria-live="polite"></div>
-
-        <h3>Hammingův kód (7,4) — chyba se sama opraví</h3>
-        <p>Ke 4 datovým bitům se přidají 3 paritní bity. Každý paritní bit hlídá jinou trojici datových bitů (kruhy v diagramu). Když se jeden bit pokazí, nesouhlasí parita právě v těch kruzích, které ho obsahují — a z toho se pozná jeho pozice.</p>
-        <div class="venn-row">
-            <svg class="venn" id="venn" viewBox="0 0 300 280" role="img" aria-label="Vennův diagram tří paritních skupin Hammingova kódu"></svg>
-            <div>
-                <span class="label">Data (4 bity) — klepnutím změníš</span>
-                <div class="bits" id="hamData"></div>
-                <span class="label">Odeslané kódové slovo (7 bitů)</span>
-                <div class="bits" id="hamSend"></div>
-                <span class="label">Přijato — klepnutím pokazíš bit</span>
-                <div class="bits" id="hamRecv"></div>
-                <div class="row" style="margin-bottom:var(--space-3)"><button class="btn btn--primary btn--sm" type="button" id="hamFix">Opravit chybu</button><button class="btn btn--sm" type="button" id="hamReset">Přijmout znovu bez chyby</button></div>
-            </div>
-        </div>
-        <div class="legend">
-            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-orange)"></span>paritní bity p1, p2, p4 (pozice 1, 2, 4)</span>
-            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-blue)"></span>datové bity d1–d4 (pozice 3, 5, 6, 7)</span>
-        </div>
-        <div class="formula" id="hamCalc" aria-live="polite"></div>
-
-        <h3>Kontrolní číslice v běžném životě</h3>
-        <p>Podobný princip chrání i čísla, která přepisují lidé: čárové kódy EAN, ISBN knih, čísla bankovních účtů a platebních karet. Poslední číslice je vypočtená z ostatních a odhalí překlep nebo prohození dvou číslic.</p>
-        <div class="field--inline">
-            <div class="grow">
-                <label class="label" for="eanInput">Prvních 12 číslic kódu EAN-13</label>
-                <input type="text" id="eanInput" value="859400000123" inputmode="numeric" maxlength="13" class="mono" autocomplete="off">
-            </div>
-        </div>
-        <div class="formula" id="eanOut"></div>
-
-        <div class="examples">
-            <h3>Řešené příklady</h3>
-            <details class="example">
-                <summary>Příklad 1: Jaký paritní bit přidáme k datům 1011001 při sudé paritě?</summary>
-                <div class="example__body">
-                    <div class="formula">počet jedniček v 1011001 = 4 (sudý)<br>sudá parita → paritní bit = <b>0</b> → odešle se 1011001<b>0</b></div>
-                    <p>Při liché paritě by byl paritní bit 1.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 2: Zakódujte data 1011 Hammingovým kódem (7,4).</summary>
-                <div class="example__body">
-                    <div class="formula">d1 d2 d3 d4 = 1 0 1 1 → pozice 3, 5, 6, 7<br>
-                    p1 = d1 ⊕ d2 ⊕ d4 = 1 ⊕ 0 ⊕ 1 = 0<br>
-                    p2 = d1 ⊕ d3 ⊕ d4 = 1 ⊕ 1 ⊕ 1 = 1<br>
-                    p4 = d2 ⊕ d3 ⊕ d4 = 0 ⊕ 1 ⊕ 1 = 0<br>
-                    pozice 1–7: p1 p2 d1 p4 d2 d3 d4 = <b>0 1 1 0 0 1 1</b></div>
-                    <p>⊕ je XOR — výsledek je 1, když je počet jedniček lichý.</p>
-                </div>
-            </details>
-            <details class="example">
-                <summary>Příklad 3: Přijali jsme 0110111. Je v něm chyba?</summary>
-                <div class="example__body">
-                    <div class="formula">s1 = b1 ⊕ b3 ⊕ b5 ⊕ b7 = 0 ⊕ 1 ⊕ 1 ⊕ 1 = 1<br>
-                    s2 = b2 ⊕ b3 ⊕ b6 ⊕ b7 = 1 ⊕ 1 ⊕ 1 ⊕ 1 = 0<br>
-                    s4 = b4 ⊕ b5 ⊕ b6 ⊕ b7 = 0 ⊕ 1 ⊕ 1 ⊕ 1 = 1<br>
-                    syndrom s4 s2 s1 = 101₂ = <b>5</b> → chyba na pozici 5</div>
-                    <p>Opravené slovo: 0110<b>0</b>11, data 1011. Syndrom 000 by znamenal, že je vše v pořádku.</p>
-                </div>
-            </details>
-        </div>
-    </section>
-
-    <!-- ================================================================
-         11. PROCVIČENÍ
-         ================================================================ -->
-    <section id="procviceni" class="tab-content" role="tabpanel" aria-labelledby="t-procviceni" hidden>
-        <h2>Procvičení</h2>
-        <p class="lead">Úlohy se generují náhodně, takže je můžeš opakovat donekonečna. Vyber témata a spusť sérii 10 úloh. U každé si můžeš zobrazit postup.</p>
-
-        <span class="label">Témata</span>
-        <div class="chips" id="quizTopics" role="group" aria-label="Témata úloh">
-            <button type="button" class="chip" data-t="zaklady" aria-pressed="true">Základy</button>
-            <button type="button" class="chip" data-t="text" aria-pressed="true">Text</button>
-            <button type="button" class="chip" data-t="cela" aria-pressed="true">Celá čísla</button>
-            <button type="button" class="chip" data-t="float" aria-pressed="true">Desetinná čísla</button>
-            <button type="button" class="chip" data-t="obraz" aria-pressed="true">Obraz</button>
-            <button type="button" class="chip" data-t="zvuk" aria-pressed="true">Zvuk</button>
-            <button type="button" class="chip" data-t="komprese" aria-pressed="true">Komprese</button>
-            <button type="button" class="chip" data-t="chyby" aria-pressed="true">Detekce chyb</button>
-        </div>
-        <div class="row" style="justify-content:center;margin-bottom:var(--space-6)">
-            <button class="btn btn--primary btn--lg" type="button" id="quizStart">Nová série 10 úloh</button>
-        </div>
-
-        <div class="panel quiz-panel" id="quizPanel" hidden>
-            <div class="quiz-meta"><span id="quizProgressText"></span><span id="quizScore"></span></div>
-            <div class="progress" aria-hidden="true"><span id="quizBar"></span></div>
-            <div class="quiz-task" id="quizTask"></div>
-            <div class="quiz-input">
-                <input type="text" id="quizAnswer" autocomplete="off" spellcheck="false" aria-label="Tvoje odpověď">
-                <span class="quiz-unit" id="quizUnit"></span>
-                <button class="btn btn--primary" type="button" id="quizCheck">Zkontrolovat</button>
-            </div>
-            <div class="feedback" id="quizFeedback" aria-live="polite"></div>
-            <div class="quiz-actions">
-                <button class="btn" type="button" id="quizSteps">Zobrazit postup</button>
-                <button class="btn" type="button" id="quizNext">Další úloha</button>
-            </div>
-            <div class="steps-box" id="quizStepsBox"></div>
-        </div>
-
-        <div class="result-overlay" id="quizResult" role="status"></div>
     </section>
 
 </main>
@@ -3249,428 +2785,6 @@ function showCh(c) { return c === ' ' ? '␣' : c === '\n' ? '↵' : c; }
     updateJpg();
 })();
 
-/* ======================================================================
-   10. DETEKCE CHYB
-   ====================================================================== */
-function hammingEncode(d) { // d = [d1,d2,d3,d4]
-    var p1 = d[0] ^ d[1] ^ d[3], p2 = d[0] ^ d[2] ^ d[3], p4 = d[1] ^ d[2] ^ d[3];
-    return [p1, p2, d[0], p4, d[1], d[2], d[3]];
-}
-function hammingSyndrome(b) { // b = 7 bitů, pozice 1..7 = index 0..6
-    var s1 = b[0] ^ b[2] ^ b[4] ^ b[6], s2 = b[1] ^ b[2] ^ b[5] ^ b[6], s4 = b[3] ^ b[4] ^ b[5] ^ b[6];
-    return { s1: s1, s2: s2, s4: s4, pos: s4 * 4 + s2 * 2 + s1 };
-}
-
-(function () {
-    /* --- Parita --- */
-    var send = [], recv = [];
-    function bitsHtml(arr, opts) {
-        return '<div class="bits__group">' + arr.map(function (v, i) {
-            var cls = 'bit' + (i === 7 ? ' bit--p' : '') + (opts.err && opts.err[i] ? ' bit--err' : '') + (opts.click ? '' : ' bit--static');
-            return '<button type="button" class="' + cls + '" data-i="' + i + '" aria-pressed="' + (v ? 'true' : 'false') + '"' + (opts.click ? '' : ' tabindex="-1"') + '>' + v +
-                '<span class="bit__w">' + (i === 7 ? 'P' : '') + '</span></button>';
-        }).join('') + '</div>';
-    }
-    function initParity() {
-        var ch = $('parInput').value || 'K';
-        var c = ch.codePointAt(0); if (c > 127) c = 63;
-        var data = c.toString(2).padStart(7, '0').split('').map(Number);
-        var ones = data.reduce(function (a, b) { return a + b; }, 0);
-        var even = segValue($('parType')) === 'even';
-        var p = even ? ones % 2 : 1 - ones % 2;
-        send = data.concat([p]);
-        recv = send.slice();
-        renderParity();
-    }
-    function renderParity() {
-        var even = segValue($('parType')) === 'even';
-        var err = recv.map(function (v, i) { return v !== send[i]; });
-        $('parSend').innerHTML = bitsHtml(send, {});
-        $('parRecv').innerHTML = bitsHtml(recv, { click: true, err: err });
-        var ones = recv.reduce(function (a, b) { return a + b; }, 0);
-        var ok = even ? ones % 2 === 0 : ones % 2 === 1;
-        var flips = err.filter(Boolean).length;
-        var code = parseInt(recv.slice(0, 7).join(''), 2);
-        var chr = code >= 32 && code < 127 ? '„' + esc(String.fromCharCode(code)) + '“' : 'řídicí znak ' + code;
-        var info = 'Přijato jedniček: <strong>' + ones + '</strong> (' + (ones % 2 ? 'lichý' : 'sudý') + ' počet), čekali jsme ' + (even ? 'sudý' : 'lichý') + '. Přijatý znak: ' + chr + '.<br>';
-        var cls, msg;
-        if (ok && flips === 0) { cls = 'callout--success'; msg = 'Parita sedí — přenos je v pořádku.'; }
-        else if (!ok) { cls = 'callout--warn'; msg = '<strong>Chyba zjištěna!</strong> Parita nesedí. Příjemce ale neví, který bit je špatně — musí požádat o nové poslání.'; }
-        else { cls = 'callout--danger'; msg = '<strong>Chyba nezjištěna!</strong> Pokazily se ' + flips + ' bity a parita přesto sedí. Jeden paritní bit odhalí jen lichý počet chyb.'; }
-        $('parMsg').innerHTML = '<div class="callout ' + cls + '">' + info + msg + '</div>';
-    }
-    $('parRecv').addEventListener('click', function (e) {
-        var b = e.target.closest('.bit');
-        if (!b) return;
-        recv[+b.dataset.i] ^= 1;
-        renderParity();
-    });
-    $('parInput').addEventListener('input', initParity);
-    bindSeg($('parType'), initParity);
-    initParity();
-
-    /* --- Hamming (7,4) --- */
-    var data = [1, 0, 1, 1], code = [], rx = [];
-    var NAMES = ['p1', 'p2', 'd1', 'p4', 'd2', 'd3', 'd4'];
-    function hbits(arr, kind) {
-        return '<div class="bits__group">' + arr.map(function (v, i) {
-            var isP = kind !== 'data' && (i === 0 || i === 1 || i === 3);
-            var cls = 'bit ' + (kind === 'data' ? 'bit--m' : isP ? 'bit--p' : 'bit--m');
-            if (kind === 'rx' && v !== code[i]) cls += ' bit--err';
-            if (kind === 'send') cls += ' bit--static';
-            var lab = kind === 'data' ? 'd' + (i + 1) : (i + 1) + '·' + NAMES[i];
-            return '<button type="button" class="' + cls + '" data-i="' + i + '" aria-pressed="' + (v ? 'true' : 'false') + '"' + (kind === 'send' ? ' tabindex="-1"' : '') + '>' + v + '<span class="bit__w">' + lab + '</span></button>';
-        }).join('') + '</div>';
-    }
-    function encode() { code = hammingEncode(data); rx = code.slice(); renderHam(); }
-    function renderHam() {
-        $('hamData').innerHTML = hbits(data, 'data');
-        $('hamSend').innerHTML = hbits(code, 'send');
-        $('hamRecv').innerHTML = hbits(rx, 'rx');
-        var s = hammingSyndrome(rx);
-        var flips = rx.filter(function (v, i) { return v !== code[i]; }).length;
-        var b = function (i) { return rx[i - 1]; };
-        var msg;
-        if (s.pos === 0) msg = flips ? '<span class="bad">Syndrom 000, ale chyby tam jsou — tolik chyb už kód nepozná.</span>' : '<span class="ok">Syndrom 000 → přijato bez chyby.</span>';
-        else msg = '<span class="warn">Syndrom ' + s.s4 + s.s2 + s.s1 + '₂ = ' + s.pos + ' → chyba na pozici ' + s.pos + ' (' + NAMES[s.pos - 1] + ').</span>' +
-            (flips > 1 ? '<br><span class="bad">Pozor: pokazily se ' + flips + ' bity. Hammingův kód (7,4) opraví jen jednu chybu — „oprava“ teď udělá další chybu.</span>' : '');
-        $('hamCalc').innerHTML =
-            's1 = b1 ⊕ b3 ⊕ b5 ⊕ b7 = ' + [b(1), b(3), b(5), b(7)].join(' ⊕ ') + ' = <b>' + s.s1 + '</b><br>' +
-            's2 = b2 ⊕ b3 ⊕ b6 ⊕ b7 = ' + [b(2), b(3), b(6), b(7)].join(' ⊕ ') + ' = <b>' + s.s2 + '</b><br>' +
-            's4 = b4 ⊕ b5 ⊕ b6 ⊕ b7 = ' + [b(4), b(5), b(6), b(7)].join(' ⊕ ') + ' = <b>' + s.s4 + '</b><br>' + msg +
-            '<br><span class="muted">Data z přijatého slova: ' + [rx[2], rx[4], rx[5], rx[6]].join('') + '</span>';
-        $('hamFix').disabled = s.pos === 0;
-        drawVenn(s);
-    }
-    function drawVenn(s) {
-        var C = [
-            { x: 112, y: 108, ok: !s.s1, name: 'p1' },
-            { x: 188, y: 108, ok: !s.s2, name: 'p2' },
-            { x: 150, y: 172, ok: !s.s4, name: 'p4' }
-        ];
-        var P = { 1: [72, 80], 2: [228, 80], 3: [150, 84], 4: [150, 228], 5: [110, 160], 6: [190, 160], 7: [150, 134] };
-        var lab = [[60, 40], [240, 40], [150, 270]];
-        var h = '';
-        C.forEach(function (c, i) {
-            var col = c.ok ? 'var(--c-green)' : 'var(--c-red)';
-            h += '<circle cx="' + c.x + '" cy="' + c.y + '" r="74" style="fill:' + (c.ok ? 'var(--c-green-bg)' : 'var(--c-red-bg)') + ';fill-opacity:0.55;stroke:' + col + ';stroke-width:2"/>';
-            h += '<text x="' + lab[i][0] + '" y="' + lab[i][1] + '" text-anchor="middle" font-size="12" style="fill:' + col + ';font-weight:700">' + c.name + (c.ok ? ' ✓' : ' ✗') + '</text>';
-        });
-        for (var p = 1; p <= 7; p++) {
-            var q = P[p], v = rx[p - 1], bad = v !== code[p - 1], isP = p === 1 || p === 2 || p === 4;
-            h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="15" style="fill:var(--surface);stroke:' + (bad ? 'var(--c-red)' : isP ? 'var(--c-orange)' : 'var(--c-blue)') + ';stroke-width:' + (bad ? 3 : 1.5) + '"/>';
-            h += '<text x="' + q[0] + '" y="' + (q[1] + 5) + '" text-anchor="middle" font-size="15" style="fill:var(--text);font-weight:700">' + v + '</text>';
-            h += '<text x="' + (q[0] + 17) + '" y="' + (q[1] - 10) + '" font-size="9" style="fill:var(--text-muted)">' + p + '</text>';
-        }
-        $('venn').innerHTML = h;
-    }
-    $('hamData').addEventListener('click', function (e) { var b = e.target.closest('.bit'); if (b) { data[+b.dataset.i] ^= 1; encode(); } });
-    $('hamRecv').addEventListener('click', function (e) { var b = e.target.closest('.bit'); if (b) { rx[+b.dataset.i] ^= 1; renderHam(); } });
-    $('hamFix').addEventListener('click', function () { var s = hammingSyndrome(rx); if (s.pos) { rx[s.pos - 1] ^= 1; renderHam(); } });
-    $('hamReset').addEventListener('click', function () { rx = code.slice(); renderHam(); });
-    encode();
-    rx[4] ^= 1; renderHam(); // ukázková chyba na pozici 5
-
-    /* --- EAN-13 --- */
-    function updateEan() {
-        var v = $('eanInput').value.replace(/\D/g, '');
-        var out = $('eanOut');
-        if (v.length < 12) { out.innerHTML = 'Zadej aspoň 12 číslic (zatím ' + v.length + ').'; return; }
-        var d = v.slice(0, 12).split('').map(Number);
-        var parts = d.map(function (x, i) { return x + '·' + (i % 2 ? 3 : 1); });
-        var sum = d.reduce(function (a, x, i) { return a + x * (i % 2 ? 3 : 1); }, 0);
-        var check = (10 - sum % 10) % 10;
-        var h = 'váhy střídavě 1 a 3: ' + parts.join(' + ') + ' = <b>' + sum + '</b><br>' +
-            'kontrolní číslice = (10 − ' + sum + ' mod 10) mod 10 = <b>' + check + '</b> → celý kód: <b>' + v.slice(0, 12) + check + '</b>';
-        if (v.length === 13) {
-            h += '<br>' + (+v[12] === check ? '<span class="ok">Zadaný 13místný kód je platný.</span>' : '<span class="bad">Zadaný kód končí ' + v[12] + ', ale má končit ' + check + ' — v čísle je chyba.</span>');
-        }
-        if (v.slice(0, 3) === '859') h += '<br><span class="muted">Prefix 859 přiděluje organizace GS1 pro Českou republiku.</span>';
-        out.innerHTML = h;
-    }
-    $('eanInput').addEventListener('input', updateEan);
-    updateEan();
-})();
-
-/* ======================================================================
-   11. PROCVIČENÍ
-   ====================================================================== */
-var Quiz = (function () {
-    function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
-    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-    function n2(x) { return fmt(x).replace(/ /g, ' '); }
-    function bitsWord(n) { return n === 1 ? 'bit' : n < 5 ? 'bity' : 'bitů'; }
-
-    var G = {
-        zaklady: [
-            function () {
-                var N = pick([3, 5, 7, 10, 12, 20, 26, 33, 50, 64, 100, 130, 200, 256, 300, 500, 1000, 1500]);
-                var n = Math.ceil(Math.log2(N));
-                return { q: 'Kolik nejméně bitů je potřeba, aby šlo zakódovat <strong>' + N + '</strong> různých hodnot?', a: n, unit: 'bitů',
-                    steps: 'Hledám nejmenší n, pro které 2^n ≥ ' + N + '.\n2^' + (n - 1) + ' = ' + Math.pow(2, n - 1) + ' < ' + N + '\n2^' + n + ' = ' + Math.pow(2, n) + ' ≥ ' + N + '\n→ ' + n + ' ' + bitsWord(n) };
-            },
-            function () {
-                var n = rnd(3, 16);
-                return { q: 'Kolik různých hodnot lze zapsat pomocí <strong>' + n + ' bitů</strong>?', a: Math.pow(2, n), unit: 'hodnot',
-                    steps: 'Každý bit zdvojnásobí počet kombinací: 2^' + n + ' = ' + n2(Math.pow(2, n)) };
-            }
-        ],
-        text: [
-            function () {
-                var set = pick(['upper', 'lower', 'digit']);
-                var ch = set === 'upper' ? String.fromCharCode(rnd(65, 90)) : set === 'lower' ? String.fromCharCode(rnd(97, 122)) : String(rnd(0, 9));
-                var c = ch.charCodeAt(0);
-                var base = set === 'upper' ? ['A', 65] : set === 'lower' ? ['a', 97] : ['0', 48];
-                return { q: 'Jaký je desítkový kód ASCII znaku <code>' + ch + '</code>?', a: c,
-                    steps: 'Opěrný bod: „' + base[0] + '“ = ' + base[1] + '.\n„' + ch + '“ je o ' + (c - base[1]) + ' pozic dál → ' + base[1] + ' + ' + (c - base[1]) + ' = ' + c };
-            },
-            function () {
-                var up = Math.random() < 0.5, c = up ? rnd(65, 90) : rnd(97, 122);
-                var base = up ? ['A', 65] : ['a', 97];
-                return { q: 'Který znak má v ASCII kód <strong>' + c + '</strong>? (pozor na velikost písmen)', a: String.fromCharCode(c), caseSensitive: true,
-                    steps: (up ? '65 až 90 jsou velká písmena' : '97 až 122 jsou malá písmena') + '.\n' + c + ' − ' + base[1] + ' = ' + (c - base[1]) + ' → ' + (c - base[1]) + '. písmeno po „' + base[0] + '“ = „' + String.fromCharCode(c) + '“' };
-            },
-            function () {
-                var w = pick(['škola', 'řeka', 'kůň', 'Brno', 'počítač', 'čeština', 'žlutý', 'Plzeň', 'data', 'bajt', 'úloha', 'ďábel', 'týden', 'motýl']);
-                var arr = Array.from(w);
-                var bytes = new TextEncoder().encode(w).length;
-                var two = arr.filter(function (c) { return c.charCodeAt(0) > 127; });
-                return { q: 'Kolik bajtů zabere slovo <strong>„' + w + '“</strong> v kódování UTF-8?', a: bytes, unit: 'B',
-                    steps: 'Znaků: ' + arr.length + '\nZnaky z ASCII mají 1 B, česká písmena s diakritikou 2 B.\n' +
-                        (two.length ? 'Dvoubajtové: ' + two.join(', ') + ' → ' + two.length + ' × 2 B\n' : 'Žádná diakritika.\n') +
-                        (arr.length - two.length) + ' × 1 B' + (two.length ? ' + ' + two.length + ' × 2 B' : '') + ' = ' + bytes + ' B' };
-            }
-        ],
-        cela: [
-            function () {
-                var N = rnd(1, 127), pos = N.toString(2).padStart(8, '0');
-                var inv = pos.split('').map(function (b) { return b === '0' ? '1' : '0'; }).join('');
-                var res = (256 - N).toString(2);
-                return { q: 'Zapiš číslo <strong>−' + N + '</strong> jako 8bitové číslo ve dvojkovém doplňku.', a: res, bits: true, unit: '(8 bitů)',
-                    steps: '+' + N + ' = ' + pos + '\ninvertuj = ' + inv + '\npřičti 1 = ' + res };
-            },
-            function () {
-                var r = rnd(128, 255), b = r.toString(2);
-                return { q: 'Jakou hodnotu má 8bitové číslo <strong>se znaménkem</strong> <code>' + b.replace(/(.{4})/, '$1 ') + '</code>?', a: r - 256,
-                    steps: 'Nejvyšší bit má váhu −128.\nZbylé bity: ' + b.slice(1) + ' = ' + (r - 128) + '\n−128 + ' + (r - 128) + ' = ' + (r - 256) };
-            },
-            function () {
-                var a = rnd(60, 127), b = rnd(128 - a, 127);
-                var s = a + b, w = s > 127 ? s - 256 : s;
-                return { q: 'Kolik vyjde <strong>' + a + ' + ' + b + '</strong>, když se počítá v 8bitovém čísle se znaménkem (rozsah −128 až 127)?', a: w,
-                    steps: 'Skutečný součet: ' + s + '\n' + (s > 127 ? s + ' > 127 → přetečení: ' + s + ' − 256 = ' + w : 'Vejde se do rozsahu.') };
-            },
-            function () {
-                var n = pick([4, 6, 8, 10, 12, 16]), signed = Math.random() < 0.5;
-                var a = signed ? Math.pow(2, n - 1) - 1 : Math.pow(2, n) - 1;
-                return { q: 'Jaké je <strong>největší</strong> číslo, které uložíš do ' + n + ' bitů ' + (signed ? '<strong>se znaménkem</strong> (dvojkový doplněk)' : '<strong>bez znaménka</strong>') + '?', a: a,
-                    steps: signed ? 'Rozsah se znaménkem: −2^' + (n - 1) + ' až 2^' + (n - 1) + ' − 1\n2^' + (n - 1) + ' − 1 = ' + n2(a) : 'Rozsah bez znaménka: 0 až 2^' + n + ' − 1\n2^' + n + ' − 1 = ' + n2(a) };
-            }
-        ],
-        float: [
-            function () {
-                var m = pick([1, 1.25, 1.5, 1.75]), e = rnd(-3, 10), x = m * Math.pow(2, e);
-                return { q: 'Jakou hodnotu bude mít uložené pole exponentu <strong>E</strong> (8 bitů, posun 127), když do typu float uložíš číslo <strong>' + czNum(x) + '</strong>?', a: e + 127,
-                    steps: czNum(x) + ' = ' + czNum(m) + ' · 2^' + e + '\nE = exponent + 127 = ' + e + ' + 127 = ' + (e + 127) };
-            },
-            function () {
-                var S = rnd(0, 1), m = pick([1, 1.25, 1.5, 1.75]), e = rnd(-2, 6);
-                var M = (m - 1) * 4, E = e + 127;
-                var bits = S + ' ' + E.toString(2).padStart(8, '0') + ' ' + M.toString(2).padStart(2, '0') + '0'.repeat(21);
-                var val = (S ? -1 : 1) * m * Math.pow(2, e);
-                return { q: 'Jaké číslo je uloženo jako float <code>' + bits + '</code>?<br><span class="muted text-sm">(znaménko | exponent | mantisa)</span>', a: val,
-                    steps: 'S = ' + S + ' → ' + (S ? 'záporné' : 'kladné') + '\nE = ' + E.toString(2).padStart(8, '0') + ' = ' + E + ' → exponent ' + E + ' − 127 = ' + e +
-                        '\nmantisa = 1,' + M.toString(2).padStart(2, '0') + '₂ = ' + czNum(m) + '\nhodnota = ' + (S ? '−' : '') + czNum(m) + ' · 2^' + e + ' = ' + czNum(val) };
-            }
-        ],
-        obraz: [
-            function () {
-                var d = pick([1, 8, 24, 24]);
-                var w = d === 1 ? pick([64, 128, 160, 320, 640]) : pick([100, 200, 320, 400, 640, 800, 1024]);
-                var h = pick([50, 100, 200, 240, 300, 480, 600]);
-                var bytes = w * h * d / 8;
-                return { q: 'Kolik <strong>bajtů</strong> zabere nekomprimovaný obrázek <strong>' + w + ' × ' + h + ' px</strong> s barevnou hloubkou <strong>' + d + ' ' + bitsWord(d) + '</strong>?', a: bytes, unit: 'B',
-                    steps: w + ' × ' + h + ' = ' + n2(w * h) + ' pixelů\n' + n2(w * h) + ' × ' + d + ' b = ' + n2(w * h * d) + ' b\n÷ 8 = ' + n2(bytes) + ' B' };
-            },
-            function () {
-                var n = pick([1, 2, 3, 4, 5, 6, 8, 16]);
-                return { q: 'Kolik různých barev může mít pixel při barevné hloubce <strong>' + n + ' ' + bitsWord(n) + '</strong>?', a: Math.pow(2, n),
-                    steps: '2^' + n + ' = ' + n2(Math.pow(2, n)) };
-            },
-            function () {
-                var K = pick([2, 3, 5, 12, 16, 17, 30, 64, 100, 200, 256, 1000]);
-                var n = Math.max(1, Math.ceil(Math.log2(K)));
-                return { q: 'Obrázek obsahuje <strong>' + K + '</strong> různých barev a použije se paleta. Kolik bitů nejméně potřebuje jeden pixel?', a: n, unit: 'bitů',
-                    steps: 'Hledám nejmenší n, aby 2^n ≥ ' + K + '.\n2^' + n + ' = ' + Math.pow(2, n) + (n > 1 ? ', ale 2^' + (n - 1) + ' = ' + Math.pow(2, n - 1) + ' nestačí' : '') + '\n→ ' + n + ' ' + bitsWord(n) };
-            }
-        ],
-        zvuk: [
-            function () {
-                var fs = pick([8000, 11025, 22050, 44100]), b = pick([8, 16]), ch = pick([1, 2]), s = rnd(1, 10);
-                var bytes = fs * b * ch * s / 8;
-                return { q: 'Kolik <strong>bajtů</strong> zabere nekomprimovaný zvuk: ' + n2(fs) + ' Hz, ' + b + ' bitů, ' + (ch === 1 ? 'mono' : 'stereo') + ', délka ' + s + ' s?', a: bytes, unit: 'B',
-                    steps: n2(fs) + ' × ' + b + ' × ' + ch + ' × ' + s + ' = ' + n2(bytes * 8) + ' b\n÷ 8 = ' + n2(bytes) + ' B' };
-            },
-            function () {
-                var f = pick([1000, 2500, 3400, 4000, 5000, 10000, 15000, 20000]);
-                return { q: 'Signál obsahuje frekvence až do <strong>' + n2(f) + ' Hz</strong>. Jaká je teoretická hranice vzorkovací frekvence (Nyquistova frekvence), kterou musíme překročit?', a: 2 * f, unit: 'Hz',
-                    steps: 'Vzorkovací frekvence musí být větší než dvojnásobek nejvyšší frekvence.\n2 × ' + n2(f) + ' = ' + n2(2 * f) + ' Hz' };
-            },
-            function () {
-                var n = rnd(1, 16);
-                return { q: 'Kolik kvantovacích úrovní má A/D převodník s bitovou hloubkou <strong>' + n + ' ' + bitsWord(n) + '</strong>?', a: Math.pow(2, n),
-                    steps: '2^' + n + ' = ' + n2(Math.pow(2, n)) + ' úrovní' };
-            }
-        ],
-        komprese: [
-            function () {
-                var letters = ['A', 'B', 'C', 'W'], s = '', prev = '';
-                for (var k = 0, runs = rnd(3, 5); k < runs; k++) {
-                    var l; do { l = pick(letters); } while (l === prev);
-                    s += l.repeat(rnd(1, 7)); prev = l;
-                }
-                return { q: 'Zakóduj metodou RLE (počet + znak): <code>' + s + '</code>', a: rleEncode(s), caseSensitive: false,
-                    steps: 'Rozděl na běhy stejných znaků a zapiš počet + znak:\n' + s.match(/(.)\1*/g).join(' | ') + '\n→ ' + rleEncode(s) };
-            },
-            function () {
-                var letters = ['A', 'B', 'X', 'O'], enc = '', dec = '', prev = '';
-                for (var k = 0, runs = rnd(3, 4); k < runs; k++) {
-                    var l; do { l = pick(letters); } while (l === prev);
-                    var c = rnd(1, 6); enc += c + l; dec += l.repeat(c); prev = l;
-                }
-                return { q: 'Rozbal řetězec zakódovaný metodou RLE: <code>' + enc + '</code>', a: dec,
-                    steps: enc.match(/\d+\D/g).map(function (p) { return p + ' → ' + p.slice(-1).repeat(+p.slice(0, -1)); }).join('\n') + '\n→ ' + dec };
-            },
-            function () {
-                var w = pick(['ANANAS', 'BANÁN', 'MAMAMIA', 'ABRAKADABRA', 'KOKOS', 'PAPAGÁJ', 'LALALAND', 'ALIBABA']);
-                var hf = huffman(w);
-                var total = Array.from(w).reduce(function (a, c) { return a + hf.codes.get(c).length; }, 0);
-                var rows = Array.from(hf.freq.entries()).sort(function (a, b) { return b[1] - a[1]; });
-                return { q: 'Kolik bitů zabere slovo <strong>' + w + '</strong> po Huffmanově kódování (bez tabulky kódů)?', a: total, unit: 'bitů',
-                    steps: 'Četnosti: ' + rows.map(function (r) { return r[0] + ' ' + r[1] + '×'; }).join(', ') +
-                        '\nJeden z možných kódů: ' + rows.map(function (r) { return r[0] + ' = ' + hf.codes.get(r[0]); }).join(', ') +
-                        '\nSoučet: ' + rows.map(function (r) { return r[1] + '·' + hf.codes.get(r[0]).length; }).join(' + ') + ' = ' + total + ' bitů' };
-            }
-        ],
-        chyby: [
-            function () {
-                var d = ''; for (var k = 0; k < 7; k++) d += rnd(0, 1);
-                var ones = d.split('').filter(function (x) { return x === '1'; }).length;
-                var even = Math.random() < 0.5;
-                var p = even ? ones % 2 : 1 - ones % 2;
-                return { q: 'Jaký paritní bit přidáš k datům <code>' + d + '</code> při <strong>' + (even ? 'sudé' : 'liché') + '</strong> paritě?', a: p, bits: true,
-                    steps: 'Počet jedniček: ' + ones + ' (' + (ones % 2 ? 'lichý' : 'sudý') + ')\nChceme ' + (even ? 'sudý' : 'lichý') + ' počet → paritní bit = ' + p };
-            },
-            function () {
-                var data = [rnd(0, 1), rnd(0, 1), rnd(0, 1), rnd(0, 1)];
-                var c = hammingEncode(data), pos = Math.random() < 0.2 ? 0 : rnd(1, 7);
-                if (pos) c[pos - 1] ^= 1;
-                var s = hammingSyndrome(c);
-                var b = function (i) { return c[i - 1]; };
-                return { q: 'Přijali jsme slovo Hammingova kódu (7,4) <code>' + c.join('') + '</code>. Na které pozici (1–7) je chyba? Pokud chyba není, napiš 0.', a: s.pos,
-                    steps: 's1 = b1⊕b3⊕b5⊕b7 = ' + [b(1), b(3), b(5), b(7)].join('⊕') + ' = ' + s.s1 +
-                        '\ns2 = b2⊕b3⊕b6⊕b7 = ' + [b(2), b(3), b(6), b(7)].join('⊕') + ' = ' + s.s2 +
-                        '\ns4 = b4⊕b5⊕b6⊕b7 = ' + [b(4), b(5), b(6), b(7)].join('⊕') + ' = ' + s.s4 +
-                        '\nsyndrom s4 s2 s1 = ' + s.s4 + s.s2 + s.s1 + ' = ' + s.pos };
-            }
-        ]
-    };
-
-    var LEN = 10, tasks = [], idx = 0, score = 0, answered = false, firstTry = true;
-
-    function topics() {
-        return Array.prototype.slice.call(document.querySelectorAll('#quizTopics .chip[aria-pressed="true"]')).map(function (c) { return c.dataset.t; });
-    }
-    function norm(s, cs) {
-        s = String(s).trim().replace(/[\s ]/g, '').replace(/,/g, '.').replace(/−/g, '-');
-        return cs ? s : s.toLowerCase();
-    }
-    function correct(task, ans) {
-        if (typeof task.a === 'number' && !task.bits) {
-            var v = parseCz(ans);
-            return v !== null && Math.abs(v - task.a) < 1e-9 * Math.max(1, Math.abs(task.a));
-        }
-        return norm(ans, task.caseSensitive) === norm(task.a, task.caseSensitive);
-    }
-    function start() {
-        var t = topics();
-        if (!t.length) { alertNoTopic(); return; }
-        tasks = [];
-        for (var i = 0; i < LEN; i++) {
-            var topic = t[i % t.length];
-            tasks.push(Object.assign({ topic: topic }, pick(G[topic])()));
-        }
-        for (i = tasks.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = tasks[i]; tasks[i] = tasks[j]; tasks[j] = x; }
-        idx = 0; score = 0;
-        $('quizResult').style.display = 'none';
-        $('quizPanel').hidden = false;
-        show();
-    }
-    function alertNoTopic() {
-        $('quizResult').style.display = 'block';
-        $('quizResult').innerHTML = '<strong>Vyber alespoň jedno téma.</strong>';
-    }
-    function show() {
-        var t = tasks[idx];
-        answered = false; firstTry = true;
-        $('quizProgressText').textContent = 'Úloha ' + (idx + 1) + ' z ' + LEN;
-        $('quizScore').textContent = 'Správně: ' + score;
-        $('quizBar').style.width = (idx / LEN * 100) + '%';
-        $('quizTask').innerHTML = t.q;
-        $('quizUnit').textContent = t.unit || '';
-        $('quizAnswer').value = '';
-        $('quizFeedback').textContent = '';
-        $('quizFeedback').className = 'feedback';
-        $('quizStepsBox').classList.remove('is-open');
-        $('quizStepsBox').textContent = t.steps;
-        $('quizSteps').textContent = 'Zobrazit postup';
-        $('quizNext').textContent = idx === LEN - 1 ? 'Vyhodnotit' : 'Další úloha';
-        $('quizAnswer').focus({ preventScroll: true });
-    }
-    function check() {
-        var t = tasks[idx], ans = $('quizAnswer').value;
-        if (!ans.trim()) return;
-        var ok = correct(t, ans);
-        if (ok && firstTry && !answered) score++;
-        if (!ok) firstTry = false;
-        answered = answered || ok;
-        $('quizScore').textContent = 'Správně: ' + score;
-        var fb = $('quizFeedback');
-        fb.className = 'feedback ' + (ok ? 'success' : 'error');
-        fb.textContent = ok ? 'Správně!' : 'Zatím ne. Zkus to znovu, nebo si zobraz postup.';
-        if (!ok) { fb.style.animation = 'none'; void fb.offsetWidth; fb.style.animation = 'shake 0.3s'; }
-    }
-    function next() {
-        if (idx < LEN - 1) { idx++; show(); return; }
-        $('quizBar').style.width = '100%';
-        $('quizPanel').hidden = true;
-        var pct = Math.round(score / LEN * 100);
-        var r = $('quizResult');
-        r.style.display = 'block';
-        r.innerHTML = '<div style="font-size:var(--fs-3xl);font-weight:700">' + score + ' / ' + LEN + '</div><p>' +
-            (pct >= 90 ? 'Výborně! Kódování dat máš v malíčku.' : pct >= 70 ? 'Dobrá práce! Pár věcí ještě zopakuj.' : pct >= 50 ? 'Slušný základ. Projdi si řešené příklady a zkus to znovu.' : 'Nevzdávej to — vrať se k teorii a řešeným příkladům v jednotlivých záložkách.') +
-            '</p><button class="btn btn--primary" type="button" id="quizAgain">Nová série</button>';
-        $('quizAgain').addEventListener('click', start);
-    }
-
-    $('quizTopics').addEventListener('click', function (e) {
-        var c = e.target.closest('.chip');
-        if (c) c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
-    });
-    $('quizStart').addEventListener('click', start);
-    $('quizCheck').addEventListener('click', check);
-    $('quizAnswer').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); answered && $('quizFeedback').classList.contains('success') ? next() : check(); }
-    });
-    $('quizNext').addEventListener('click', next);
-    $('quizSteps').addEventListener('click', function () {
-        var box = $('quizStepsBox'), open = box.classList.toggle('is-open');
-        this.textContent = open ? 'Skrýt postup' : 'Zobrazit postup';
-        if (open) firstTry = false;
-    });
-
-    return { G: G, correct: correct };
-})();
 </script>
 </body>
 </html>
