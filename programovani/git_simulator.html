@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Git a GitHub | Výukové aplikace</title>
+    <meta name="description" content="Interaktivní simulátor gitu: commity, větve, merge, rebase, cherry-pick, vracení změn a spolupráce přes GitHub (clone, fetch, pull, push, pull request) v 18 úrovních a volném pískovišti.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Git a GitHub — interaktivní simulátor">
+    <meta property="og:description" content="Nauč se větvit, slučovat, přeskládávat a spolupracovat přes GitHub na živém grafu commitů.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* --- Specifika stránky --- */
+
+        [hidden] { display: none !important; }
+
+        code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+        p code, li code, td code, .task code {
+            padding: 1px 5px;
+            color: var(--code-text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            white-space: nowrap;
+        }
+
+        /* Rozvržení úrovní a pískoviště */
+        .git-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: var(--space-5);
+            align-items: start;
+        }
+        .git-main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+
+        .repos {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: var(--space-3);
+        }
+        .repos.has-remote { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+
+        .repo {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        .repo__head {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .repo__head .muted { font-weight: 400; margin-left: auto; font-size: var(--fs-xs); }
+        .repo--remote .repo__head { color: var(--c-purple); }
+        .repo > svg {
+            display: block;
+            width: 100%;
+            height: clamp(260px, 44vh, 440px);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .repo--empty .repo__empty {
+            display: flex; align-items: center; justify-content: center;
+            height: clamp(260px, 44vh, 440px); padding: var(--space-6);
+            text-align: center; color: var(--text-faint); font-size: var(--fs-sm);
+        }
+        .prs { padding: var(--space-2) var(--space-3); border-top: 1px solid var(--border); font-size: var(--fs-xs); background: var(--surface); }
+        .prs:empty { display: none; }
+        .pr { display: flex; align-items: center; gap: var(--space-2); padding: 2px 0; color: var(--text-muted); }
+        .pr .icon { color: var(--c-green); }
+        .pr--merged .icon { color: var(--c-purple); }
+
+        /* SVG graf */
+        .gv-edge { fill: none; stroke: var(--border-strong); stroke-width: 2; }
+        .gv-edge--orphan { stroke-dasharray: 4 4; }
+        .gv-id { font-family: var(--font-mono); font-weight: 600; fill: var(--text); pointer-events: none; }
+        .gv-lbl { font-family: var(--font-mono); pointer-events: none; }
+        .gv-node--click { cursor: pointer; }
+        .gv-node--click:hover circle:first-of-type { stroke-width: 3 !important; }
+
+        /* Terminál */
+        .term {
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .term__log {
+            height: 190px;
+            overflow-y: auto;
+            padding: var(--space-3);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.55;
+            background: var(--surface-sunken);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        .term__log .l-cmd { color: var(--text); font-weight: 600; margin-top: var(--space-1); }
+        .term__log .l-cmd::before { content: '$ '; color: var(--accent); }
+        .term__log .l-out, .term__log .l-log { color: var(--text-muted); }
+        .term__log .l-ok { color: var(--c-green); }
+        .term__log .l-err { color: var(--c-red); }
+        .term__log .l-hint { color: var(--c-orange); }
+        .term__log .l-info { color: var(--accent); }
+        .term__form {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            border-top: 1px solid var(--border);
+        }
+        .term__prompt { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+        .term__input {
+            flex: 1;
+            min-width: 0;
+            padding: var(--space-2) 0;
+            font-family: var(--font-mono);
+            font-size: var(--fs-base);
+            color: var(--text);
+            background: transparent;
+            border: 0;
+            outline: none;
+        }
+        .term__form:focus-within { box-shadow: inset 0 0 0 2px var(--accent-soft); }
+
+        .chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+        .chip {
+            padding: 3px 8px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+        }
+        .chip:hover { color: var(--text); background: var(--hover-bg); border-color: var(--border-strong); }
+
+        /* Panel se zadáním */
+        .task-card {
+            position: sticky;
+            top: var(--space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            padding: var(--space-4);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        .task-card h2 { margin: 0; font-size: var(--fs-xl); }
+        .task-card .eyebrow { font-size: var(--fs-xs); color: var(--text-faint); text-transform: uppercase; letter-spacing: var(--tracking-wide); font-weight: 600; }
+        .task-card .text p { margin-bottom: var(--space-3); font-size: var(--fs-sm); line-height: var(--lh-normal); }
+        .task-card .text p.task { padding: var(--space-3); background: var(--accent-soft); border-radius: var(--radius-md); color: var(--text); }
+        .task-card .btn-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+        .task-card .callout { margin: 0; font-size: var(--fs-sm); }
+        .goal {
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-md);
+            background: var(--surface-sunken);
+        }
+        .goal__title { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3) 0; font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); }
+        .goal__grid { display: grid; grid-template-columns: minmax(0, 1fr); }
+        .goal__grid.has-remote svg:not(.icon) { height: 130px; }
+        .goal__sub { font-size: 11px; color: var(--text-faint); padding: 2px var(--space-3) 0; }
+        .goal svg:not(.icon) { display: block; width: 100%; height: 150px; }
+        .counter { font-size: var(--fs-sm); color: var(--text-muted); }
+        .counter strong { color: var(--text); }
+
+        /* Výběr úrovně */
+        .levels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .chapter { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+        .chapter__title { font-size: var(--fs-sm); font-weight: 600; }
+        .chapter__desc { font-size: var(--fs-xs); color: var(--text-faint); margin-bottom: var(--space-2); }
+        .lvl-btns { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+        .lvl {
+            position: relative;
+            width: 34px; height: 34px;
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+        .lvl:hover { border-color: var(--border-strong); color: var(--text); }
+        .lvl.solved { color: var(--c-green); background: var(--c-green-bg); border-color: var(--c-green); }
+        .lvl[aria-current="true"] { outline: 2px solid var(--accent); outline-offset: 1px; color: var(--text); }
+        .lvl .star { position: absolute; top: -6px; right: -5px; font-size: 10px; line-height: 1; color: var(--c-yellow); }
+
+        .legend { margin-top: 0; }
+        .legend__pill {
+            display: inline-block; padding: 0 6px; font-family: var(--font-mono); font-size: 11px; line-height: 16px;
+            border-radius: 8px; border: 1.2px solid var(--c-blue); background: var(--c-blue-bg); color: var(--c-blue);
+        }
+        .legend__pill--head { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 700; }
+        .legend__pill--remote { background: var(--surface); border-style: dashed; color: var(--text-muted); }
+        .legend__pill--tag { background: var(--c-yellow-bg); border-color: var(--c-yellow); color: var(--c-yellow); border-radius: 2px; }
+        .legend__dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px dashed var(--c-gray); opacity: .6; vertical-align: -2px; }
+
+        .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+        .toolbar .spacer { flex: 1; }
+
+        /* Dialog interaktivního rebase */
+        dialog.rb {
+            position: fixed;
+            inset: 0;
+            margin: auto;
+            height: fit-content;
+            width: min(440px, calc(100vw - 32px));
+            padding: 0;
+            color: var(--text);
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+        dialog.rb::backdrop { background: rgba(0, 0, 0, 0.35); }
+        .rb__body { padding: var(--space-5); }
+        .rb__body h2 { margin: 0 0 var(--space-2); font-size: var(--fs-lg); }
+        .rb__list { list-style: none; margin: var(--space-3) 0; padding: 0; }
+        .rb__item {
+            display: flex; align-items: center; gap: var(--space-2);
+            padding: var(--space-2); margin-bottom: var(--space-1);
+            background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-md);
+        }
+        .rb__item.dropped { opacity: .5; }
+        .rb__item.dropped .rb__msg { text-decoration: line-through; }
+        .rb__id { font-family: var(--font-mono); font-weight: 600; min-width: 2.6em; }
+        .rb__msg { flex: 1; font-size: var(--fs-sm); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rb__foot { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border); }
+
+        /* Teorie */
+        .card--full { grid-column: 1 / -1; }
+        .card .notion-table { margin-top: var(--space-2); margin-bottom: 0; }
+        .flow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; }
+        .flow span.step { padding: 4px 10px; border-radius: var(--radius-full); background: var(--c-blue-bg); color: var(--c-blue); font-size: var(--fs-sm); font-weight: 600; }
+        .flow .icon { color: var(--text-faint); }
+
+        @media (max-width: 900px) {
+            .git-layout { grid-template-columns: minmax(0, 1fr); }
+            .task-card { position: static; order: -1; }
+        }
+        @media (max-width: 720px) {
+            .repos.has-remote { grid-template-columns: minmax(0, 1fr); }
+            .repo > svg, .repo--empty .repo__empty { height: 280px; }
+            .term__log { height: 160px; }
+        }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page page--wide">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="prog">Programování</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">Git a GitHub</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+            <h1>Git a GitHub</h1>
+            <p class="subtitle">Interaktivní simulátor verzování — piš příkazy a sleduj, co dělají s historií</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Části aplikace">
+        <button class="tab" type="button" role="tab" id="t-theory" aria-controls="theory" aria-selected="false" tabindex="-1" onclick="openTab('theory')">Teorie</button>
+        <button class="tab active" type="button" role="tab" id="t-levels" aria-controls="levels" aria-selected="true" tabindex="0" onclick="openTab('levels')">Úrovně</button>
+        <button class="tab" type="button" role="tab" id="t-sandbox" aria-controls="sandbox" aria-selected="false" tabindex="-1" onclick="openTab('sandbox')">Pískoviště</button>
+    </div>
+
+    <!-- ===================== TEORIE ===================== -->
+    <div id="theory" class="tab-content" role="tabpanel" aria-labelledby="t-theory" hidden>
+        <div class="callout callout--info">
+            <strong>Původní zdroj:</strong> simulátor vychází z myšlenky a struktury úrovní projektu
+            <a href="https://learngitbranching.js.org/" target="_blank" rel="noopener">Learn Git Branching</a>,
+            jehož autorem je Peter Cottle (open source, <a href="https://github.com/pcottle/learnGitBranching" target="_blank" rel="noopener">licence MIT</a>).
+            Tato česká verze je napsaná znovu a přizpůsobená pro výuku; původní aplikaci doporučujeme jako rozšiřující materiál.
+        </div>
+        <div class="card-grid">
+
+            <div class="card">
+                <div class="tag-container"><span class="tag tag-blue">Základ</span></div>
+                <div class="card-title">Git a GitHub</div>
+                <div class="card-desc">
+                    <p><strong>Git</strong> je systém pro správu verzí. Ukládá historii projektu jako řadu snímků, takže se lze kdykoli vrátit, porovnat změny nebo pracovat na více věcech současně.</p>
+                    <p><strong>GitHub</strong> je služba, která hostuje git repozitáře na internetu a přidává nástroje pro spolupráci — pull requesty, kontrolu kódu (review), úkoly (issues) a automatické testy.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="tag-container"><span class="tag tag-blue">Základ</span></div>
+                <div class="card-title">Commit</div>
+                <div class="card-desc">
+                    <p>Commit je uložený snímek všech souborů projektu. Každý má jedinečný identifikátor (hash, např. <code>3f9a2c1</code>), zprávu, autora a odkaz na <strong>rodiče</strong>.</p>
+                    <p>V simulátoru se commity jmenují zkráceně <code>C0</code>, <code>C1</code>… a kopie vzniklé rebasem nebo cherry-pickem dostávají apostrof: <code>C2'</code>.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="tag-container"><span class="tag tag-green">Větvení</span></div>
+                <div class="card-title">Větve a HEAD</div>
+                <div class="card-desc">
+                    <p><strong>Větev</strong> je pohyblivý ukazatel na commit. Při novém commitu se posune dopředu.</p>
+                    <p><strong>HEAD</strong> říká, kde právě jsi. Obvykle ukazuje na větev; když ukazuje rovnou na commit, mluvíme o <em>odpojené HEAD</em>.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="tag-container"><span class="tag tag-green">Větvení</span></div>
+                <div class="card-title">Merge vs. rebase</div>
+                <div class="card-desc">
+                    <p><strong>Merge</strong> spojí dvě větve slučovacím commitem se dvěma rodiči. Historie zůstává přesně taková, jak vznikla.</p>
+                    <p><strong>Rebase</strong> zkopíruje tvoje commity na konec jiné větve. Historie je rovná a přehledná, ale commity se přepisují — nepoužívej ho na práci, kterou už mají ostatní.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="tag-container"><span class="tag tag-orange">Soubory</span></div>
+                <div class="card-title">Tři oblasti gitu</div>
+                <div class="card-desc">
+                    <p><strong>Pracovní adresář</strong> (soubory, které upravuješ) → <code>git add</code> → <strong>přípravná oblast</strong> (staging) → <code>git commit</code> → <strong>repozitář</strong>.</p>
+                    <p>Simulátor se soustředí na historii, takže soubory neřeší — <code>git commit</code> v něm rovnou vytvoří commit.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="tag-container"><span class="tag tag-purple">GitHub</span></div>
+                <div class="card-title">Lokální a vzdálený repozitář</div>
+                <div class="card-desc">
+                    <p>Na svém počítači máš celou kopii projektu. Vzdálený repozitář (<code>origin</code>) je společná kopie na GitHubu.</p>
+                    <p>Větev <code>origin/main</code> je tvoje <em>poslední známá</em> podoba větve <code>main</code> na GitHubu. Aktualizuje se jen při <code>fetch</code>, <code>pull</code> a <code>push</code>.</p>
+                </div>
+            </div>
+
+            <div class="card card--full">
+                <div class="tag-container"><span class="tag tag-purple">GitHub</span></div>
+                <div class="card-title">Pracovní postup v týmu (GitHub flow)</div>
+                <div class="card-desc">
+                    <div class="flow" aria-label="Postup: větev, commity, push, pull request, review, merge, pull">
+                        <span class="step">git switch -c feature</span>
+                        <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <span class="step">git commit</span>
+                        <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <span class="step">git push -u origin feature</span>
+                        <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <span class="step">pull request + review</span>
+                        <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <span class="step">merge na GitHubu</span>
+                        <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <span class="step">git pull</span>
+                    </div>
+                    <p>Do <code>main</code> se nepíše přímo. Každá úloha má vlastní větev, která se přes pull request zkontroluje a teprve potom začlení. Když ti GitHub odmítne push, znamená to, že někdo odeslal práci před tebou — nejdřív <code>git pull</code>, pak znovu <code>git push</code>.</p>
+                </div>
+            </div>
+
+            <div class="card card--full">
+                <div class="tag-container"><span class="tag tag-gray">Tahák</span></div>
+                <div class="card-title">Přehled příkazů</div>
+                <div class="card-desc">
+                    <div class="table-wrap"><table class="notion-table">
+                        <thead><tr><th>Příkaz</th><th>Co dělá</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>git commit</code></td><td>vytvoří nový commit (<code>-m "zpráva"</code>, oprava posledního: <code>--amend</code>)</td></tr>
+                            <tr><td><code>git branch x</code></td><td>vytvoří větev x; <code>-d x</code> smaže, <code>-f x C3</code> přesune, bez parametru vypíše větve</td></tr>
+                            <tr><td><code>git switch x</code></td><td>přepne na větev x; <code>-c x</code> ji zároveň vytvoří</td></tr>
+                            <tr><td><code>git checkout x</code></td><td>přepne na větev nebo commit (commit = odpojená HEAD); <code>-b x</code> vytvoří větev</td></tr>
+                            <tr><td><code>git merge x</code></td><td>sloučí větev x do aktuální (fast-forward nebo slučovací commit; <code>--no-ff</code> vždy commit)</td></tr>
+                            <tr><td><code>git rebase x</code></td><td>přeskládá aktuální větev na konec x; <code>-i HEAD~3</code> = úprava posledních tří commitů</td></tr>
+                            <tr><td><code>git cherry-pick C3 C5</code></td><td>zkopíruje vybrané commity na aktuální místo</td></tr>
+                            <tr><td><code>git reset HEAD~1</code></td><td>posune větev zpět (přepisuje historii; <code>--soft</code>, <code>--mixed</code>, <code>--hard</code>)</td></tr>
+                            <tr><td><code>git revert C3</code></td><td>vytvoří nový commit, který ruší změny C3</td></tr>
+                            <tr><td><code>git tag v1 C2</code></td><td>pevná značka (verze) na commitu</td></tr>
+                            <tr><td><code>git log</code>, <code>git status</code></td><td>vypíše historii, resp. stav větve vůči GitHubu</td></tr>
+                            <tr><td><code>git clone</code></td><td>vytvoří kopii repozitáře (v simulátoru založí origin na GitHubu)</td></tr>
+                            <tr><td><code>git fetch</code></td><td>stáhne novinky z GitHubu do <code>origin/*</code>, tvoje větve nemění</td></tr>
+                            <tr><td><code>git pull</code></td><td><code>fetch</code> + <code>merge</code>; s <code>--rebase</code> místo merge přeskládá</td></tr>
+                            <tr><td><code>git push</code></td><td>odešle commity na GitHub; nová větev: <code>-u origin x</code>; smazání: <code>--delete x</code></td></tr>
+                            <tr><td><code>gh pr create</code></td><td>založí pull request z aktuální větve do main</td></tr>
+                            <tr><td><code>gh pr merge</code></td><td>sloučí pull request na GitHubu (<code>--squash</code>, <code>--rebase</code>, <code>--delete-branch</code>)</td></tr>
+                            <tr><td><code>git fakeTeamwork</code></td><td>jen v simulátoru: kolega odešle commit na GitHub (<code>git fakeTeamwork feature 2</code>)</td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+
+            <div class="card card--full">
+                <div class="tag-container"><span class="tag tag-gray">Tahák</span></div>
+                <div class="card-title">Odkazy na commity</div>
+                <div class="card-desc">
+                    <div class="table-wrap"><table class="notion-table">
+                        <thead><tr><th>Zápis</th><th>Význam</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>main</code>, <code>HEAD</code>, <code>C3</code>, <code>v1</code></td><td>větev, aktuální pozice, konkrétní commit, značka</td></tr>
+                            <tr><td><code>HEAD^</code></td><td>rodič (o jeden commit zpět); <code>HEAD^^</code> prarodič</td></tr>
+                            <tr><td><code>HEAD~3</code></td><td>o tři commity zpět po prvních rodičích</td></tr>
+                            <tr><td><code>C5^2</code></td><td>druhý rodič slučovacího commitu</td></tr>
+                            <tr><td><code>origin/main</code></td><td>poslední známý stav větve main na GitHubu</td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===================== ÚROVNĚ ===================== -->
+    <div id="levels" class="tab-content active" role="tabpanel" aria-labelledby="t-levels">
+        <div class="levels" id="levelPicker" aria-label="Výběr úrovně"></div>
+
+        <div class="git-layout">
+            <div class="git-main" data-session="level"></div>
+
+            <aside class="task-card" aria-labelledby="lvlTitle">
+                <div>
+                    <div class="eyebrow" id="lvlEyebrow">Úroveň 1</div>
+                    <h2 id="lvlTitle">—</h2>
+                </div>
+                <div class="text" id="lvlText"></div>
+
+                <div class="goal">
+                    <div class="goal__title">
+                        <svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                        Cílový stav
+                    </div>
+                    <div class="goal__grid" id="goalGrid">
+                        <div><div class="goal__sub">Tvůj počítač</div><svg id="goalLocal" role="img" aria-label="Cílový stav"></svg></div>
+                        <div id="goalRemoteWrap" hidden><div class="goal__sub">GitHub</div><svg id="goalRemote" role="img" aria-label="Cílový stav na GitHubu"></svg></div>
+                    </div>
+                </div>
+
+                <div class="counter" id="lvlCounter"></div>
+                <div class="callout callout--success" id="lvlSuccess" hidden></div>
+                <div class="callout callout--info" id="lvlHint" hidden></div>
+                <div class="callout callout--neutral" id="lvlDiff" hidden></div>
+
+                <div class="btn-row">
+                    <button class="btn btn--sm" type="button" id="btnHint">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>Nápověda</button>
+                    <button class="btn btn--sm" type="button" id="btnDiff">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>Co chybí?</button>
+                    <button class="btn btn--sm" type="button" id="btnSolution">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Přehrát řešení</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn--sm" type="button" id="btnUndo">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>Vrátit krok</button>
+                    <button class="btn btn--sm" type="button" id="btnRestart">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>Začít znovu</button>
+                    <button class="btn btn--sm btn--primary" type="button" id="btnNext">Další úroveň
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- ===================== PÍSKOVIŠTĚ ===================== -->
+    <div id="sandbox" class="tab-content" role="tabpanel" aria-labelledby="t-sandbox" hidden>
+        <p class="muted text-sm" style="margin-bottom: var(--space-4)">Volný režim bez zadání. Zkoušej libovolné příkazy — stav se průběžně ukládá v prohlížeči.</p>
+        <div class="toolbar" style="margin-bottom: var(--space-4)">
+            <button class="btn btn--sm" type="button" id="sbUndo">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>Vrátit krok</button>
+            <button class="btn btn--sm" type="button" id="sbReset">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>Začít znovu</button>
+            <span class="spacer"></span>
+            <button class="btn btn--sm" type="button" id="sbClone">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>Vytvořit GitHub (clone)</button>
+            <button class="btn btn--sm" type="button" id="sbTeam">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 5.74"></path></svg>Kolega odeslal commit</button>
+        </div>
+        <div class="git-main" data-session="sandbox"></div>
+    </div>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Podle projektu <a href="https://learngitbranching.js.org/" target="_blank" rel="noopener">Learn Git Branching</a> (Peter Cottle, <a href="https://github.com/pcottle/learnGitBranching" target="_blank" rel="noopener">licence MIT</a>) · Vytvořeno s pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<!-- Šablona simulátoru (graf + terminál), používá ji úroveň i pískoviště -->
+<template id="tplSession">
+    <div class="repos">
+        <section class="repo repo--local">
+            <div class="repo__head">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                Tvůj počítač <span class="muted">lokální repozitář</span>
+            </div>
+            <svg class="g-local" role="img" aria-label="Lokální repozitář"></svg>
+        </section>
+        <section class="repo repo--remote" hidden>
+            <div class="repo__head">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+                GitHub <span class="muted">origin</span>
+            </div>
+            <svg class="g-remote" role="img" aria-label="Vzdálený repozitář"></svg>
+            <div class="prs"></div>
+        </section>
+    </div>
+    <div class="legend" aria-label="Vysvětlivky grafu">
+        <span class="legend__item"><span class="legend__pill"><span class="legend__pill legend__pill--head" style="margin-left:-7px;border-radius:8px 0 0 8px">HEAD</span> main</span>aktuální větev</span>
+        <span class="legend__item"><span class="legend__pill legend__pill--head">HEAD</span>odpojená HEAD</span>
+        <span class="legend__item"><span class="legend__pill legend__pill--remote">origin/main</span>stav GitHubu u tebe</span>
+        <span class="legend__item"><span class="legend__pill legend__pill--tag">v1</span>značka</span>
+        <span class="legend__item"><span class="legend__dot"></span>osiřelý commit</span>
+    </div>
+    <div class="term">
+        <div class="term__log" aria-live="polite" aria-label="Výstup terminálu"></div>
+        <form class="term__form" autocomplete="off">
+            <label class="term__prompt">$<span class="visually-hidden">Příkaz</span>
+            </label>
+            <input class="term__input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="git commit" aria-label="Příkaz gitu">
+            <button class="btn btn--sm btn--primary" type="submit">Spustit</button>
+        </form>
+    </div>
+    <div class="chips" aria-label="Rychlé vložení příkazu"></div>
+</template>
+
+<dialog class="rb" id="rbDialog" aria-labelledby="rbTitle">
+    <div class="rb__body">
+        <h2 id="rbTitle">Interaktivní rebase</h2>
+        <p class="text-sm muted">Commity se použijí shora dolů (nejstarší nahoře). Odškrtnutý commit se vynechá.</p>
+        <ul class="rb__list" id="rbList"></ul>
+    </div>
+    <div class="rb__foot">
+        <button class="btn" type="button" id="rbCancel">Zrušit</button>
+        <button class="btn btn--primary" type="button" id="rbOk">Provést rebase</button>
+    </div>
+</dialog>
+
+<script src="../assets/theme.js"></script>
+<script>
+/* ==========================================================================
+   Git simulátor — jádro (model repozitáře a příkazy)
+   Svět = sdílené úložiště commitů + lokální repozitář + volitelně origin (GitHub).
+   ========================================================================== */
+var GitSim = (function () {
+  'use strict';
+
+  function GitError(msg, hint) { this.message = msg; this.hint = hint || ''; }
+
+  function baseId(id) { return id.replace(/'+$/, ''); }
+
+  /* ---------- Svět ---------- */
+
+  function newWorld() {
+    var w = {
+      store: {},          // id -> {id, parents, msg, seq, revertOf, squash}
+      seq: 0,
+      nextNum: 0,
+      local: null,
+      remote: null,
+      prs: [],
+      initial: null       // id commitů, které existovaly na začátku úrovně
+    };
+    var c0 = mkCommit(w, [], 'Počáteční commit');
+    var c1 = mkCommit(w, [c0], 'Druhý commit');
+    w.local = newRepo();
+    w.local.branches.main = c1;
+    w.local.head = { branch: 'main' };
+    markKnown(w, w.local, c1);
+    return w;
+  }
+
+  function newRepo() {
+    return { branches: {}, tags: {}, head: null, tracking: {}, upstream: {} };
+  }
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function mkCommit(w, parents, msg, id) {
+    if (!id) { id = 'C' + w.nextNum; w.nextNum++; }
+    w.store[id] = { id: id, parents: parents.slice(), msg: msg || ('Commit ' + id), seq: w.seq++ };
+    return id;
+  }
+
+  function copyId(w, id) {
+    var b = baseId(id), n = 1, cand;
+    while (true) {
+      cand = b + new Array(n + 1).join("'");
+      if (!w.store[cand]) return cand;
+      n++;
+    }
+  }
+
+  /* ---------- Pomocné dotazy ---------- */
+
+  function headCommit(repo) {
+    if (!repo.head) return null;
+    return repo.head.branch ? repo.branches[repo.head.branch] : repo.head.detached;
+  }
+
+  function ancestors(w, id) {
+    var seen = {}, stack = id ? [id] : [];
+    while (stack.length) {
+      var c = stack.pop();
+      if (seen[c]) continue;
+      seen[c] = true;
+      w.store[c].parents.forEach(function (p) { stack.push(p); });
+    }
+    return seen;
+  }
+
+  function isAncestor(w, a, b) { return !!ancestors(w, b)[a]; } // a je předek b (nebo a == b)
+
+  function setHeadTarget(repo, id) {
+    if (repo.head.branch) repo.branches[repo.head.branch] = id;
+    else repo.head.detached = id;
+  }
+
+  function refsOf(repo) {
+    var out = {};
+    Object.keys(repo.branches).forEach(function (b) { out[repo.branches[b]] = true; });
+    Object.keys(repo.tags).forEach(function (b) { out[repo.tags[b]] = true; });
+    Object.keys(repo.tracking || {}).forEach(function (b) { out[repo.tracking[b]] = true; });
+    var h = headCommit(repo); if (h) out[h] = true;
+    return out;
+  }
+
+  function reachable(w, repo) {
+    var all = {};
+    Object.keys(refsOf(repo)).forEach(function (id) {
+      var a = ancestors(w, id);
+      for (var k in a) all[k] = true;
+    });
+    return all;
+  }
+
+  /* ---------- Rozbor odkazů (HEAD~2, main^, C3, origin/main) ---------- */
+
+  function resolve(w, repo, ref) {
+    if (!ref) throw new GitError('chybí odkaz na commit');
+    var m = /^([^~^]+)((?:[~^]\d*)*)$/.exec(ref);
+    if (!m) throw new GitError("fatal: '" + ref + "' není platný odkaz", 'Příklady platných odkazů: main, HEAD, C3, HEAD~2, bugFix^');
+    var name = m[1], mods = m[2], id = null;
+
+    if (name === 'HEAD' || name === '@') id = headCommit(repo);
+    else if (repo.branches[name] !== undefined) id = repo.branches[name];
+    else if (repo.tags[name] !== undefined) id = repo.tags[name];
+    else if (/^origin\//.test(name) && repo.tracking[name.slice(7)] !== undefined) id = repo.tracking[name.slice(7)];
+    else {
+      var cid = name.charAt(0).toUpperCase() + name.slice(1);
+      if (w.store[cid] && (reachable(w, repo)[cid] || knownIn(w, repo, cid))) id = cid;
+    }
+    if (!id) throw new GitError("fatal: odkaz '" + name + "' neexistuje",
+      'Zkontroluj název větve nebo commitu (rozlišují se velká a malá písmena).');
+
+    var re = /([~^])(\d*)/g, mm;
+    while ((mm = re.exec(mods))) {
+      var n = mm[2] === '' ? 1 : parseInt(mm[2], 10);
+      if (mm[1] === '^') {
+        if (n === 0) continue;
+        var p = w.store[id].parents[n - 1];
+        if (!p) throw new GitError('fatal: commit ' + id + ' nemá ' + (n === 1 ? 'rodiče' : n + '. rodiče'));
+        id = p;
+      } else {
+        for (var i = 0; i < n; i++) {
+          var q = w.store[id].parents[0];
+          if (!q) throw new GitError('fatal: commit ' + id + ' už nemá dalšího předka', 'Došel jsi až k prvnímu commitu v historii.');
+          id = q;
+        }
+      }
+    }
+    return id;
+  }
+
+  function knownIn(w, repo, id) {
+    // Commit je v repozitáři znám, pokud ho kdy obsahoval (i osiřelý).
+    return repo.known ? !!repo.known[id] : false;
+  }
+
+  function markKnown(w, repo, id) {
+    repo.known = repo.known || {};
+    var a = ancestors(w, id);
+    for (var k in a) repo.known[k] = true;
+  }
+
+  /* ---------- Rozdělení příkazové řádky ---------- */
+
+  function tokenize(s) {
+    var out = [], cur = '', q = null, has = false;
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (q) { if (ch === q) q = null; else cur += ch; continue; }
+      if (ch === '"' || ch === "'" ) {
+        // apostrof za názvem commitu (C2') je součást názvu
+        if (ch === "'" && has && /[A-Za-z0-9']$/.test(cur)) { cur += ch; continue; }
+        q = ch; has = true; continue;
+      }
+      if (/\s/.test(ch)) { if (has) { out.push(cur); cur = ''; has = false; } continue; }
+      cur += ch; has = true;
+    }
+    if (q) throw new GitError('neukončené uvozovky');
+    if (has) out.push(cur);
+    return out;
+  }
+
+  function splitCommands(line) {
+    // Více příkazů lze oddělit středníkem nebo &&
+    var parts = [], cur = '', q = null;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line.charAt(i);
+      if (q) { cur += ch; if (ch === q) q = null; continue; }
+      if (ch === '"') { q = ch; cur += ch; continue; }
+      if (ch === ';') { parts.push(cur); cur = ''; continue; }
+      if (ch === '&' && line.charAt(i + 1) === '&') { parts.push(cur); cur = ''; i++; continue; }
+      cur += ch;
+    }
+    parts.push(cur);
+    return parts.map(function (p) { return p.trim(); }).filter(Boolean);
+  }
+
+  function parseArgs(tokens) {
+    var flags = {}, pos = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var t = tokens[i];
+      if (/^--[a-z-]+=/.test(t)) { var eq = t.indexOf('='); flags[t.slice(2, eq)] = t.slice(eq + 1); }
+      else if (/^--/.test(t)) {
+        var key = t.slice(2);
+        if ((key === 'order' || key === 'base' || key === 'head' || key === 'title' || key === 'message' || key === 'set-upstream-to') && i + 1 < tokens.length) { flags[key] = tokens[++i]; }
+        else flags[key] = true;
+      }
+      else if (/^-[A-Za-z]+$/.test(t)) {
+        var letters = t.slice(1);
+        for (var j = 0; j < letters.length; j++) {
+          var L = letters.charAt(j);
+          if ((L === 'm' || L === 'b' || L === 'B' || L === 'c' || L === 'C' || L === 'n') && j === letters.length - 1 && i + 1 < tokens.length && !/^-/.test(tokens[i + 1])) {
+            flags[L] = tokens[++i];
+          } else flags[L] = true;
+        }
+      }
+      else pos.push(t);
+    }
+    return { flags: flags, pos: pos };
+  }
+
+  /* ---------- Výstup ---------- */
+
+  function Out() { this.lines = []; }
+  Out.prototype.log = function (t, cls) { this.lines.push({ text: t, cls: cls || 'out' }); };
+
+  /* ---------- Příkazy ---------- */
+
+  function needRepo(w) { if (!w.local) throw new GitError('fatal: nejsi v repozitáři git'); }
+
+  function describeHead(repo) {
+    return repo.head.branch ? 'větev ' + repo.head.branch : 'odpojená HEAD na ' + repo.head.detached;
+  }
+
+  function cmdCommit(w, a, out) {
+    var r = w.local, h = headCommit(r);
+    if (a.flags.amend) {
+      var old = w.store[h];
+      if (!old.parents.length && false) throw new GitError('nelze');
+      var nid = copyId(w, h);
+      mkCommit(w, old.parents, a.flags.m || old.msg, nid);
+      setHeadTarget(r, nid);
+      markKnown(w, r, nid);
+      out.log('[' + (r.head.branch || 'odpojená HEAD') + ' ' + nid + '] ' + w.store[nid].msg + '  (nahrazuje ' + h + ')', 'ok');
+      return;
+    }
+    var id = mkCommit(w, [h], typeof a.flags.m === 'string' ? a.flags.m : (typeof a.flags.message === 'string' ? a.flags.message : null));
+    setHeadTarget(r, id);
+    markKnown(w, r, id);
+    out.log('[' + (r.head.branch || 'odpojená HEAD') + ' ' + id + '] ' + w.store[id].msg, 'ok');
+  }
+
+  function validBranchName(n) {
+    if (!/^[A-Za-z0-9._\/-]+$/.test(n) || /^-/.test(n) || /\.\.|\/\/|\/$|\.$/.test(n))
+      throw new GitError("fatal: '" + n + "' není platný název větve", 'Použij písmena bez diakritiky, číslice, pomlčku nebo lomítko.');
+    if (n === 'HEAD') throw new GitError("fatal: 'HEAD' není platný název větve");
+    if (/^C\d+'*$/.test(n)) throw new GitError("fatal: název '" + n + "' by se pletl s názvem commitu", 'Zvol jiný název větve.');
+  }
+
+  function cmdBranch(w, a, out) {
+    var r = w.local, f = a.flags, p = a.pos;
+    if (f.d || f.D || f['delete']) {
+      if (!p.length) throw new GitError('fatal: chybí název větve ke smazání');
+      p.forEach(function (n) {
+        if (r.branches[n] === undefined) throw new GitError("error: větev '" + n + "' neexistuje");
+        if (r.head.branch === n) throw new GitError("error: nelze smazat větev '" + n + "', na které právě jsi", 'Nejdřív se přepni na jinou větev (git switch main).');
+        var tip = r.branches[n];
+        var upTip = r.upstream[n] ? r.tracking[r.upstream[n].slice(7)] : undefined;
+        if (!f.D && !isAncestor(w, tip, headCommit(r)) && !(upTip !== undefined && isAncestor(w, tip, upTip))) {
+          throw new GitError("error: větev '" + n + "' není plně sloučená", "Pokud ji opravdu chceš smazat i s commity, použij git branch -D " + n + '.');
+        }
+        delete r.branches[n];
+        delete r.upstream[n];
+        out.log('Větev ' + n + ' smazána (byla na ' + tip + ').', 'ok');
+      });
+      return;
+    }
+    if (f.m || f.M) {
+      var oldN = p.length >= 2 ? p[0] : r.head.branch, newN = p.length >= 2 ? p[1] : (typeof f.m === 'string' ? f.m : p[0]);
+      if (typeof f.m === 'string' && p.length === 1) { oldN = f.m; newN = p[0]; }
+      if (!oldN || r.branches[oldN] === undefined) throw new GitError('error: větev k přejmenování neexistuje');
+      validBranchName(newN);
+      if (r.branches[newN] !== undefined) throw new GitError("fatal: větev '" + newN + "' už existuje");
+      r.branches[newN] = r.branches[oldN]; delete r.branches[oldN];
+      if (r.upstream[oldN]) { r.upstream[newN] = r.upstream[oldN]; delete r.upstream[oldN]; }
+      if (r.head.branch === oldN) r.head.branch = newN;
+      out.log('Větev ' + oldN + ' přejmenována na ' + newN + '.', 'ok');
+      return;
+    }
+    if (f.f || f.force) {
+      if (p.length < 2) throw new GitError('fatal: použití: git branch -f <větev> <commit>');
+      var n2 = p[0];
+      if (r.head.branch === n2) throw new GitError("fatal: nelze násilně přesunout větev '" + n2 + "', na které právě jsi", 'Použij git reset, nebo se nejdřív přepni jinam.');
+      var target = resolve(w, r, p[1]);
+      if (r.branches[n2] === undefined) validBranchName(n2);
+      r.branches[n2] = target;
+      out.log('Větev ' + n2 + ' teď ukazuje na ' + target + '.', 'ok');
+      return;
+    }
+    if (f.r || f.a) {
+      Object.keys(r.tracking).sort().forEach(function (b) { out.log('  origin/' + b + ' → ' + r.tracking[b]); });
+      if (!f.a) return;
+    }
+    if (!p.length) {
+      var names = Object.keys(r.branches).sort();
+      if (!names.length) out.log('(žádné větve)');
+      names.forEach(function (b) {
+        var u = r.upstream[b] ? '  [' + r.upstream[b] + ']' : '';
+        out.log((r.head.branch === b ? '* ' : '  ') + b + '  → ' + r.branches[b] + u, r.head.branch === b ? 'ok' : 'out');
+      });
+      if (!r.head.branch) out.log('* (odpojená HEAD na ' + r.head.detached + ')', 'ok');
+      return;
+    }
+    var name = p[0];
+    validBranchName(name);
+    if (r.branches[name] !== undefined) throw new GitError("fatal: větev '" + name + "' už existuje", 'Na existující větev se přepneš příkazem git switch ' + name + '.');
+    var start = p[1] ? resolve(w, r, p[1]) : headCommit(r);
+    r.branches[name] = start;
+    out.log('Vytvořena větev ' + name + ' na ' + start + '. (HEAD zůstává na ' + (r.head.branch || r.head.detached) + ')', 'ok');
+  }
+
+  function checkoutTo(w, ref, out, mode) {
+    var r = w.local;
+    if (r.branches[ref] !== undefined && mode !== 'detach') {
+      if (r.head.branch === ref) { out.log("Už jsi na větvi '" + ref + "'."); return; }
+      r.head = { branch: ref };
+      out.log("Přepnuto na větev '" + ref + "'.", 'ok');
+      return;
+    }
+    if (r.branches[ref] === undefined && r.tracking[ref] !== undefined && mode !== 'detach' && w.remote) {
+      r.branches[ref] = r.tracking[ref];
+      r.upstream[ref] = 'origin/' + ref;
+      r.head = { branch: ref };
+      out.log("Větev '" + ref + "' vytvořena podle 'origin/" + ref + "' a nastavena ke sledování.", 'ok');
+      out.log("Přepnuto na novou větev '" + ref + "'.", 'ok');
+      return;
+    }
+    if (mode === 'switch') {
+      var exists = false;
+      try { resolve(w, r, ref); exists = true; } catch (e) { /* nic */ }
+      if (exists) throw new GitError("fatal: '" + ref + "' není větev", 'git switch přepíná jen mezi větvemi. K odpojení HEAD použij git switch --detach ' + ref + ' nebo git checkout ' + ref + '.');
+      throw new GitError("fatal: neplatný odkaz: " + ref, 'Novou větev vytvoříš a přepneš se na ni příkazem git switch -c ' + ref + '.');
+    }
+    var id = resolve(w, r, ref);
+    r.head = { detached: id };
+    out.log('Poznámka: přepínáš na ' + ref + (ref !== id ? ' (' + id + ')' : '') + '.', 'ok');
+    out.log("Jsi ve stavu 'odpojená HEAD' — HEAD ukazuje přímo na commit, ne na větev.", 'hint');
+  }
+
+  function createAndSwitch(w, name, startRef, out, force) {
+    var r = w.local;
+    validBranchName(name);
+    if (r.branches[name] !== undefined && !force) throw new GitError("fatal: větev '" + name + "' už existuje");
+    var start = startRef ? resolve(w, r, startRef) : headCommit(r);
+    r.branches[name] = start;
+    if (startRef && /^origin\//.test(startRef) && r.tracking[startRef.slice(7)] !== undefined) r.upstream[name] = startRef;
+    r.head = { branch: name };
+    out.log("Přepnuto na novou větev '" + name + "' (" + start + ').', 'ok');
+  }
+
+  function cmdCheckout(w, a, out) {
+    var f = a.flags, p = a.pos;
+    if (typeof f.b === 'string' || typeof f.B === 'string') {
+      createAndSwitch(w, f.b || f.B, p[0], out, !!f.B);
+      return;
+    }
+    if (f.b || f.B) throw new GitError('fatal: chybí název nové větve', 'Použití: git checkout -b <název>');
+    if (!p.length) throw new GitError('fatal: chybí cíl', 'Použití: git checkout <větev|commit>');
+    checkoutTo(w, p[0], out, f.detach ? 'detach' : 'checkout');
+  }
+
+  function cmdSwitch(w, a, out) {
+    var f = a.flags, p = a.pos;
+    if (typeof f.c === 'string' || typeof f.C === 'string') { createAndSwitch(w, f.c || f.C, p[0], out, !!f.C); return; }
+    if (f.c || f.C || f.create) {
+      if (!p.length) throw new GitError('fatal: chybí název nové větve', 'Použití: git switch -c <název>');
+      createAndSwitch(w, p[0], p[1], out, !!f.C); return;
+    }
+    if (!p.length) throw new GitError('fatal: chybí název větve', 'Použití: git switch <větev>');
+    if (f.detach || f.d) { checkoutTo(w, p[0], out, 'detach'); return; }
+    checkoutTo(w, p[0], out, 'switch');
+  }
+
+  function cmdMerge(w, a, out) {
+    var r = w.local, p = a.pos;
+    if (!p.length) throw new GitError('fatal: chybí větev ke sloučení', 'Použití: git merge <větev>');
+    var h = headCommit(r), t = resolve(w, r, p[0]);
+    if (isAncestor(w, t, h)) { out.log('Already up to date. (' + p[0] + ' už je obsažena v ' + (r.head.branch || 'HEAD') + ')'); return; }
+    if (isAncestor(w, h, t) && !a.flags['no-ff']) {
+      setHeadTarget(r, t);
+      out.log('Updating ' + h + '..' + t, 'out');
+      out.log('Fast-forward — ' + (r.head.branch || 'HEAD') + ' se jen posunula dopředu na ' + t + '.', 'ok');
+      return;
+    }
+    if (a.flags['ff-only']) throw new GitError('fatal: nelze provést fast-forward', 'Historie se rozdělila — bez --ff-only vznikne slučovací commit.');
+    var id = mkCommit(w, [h, t], typeof a.flags.m === 'string' ? a.flags.m : "Merge '" + p[0] + "' do " + (r.head.branch || 'HEAD'));
+    setHeadTarget(r, id);
+    markKnown(w, r, id);
+    out.log("Merge made by the 'ort' strategy. Vznikl slučovací commit " + id + ' (rodiče ' + h + ' a ' + t + ').', 'ok');
+  }
+
+  // commity, které jsou v `tip`, ale ne v `upstream`, od nejstaršího
+  function commitsBetween(w, upstream, tip) {
+    var inUp = ancestors(w, upstream), inTip = ancestors(w, tip);
+    return Object.keys(inTip).filter(function (c) { return !inUp[c]; })
+      .sort(function (x, y) { return w.store[x].seq - w.store[y].seq; });
+  }
+
+  function rebaseOnto(w, upstreamId, list, out) {
+    var r = w.local;
+    var upBases = {};
+    Object.keys(ancestors(w, upstreamId)).forEach(function (c) { upBases[baseId(c)] = true; });
+    var base = upstreamId, copied = [];
+    list.forEach(function (c) {
+      if (w.store[c].parents.length > 1) { out.log('  vynechán slučovací commit ' + c, 'hint'); return; }
+      if (upBases[baseId(c)]) { out.log('  vynechán ' + c + ' — stejná změna už v cíli je', 'hint'); return; }
+      var nid = copyId(w, c);
+      w.store[nid] = { id: nid, parents: [base], msg: w.store[c].msg, seq: w.seq++, revertOf: w.store[c].revertOf };
+      base = nid; copied.push(c + '→' + nid);
+    });
+    setHeadTarget(r, base);
+    markKnown(w, r, base);
+    return copied;
+  }
+
+  function cmdRebase(w, a, out, ctx) {
+    var r = w.local, p = a.pos, f = a.flags;
+    if (f.i || f.interactive) {
+      if (!p.length) throw new GitError('fatal: chybí základ', 'Použití: git rebase -i HEAD~3');
+      var up = resolve(w, r, p[0]), h = headCommit(r);
+      var list = commitsBetween(w, up, h).filter(function (c) { return w.store[c].parents.length === 1; });
+      if (typeof f.order === 'string') {
+        var order = f.order === '' || f.order === '-' ? [] : f.order.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+        var ids = order.map(function (x) {
+          var id = x.charAt(0).toUpperCase() + x.slice(1);
+          if (list.indexOf(id) === -1) throw new GitError('error: commit ' + x + ' není mezi upravovanými commity');
+          return id;
+        });
+        var base = up;
+        ids.forEach(function (c) {
+          if (c === baseId(c) && false) return;
+          var nid;
+          // commit, který zůstává na svém místě se stejným rodičem, se nekopíruje
+          if (w.store[c].parents[0] === base) { base = c; return; }
+          nid = copyId(w, c);
+          w.store[nid] = { id: nid, parents: [base], msg: w.store[c].msg, seq: w.seq++, revertOf: w.store[c].revertOf };
+          base = nid;
+        });
+        setHeadTarget(r, base);
+        markKnown(w, r, base);
+        out.log('Successfully rebased and updated ' + (r.head.branch ? 'refs/heads/' + r.head.branch : 'HEAD') + '.', 'ok');
+        return;
+      }
+      if (!list.length) throw new GitError('Nic k úpravě — mezi ' + p[0] + ' a HEAD nejsou žádné commity.');
+      if (ctx && ctx.interactive) { ctx.interactive({ upstream: p[0], commits: list }); out.pending = true; return; }
+      throw new GitError('Interaktivní rebase potřebuje okno s výběrem — tady ho nelze otevřít.');
+    }
+    if (!p.length) {
+      if (r.head.branch && r.upstream[r.head.branch]) p = [r.upstream[r.head.branch]];
+      else throw new GitError('fatal: chybí větev, na kterou se má přeskládat', 'Použití: git rebase <větev>');
+    }
+    if (p[1]) checkoutTo(w, p[1], new Out(), 'checkout');
+    var upId = resolve(w, r, p[0]), head = headCommit(r);
+    if (isAncestor(w, head, upId)) {
+      setHeadTarget(r, upId);
+      out.log('Fast-forward: ' + (r.head.branch || 'HEAD') + ' posunuta na ' + upId + '.', 'ok');
+      return;
+    }
+    if (isAncestor(w, upId, head)) { out.log('Current branch ' + (r.head.branch || 'HEAD') + ' is up to date. (už stojí na ' + p[0] + ')'); return; }
+    var list2 = commitsBetween(w, upId, head);
+    var copied = rebaseOnto(w, upId, list2, out);
+    out.log('Successfully rebased and updated ' + (r.head.branch ? 'refs/heads/' + r.head.branch : 'HEAD') + '.', 'ok');
+    if (copied.length) out.log('Zkopírováno: ' + copied.join(', ') + ' (původní commity zůstávají jako osiřelé)', 'hint');
+  }
+
+  function cmdCherryPick(w, a, out) {
+    var r = w.local, p = a.pos;
+    if (!p.length) throw new GitError('fatal: chybí commit', 'Použití: git cherry-pick <commit>...');
+    var ids = [];
+    p.forEach(function (ref) {
+      var rg = /^(.+)\.\.(.+)$/.exec(ref);
+      if (rg) ids = ids.concat(commitsBetween(w, resolve(w, r, rg[1]), resolve(w, r, rg[2])));
+      else ids.push(resolve(w, r, ref));
+    });
+    ids.forEach(function (c) {
+      var h = headCommit(r);
+      if (isAncestor(w, c, h)) throw new GitError('error: commit ' + c + ' už je v historii HEAD', 'Cherry-pick kopíruje commity, které v aktuální větvi ještě nejsou.');
+      if (w.store[c].parents.length > 1) throw new GitError('error: ' + c + ' je slučovací commit', 'Slučovací commity se cherry-pickem nekopírují.');
+      var nid = copyId(w, c);
+      w.store[nid] = { id: nid, parents: [h], msg: w.store[c].msg, seq: w.seq++, revertOf: w.store[c].revertOf };
+      setHeadTarget(r, nid);
+      markKnown(w, r, nid);
+      out.log('[' + (r.head.branch || 'odpojená HEAD') + ' ' + nid + '] kopie ' + c, 'ok');
+    });
+  }
+
+  function cmdReset(w, a, out) {
+    var r = w.local, f = a.flags;
+    var target = resolve(w, r, a.pos[0] || 'HEAD'), h = headCommit(r);
+    setHeadTarget(r, target);
+    var mode = f.hard ? '--hard' : f.soft ? '--soft' : '--mixed';
+    out.log((r.head.branch || 'HEAD') + ' přesunuta z ' + h + ' na ' + target + ' (' + mode + ').', 'ok');
+    if (mode === '--soft') out.log('Změny z vynechaných commitů zůstaly připravené ke commitu (staged).', 'hint');
+    else if (mode === '--mixed') out.log('Změny z vynechaných commitů zůstaly v pracovním adresáři.', 'hint');
+    else out.log('Pracovní adresář přepsán — změny z vynechaných commitů jsou zahozené.', 'hint');
+    var lost = commitsBetween(w, target, h);
+    if (lost.length) out.log('Commity ' + lost.join(', ') + ' už nejsou na žádné větvi.', 'hint');
+  }
+
+  function cmdRevert(w, a, out) {
+    var r = w.local;
+    if (!a.pos.length) throw new GitError('fatal: chybí commit', 'Použití: git revert <commit>');
+    a.pos.forEach(function (ref) {
+      var c = resolve(w, r, ref), h = headCommit(r);
+      if (!isAncestor(w, c, h)) throw new GitError('error: commit ' + c + ' není v historii HEAD — není co vracet');
+      var id = mkCommit(w, [h], 'Revert „' + w.store[c].msg + '“');
+      w.store[id].revertOf = c;
+      setHeadTarget(r, id);
+      markKnown(w, r, id);
+      out.log('[' + (r.head.branch || 'odpojená HEAD') + ' ' + id + '] ruší změny z ' + c, 'ok');
+    });
+  }
+
+  function cmdTag(w, a, out) {
+    var r = w.local, p = a.pos, f = a.flags;
+    if (f.d) {
+      p.forEach(function (n) {
+        if (r.tags[n] === undefined) throw new GitError("error: značka '" + n + "' neexistuje");
+        delete r.tags[n]; out.log('Značka ' + n + ' smazána.', 'ok');
+      });
+      return;
+    }
+    if (!p.length) {
+      var names = Object.keys(r.tags).sort();
+      if (!names.length) out.log('(žádné značky)');
+      names.forEach(function (t) { out.log(t + '  → ' + r.tags[t]); });
+      return;
+    }
+    var n2 = p[0];
+    if (!/^[A-Za-z0-9._\/-]+$/.test(n2)) throw new GitError("fatal: '" + n2 + "' není platný název značky");
+    if (r.tags[n2] !== undefined) throw new GitError("fatal: značka '" + n2 + "' už existuje");
+    if (r.branches[n2] !== undefined) throw new GitError("fatal: název '" + n2 + "' už používá větev", 'Pro přehlednost zvol jiný název.');
+    var id = resolve(w, r, p[1] || 'HEAD');
+    r.tags[n2] = id;
+    out.log('Značka ' + n2 + ' vytvořena na ' + id + '.', 'ok');
+  }
+
+  function decorations(w, repo, id, isRemote) {
+    var d = [];
+    if (!isRemote && repo.head && !repo.head.branch && repo.head.detached === id) d.push('HEAD');
+    Object.keys(repo.branches).sort().forEach(function (b) {
+      if (repo.branches[b] === id) d.push((!isRemote && repo.head && repo.head.branch === b ? 'HEAD -> ' : '') + b);
+    });
+    Object.keys(repo.tracking || {}).sort().forEach(function (b) { if (repo.tracking[b] === id) d.push('origin/' + b); });
+    Object.keys(repo.tags).sort().forEach(function (t) { if (repo.tags[t] === id) d.push('tag: ' + t); });
+    return d.length ? ' (' + d.join(', ') + ')' : '';
+  }
+
+  function cmdLog(w, a, out) {
+    var r = w.local;
+    var start = resolve(w, r, a.pos[0] || 'HEAD');
+    var list = Object.keys(ancestors(w, start)).sort(function (x, y) { return w.store[y].seq - w.store[x].seq; });
+    var max = typeof a.flags.n === 'string' ? parseInt(a.flags.n, 10) : 20;
+    list.slice(0, max).forEach(function (c) {
+      var cm = w.store[c];
+      out.log(c + decorations(w, r, c) + '  ' + cm.msg + (cm.parents.length > 1 ? '  [merge ' + cm.parents.join(' + ') + ']' : ''), 'log');
+    });
+  }
+
+  function aheadBehind(w, a, b) {
+    return { ahead: commitsBetween(w, b, a).length, behind: commitsBetween(w, a, b).length };
+  }
+
+  function cmdStatus(w, a, out) {
+    var r = w.local;
+    if (r.head.branch) {
+      out.log('Na větvi ' + r.head.branch + ' (ukazuje na ' + r.branches[r.head.branch] + ')');
+      var up = r.upstream[r.head.branch];
+      if (up && r.tracking[up.slice(7)] !== undefined) {
+        var ab = aheadBehind(w, r.branches[r.head.branch], r.tracking[up.slice(7)]);
+        if (!ab.ahead && !ab.behind) out.log('Větev je aktuální vůči ' + up + '.', 'ok');
+        else if (ab.ahead && !ab.behind) out.log('Jsi o ' + ab.ahead + ' commit(ů) napřed před ' + up + ' — použij git push.', 'hint');
+        else if (!ab.ahead && ab.behind) out.log('Jsi o ' + ab.behind + ' commit(ů) pozadu za ' + up + ' — použij git pull.', 'hint');
+        else out.log('Větev a ' + up + ' se rozešly (' + ab.ahead + ' a ' + ab.behind + ' různých commitů).', 'hint');
+      } else if (w.remote) out.log('Větev nemá nastavenou sledovanou vzdálenou větev (upstream).', 'hint');
+    } else out.log('HEAD je odpojená na ' + r.head.detached + '.', 'hint');
+    out.log('Pracovní adresář je čistý — nic k zapsání.');
+  }
+
+  function cmdShow(w, a, out) {
+    var id = resolve(w, w.local, a.pos[0] || 'HEAD'), c = w.store[id];
+    out.log('commit ' + id + decorations(w, w.local, id), 'log');
+    out.log('rodiče: ' + (c.parents.length ? c.parents.join(', ') : '(žádní — první commit)'));
+    out.log('    ' + c.msg);
+  }
+
+  /* ---------- Vzdálený repozitář ---------- */
+
+  function needRemote(w) {
+    if (!w.remote) throw new GitError("fatal: 'origin' neexistuje — žádný vzdálený repozitář", 'Nejprve vytvoř kopii na GitHubu příkazem git clone.');
+  }
+
+  function cmdClone(w, a, out) {
+    if (w.remote) throw new GitError('fatal: repozitář už je naklonovaný (origin existuje)');
+    var r = w.local;
+    w.remote = newRepo();
+    w.remote.branches = clone(r.branches);
+    w.remote.tags = clone(r.tags);
+    w.remote.head = { branch: r.branches.main !== undefined ? 'main' : Object.keys(r.branches)[0] };
+    Object.keys(r.branches).forEach(function (b) {
+      r.tracking[b] = r.branches[b];
+      r.upstream[b] = 'origin/' + b;
+      markKnown(w, w.remote, r.branches[b]);
+    });
+    out.log("Cloning into 'projekt'... hotovo.", 'ok');
+    out.log('Vznikl vzdálený repozitář origin (GitHub). Lokální větve sledují origin/<větev>.', 'hint');
+  }
+
+  function cmdFetch(w, a, out) {
+    needRemote(w);
+    var r = w.local, R = w.remote, p = a.pos.slice();
+    if (p[0] === 'origin') p.shift();
+    var names = p.length ? [p[0].split(':')[0]] : Object.keys(R.branches);
+    var updated = 0;
+    names.forEach(function (b) {
+      if (R.branches[b] === undefined) throw new GitError("fatal: na origin neexistuje větev '" + b + "'");
+      var before = r.tracking[b];
+      r.tracking[b] = R.branches[b];
+      markKnown(w, r, R.branches[b]);
+      if (before !== R.branches[b]) { updated++; out.log('   ' + (before || '(nová)') + '..' + R.branches[b] + '  ' + b + ' -> origin/' + b, 'out'); }
+    });
+    if (!p.length && a.flags.prune) {
+      Object.keys(r.tracking).forEach(function (b) { if (R.branches[b] === undefined) { delete r.tracking[b]; out.log(' - [smazáno] origin/' + b); } });
+    }
+    out.log(updated ? 'Staženo z origin. Lokální větve se nezměnily — změnily se jen origin/*.' : 'Vše aktuální, nic nového ke stažení.', updated ? 'ok' : 'out');
+  }
+
+  function cmdPull(w, a, out, ctx) {
+    needRemote(w);
+    var r = w.local, p = a.pos.slice();
+    if (p[0] === 'origin') p.shift();
+    var b = p[0];
+    if (!b) {
+      if (!r.head.branch) throw new GitError('fatal: odpojená HEAD nemá žádnou sledovanou větev');
+      var up = r.upstream[r.head.branch];
+      if (!up) throw new GitError("Větev '" + r.head.branch + "' nesleduje žádnou vzdálenou větev.", 'Nastav ji: git push -u origin ' + r.head.branch + ', nebo napiš git pull origin <větev>.');
+      b = up.slice(7);
+    }
+    cmdFetch(w, { flags: {}, pos: [b] }, out);
+    if (a.flags.rebase || a.flags.r) cmdRebase(w, { flags: {}, pos: ['origin/' + b] }, out, ctx);
+    else cmdMerge(w, { flags: { 'ff-only': !!a.flags['ff-only'], m: "Merge origin/" + b + " do " + (r.head.branch || 'HEAD') }, pos: ['origin/' + b] }, out);
+  }
+
+  function copyToRemote(w, id) { markKnown(w, w.remote, id); }
+
+  function cmdPush(w, a, out) {
+    needRemote(w);
+    var r = w.local, R = w.remote, f = a.flags, p = a.pos.slice();
+    if (p[0] === 'origin') p.shift();
+    if (f['delete'] || (p[0] && p[0].charAt(0) === ':')) {
+      var del = f['delete'] ? p[0] : p[0].slice(1);
+      if (!del || R.branches[del] === undefined) throw new GitError("error: na origin neexistuje větev '" + (del || '') + "'");
+      if (R.head.branch === del) throw new GitError('error: výchozí větev na GitHubu nelze smazat');
+      delete R.branches[del]; delete r.tracking[del];
+      out.log(' - [deleted]  ' + del, 'ok');
+      return;
+    }
+    var src, dst;
+    if (p[0]) {
+      var parts = p[0].split(':');
+      src = parts[0]; dst = parts[1] || (r.branches[parts[0]] !== undefined ? parts[0] : null);
+      if (!dst) throw new GitError("error: nevím, kam '" + src + "' na origin poslat", 'Použij git push origin <zdroj>:<větev>.');
+    } else {
+      if (!r.head.branch) throw new GitError('fatal: nejsi na žádné větvi', 'Z odpojené HEAD pošli commit jako: git push origin HEAD:<větev>.');
+      src = r.head.branch;
+      var up = r.upstream[src];
+      if (!up && !f.u && !f['set-upstream']) throw new GitError("fatal: větev '" + src + "' nemá nastavenou vzdálenou větev (upstream)",
+        'Při prvním odeslání nové větve napiš: git push -u origin ' + src);
+      dst = up ? up.slice(7) : src;
+    }
+    var L = resolve(w, r, src), Rtip = R.branches[dst];
+    if (Rtip !== undefined && Rtip === L) {
+      out.log('Everything up-to-date — origin/' + dst + ' už ukazuje na ' + L + '.');
+    } else {
+      if (Rtip !== undefined && !isAncestor(w, Rtip, L) && !(f.force || f.f || f['force-with-lease'])) {
+        throw new GitError(' ! [rejected]  ' + src + ' -> ' + dst + ' (fetch first)\nerror: odeslání odmítnuto — na GitHubu jsou commity, které lokálně nemáš.',
+          'Nejdřív si je stáhni a začleň: git pull (sloučí) nebo git pull --rebase (přeskládá), potom znovu git push.');
+      }
+      copyToRemote(w, L);
+      R.branches[dst] = L;
+      r.tracking[dst] = L;
+      out.log('To github.com:trida/projekt.git', 'out');
+      out.log('   ' + (Rtip || '[nová větev]') + (Rtip ? '..' : ' ') + L + '  ' + src + ' -> ' + dst + ((f.force || f.f) && Rtip && !isAncestor(w, Rtip, L) ? '  (vynuceno!)' : ''), 'ok');
+      if ((f.force || f.f) && Rtip && !isAncestor(w, Rtip, L)) out.log('Pozor: --force přepsal historii na GitHubu. Kolegům se může rozbít jejich práce.', 'hint');
+    }
+    if ((f.u || f['set-upstream']) && r.branches[src] !== undefined) {
+      r.upstream[src] = 'origin/' + dst;
+      out.log("Větev '" + src + "' teď sleduje 'origin/" + dst + "'.", 'ok');
+    }
+  }
+
+  function cmdFakeTeamwork(w, a, out) {
+    needRemote(w);
+    var R = w.remote, p = a.pos, b = 'main', n = 1;
+    p.forEach(function (x) { if (/^\d+$/.test(x)) n = parseInt(x, 10); else b = x; });
+    if (R.branches[b] === undefined) throw new GitError("na origin neexistuje větev '" + b + "'");
+    n = Math.min(n, 10);
+    var made = [];
+    for (var i = 0; i < n; i++) {
+      var id = mkCommit(w, [R.branches[b]], 'Práce kolegy');
+      R.branches[b] = id; markKnown(w, R, id); made.push(id);
+    }
+    out.log('Kolega odeslal na GitHub do větve ' + b + ': ' + made.join(', '), 'ok');
+    out.log('Lokálně o tom zatím nevíš — origin/' + b + ' se změní až po git fetch nebo git pull.', 'hint');
+  }
+
+  /* ---------- GitHub: pull requesty ---------- */
+
+  function cmdGh(w, tokens, out) {
+    if (tokens[0] !== 'pr') throw new GitError("gh: neznámý příkaz '" + (tokens[0] || '') + "'", 'Simulátor umí gh pr create, gh pr list a gh pr merge.');
+    needRemote(w);
+    var a = parseArgs(tokens.slice(2)), sub = tokens[1], r = w.local, R = w.remote;
+    if (sub === 'create') {
+      var head = typeof a.flags.head === 'string' ? a.flags.head : r.head.branch;
+      var base = typeof a.flags.base === 'string' ? a.flags.base : (R.head.branch || 'main');
+      if (!head) throw new GitError('gh: nejsi na žádné větvi', 'Použij gh pr create --head <větev>.');
+      if (R.branches[head] === undefined) throw new GitError("gh: větev '" + head + "' na GitHubu není", 'Nejdřív ji odešli: git push -u origin ' + head);
+      if (R.branches[base] === undefined) throw new GitError("gh: cílová větev '" + base + "' na GitHubu není");
+      if (head === base) throw new GitError('gh: zdrojová a cílová větev jsou stejné');
+      if (isAncestor(w, R.branches[head], R.branches[base])) throw new GitError("gh: větev '" + head + "' neobsahuje nic nového oproti " + base);
+      w.prs.forEach(function (pr) { if (pr.state === 'open' && pr.head === head && pr.base === base) throw new GitError('gh: pull request #' + pr.num + ' pro tuto větev už existuje'); });
+      var num = w.prs.length + 1;
+      w.prs.push({ num: num, head: head, base: base, state: 'open', title: typeof a.flags.title === 'string' ? a.flags.title : head });
+      out.log('Vytvořen pull request #' + num + ': ' + head + ' → ' + base, 'ok');
+      out.log('https://github.com/trida/projekt/pull/' + num, 'out');
+      return;
+    }
+    if (sub === 'list') {
+      var open = w.prs.filter(function (x) { return x.state === 'open'; });
+      if (!open.length) out.log('Žádné otevřené pull requesty.');
+      open.forEach(function (x) { out.log('#' + x.num + '  ' + x.title + '  (' + x.head + ' → ' + x.base + ')'); });
+      return;
+    }
+    if (sub === 'merge') {
+      var key = a.pos[0], pr = null;
+      w.prs.forEach(function (x) {
+        if (x.state !== 'open') return;
+        if (key ? (String(x.num) === String(key).replace('#', '') || x.head === key) : x.head === r.head.branch) pr = x;
+      });
+      if (!pr) {
+        var anyOpen = w.prs.filter(function (x) { return x.state === 'open'; });
+        if (!key && anyOpen.length === 1) pr = anyOpen[0];
+        else throw new GitError('gh: nenašel jsem otevřený pull request' + (key ? " '" + key + "'" : ' pro aktuální větev'), 'Seznam: gh pr list. Nejdřív ho vytvoř: gh pr create.');
+      }
+      var bt = R.branches[pr.base], ht = R.branches[pr.head], id;
+      if (a.flags.squash || a.flags.s) {
+        id = mkCommit(w, [bt], pr.title + ' (#' + pr.num + ')');
+        w.store[id].squash = true;
+      } else if (a.flags.rebase || a.flags.r) {
+        var list = commitsBetween(w, bt, ht), base = bt;
+        list.forEach(function (c) {
+          var nid = copyId(w, c);
+          w.store[nid] = { id: nid, parents: [base], msg: w.store[c].msg, seq: w.seq++ };
+          base = nid;
+        });
+        id = base;
+      } else {
+        id = mkCommit(w, [bt, ht], 'Merge pull request #' + pr.num + ' z ' + pr.head);
+      }
+      R.branches[pr.base] = id; markKnown(w, R, id);
+      pr.state = 'merged';
+      out.log('✓ Pull request #' + pr.num + ' sloučen na GitHubu do ' + pr.base + ' (' + id + ').', 'ok');
+      if (a.flags['delete-branch'] || a.flags.d) { delete R.branches[pr.head]; out.log('✓ Větev ' + pr.head + ' na GitHubu smazána.', 'ok'); }
+      out.log('Lokální ' + pr.base + ' o tom zatím neví — stáhni si změny: git switch ' + pr.base + ' a git pull.', 'hint');
+      return;
+    }
+    throw new GitError("gh pr: neznámý podpříkaz '" + (sub || '') + "'", 'Použij create, list nebo merge.');
+  }
+
+  /* ---------- Spuštění jednoho příkazu ---------- */
+
+  var GIT = {
+    commit: cmdCommit, branch: cmdBranch, checkout: cmdCheckout, switch: cmdSwitch, merge: cmdMerge,
+    rebase: cmdRebase, 'cherry-pick': cmdCherryPick, reset: cmdReset, revert: cmdRevert, tag: cmdTag,
+    log: cmdLog, status: cmdStatus, show: cmdShow, clone: cmdClone, fetch: cmdFetch, pull: cmdPull,
+    push: cmdPush, fakeTeamwork: cmdFakeTeamwork
+  };
+
+  var NOT_NEEDED = {
+    add: 'V simulátoru se soubory neupravují — git add není potřeba, git commit rovnou vytvoří commit.',
+    init: 'Repozitář už existuje. Simulátor začíná s commity C0 a C1 na větvi main.',
+    diff: 'Simulátor nepracuje s obsahem souborů, takže git diff nic neukáže.',
+    stash: 'Simulátor nepracuje se soubory, takže není co odkládat (stash).',
+    remote: 'V simulátoru je vždy jen jeden vzdálený repozitář: origin (vzniká příkazem git clone).',
+    restore: 'Simulátor nepracuje se soubory, git restore tu nemá co obnovit.',
+    rm: 'Simulátor nepracuje se soubory.', mv: 'Simulátor nepracuje se soubory.'
+  };
+
+  /** Provede jeden příkaz. Vrací {ok, lines, counted, pending}. */
+  function run(w, line, ctx) {
+    var out = new Out();
+    var tokens;
+    try {
+      tokens = tokenize(line);
+    } catch (e) { return { ok: false, lines: [{ text: e.message, cls: 'err' }] }; }
+    if (!tokens.length) return { ok: true, lines: [] };
+    try {
+      if (tokens[0] === 'gh') { cmdGh(w, tokens.slice(1), out); return { ok: true, lines: out.lines, counted: true }; }
+      if (tokens[0] !== 'git') throw new GitError("příkaz '" + tokens[0] + "' neznám", 'Příkazy gitu začínají slovem git, např. git commit. Nápovědu vypíše help.');
+      var sub = tokens[1];
+      if (!sub) throw new GitError('použití: git <příkaz> …', 'Napiš help pro seznam podporovaných příkazů.');
+      if (sub === 'faketeamwork' || sub === 'kolega') sub = 'fakeTeamwork';
+      if (NOT_NEEDED[sub]) { out.log(NOT_NEEDED[sub], 'hint'); return { ok: true, lines: out.lines, counted: false }; }
+      var fn = GIT[sub];
+      if (!fn) throw new GitError("git: '" + sub + "' není příkaz gitu (nebo ho simulátor nepodporuje)", 'Seznam podporovaných příkazů vypíše help.');
+      needRepo(w);
+      var a = parseArgs(tokens.slice(2));
+      fn(w, a, out, ctx);
+      var readOnly = sub === 'log' || sub === 'status' || sub === 'show' || (sub === 'branch' && !a.pos.length && !Object.keys(a.flags).length) || (sub === 'tag' && !a.pos.length);
+      return { ok: true, lines: out.lines, counted: !readOnly, pending: !!out.pending };
+    } catch (e) {
+      if (!(e instanceof GitError)) { console.error(e); e = new GitError('Interní chyba simulátoru: ' + e.message); }
+      String(e.message).split('\n').forEach(function (t) { out.log(t, 'err'); });
+      if (e.hint) out.log('Tip: ' + e.hint, 'hint');
+      return { ok: false, lines: out.lines };
+    }
+  }
+
+  /* ---------- Porovnání s cílem úrovně ---------- */
+
+  function canon(w, id, memo) {
+    if (memo[id]) return memo[id];
+    var c = w.store[id], b = baseId(id), label;
+    if (c.revertOf) label = 'rev:' + (w.initial[baseId(c.revertOf)] ? baseId(c.revertOf) : '#');
+    else if (w.initial[b] && !c.squash) label = b + (id !== b ? "'" : '');
+    else label = '#';
+    var s = label + '(' + c.parents.map(function (p) { return canon(w, p, memo); }).join(',') + ')';
+    memo[id] = s;
+    return s;
+  }
+
+  /** Porovná stav se zadaným cílem; vrátí seznam rozdílů (prázdný = shoda). */
+  function compare(w, goal, opts) {
+    opts = opts || {};
+    var diffs = [], mw = {}, mg = {};
+    function cw(id) { return id === undefined ? null : canon(w, id, mw); }
+    function cg(id) { return id === undefined ? null : canon(goal, id, mg); }
+    var gl = goal.local, l = w.local;
+    var onlyB = opts.branches || Object.keys(gl.branches);
+    onlyB.forEach(function (b) {
+      if (l.branches[b] === undefined) diffs.push('chybí větev ' + b);
+      else if (cw(l.branches[b]) !== cg(gl.branches[b])) diffs.push('větev ' + b + ' neukazuje na správný commit');
+    });
+    Object.keys(gl.tags).forEach(function (t) {
+      if (l.tags[t] === undefined) diffs.push('chybí značka ' + t);
+      else if (cw(l.tags[t]) !== cg(gl.tags[t])) diffs.push('značka ' + t + ' je na jiném commitu');
+    });
+    if (opts.head) {
+      if (gl.head.branch) { if (l.head.branch !== gl.head.branch) diffs.push('HEAD má být na větvi ' + gl.head.branch); }
+      else if (l.head.branch || cw(l.head.detached) !== cg(gl.head.detached)) diffs.push('HEAD má být odpojená na ' + gl.head.detached);
+    }
+    if (goal.remote) {
+      if (!w.remote) diffs.push('chybí vzdálený repozitář origin');
+      else {
+        (opts.remoteBranches || Object.keys(goal.remote.branches)).forEach(function (b) {
+          if (w.remote.branches[b] === undefined) diffs.push('na GitHubu chybí větev ' + b);
+          else if (cw(w.remote.branches[b]) !== cg(goal.remote.branches[b])) diffs.push('větev ' + b + ' na GitHubu neodpovídá cíli');
+        });
+        if (opts.tracking) Object.keys(gl.tracking).forEach(function (b) {
+          if (cw(l.tracking[b]) !== cg(gl.tracking[b])) diffs.push('origin/' + b + ' (lokální kopie) neodpovídá cíli');
+        });
+      }
+    }
+    return diffs;
+  }
+
+  /** Připraví svět úrovně: výchozí stav + nastavovací příkazy. */
+  function buildWorld(setup) {
+    var w = newWorld();
+    splitCommands(setup || '').forEach(function (cmd) {
+      var res = run(w, cmd);
+      if (!res.ok) throw new Error('Chyba v přípravě úrovně: ' + cmd + ' → ' + res.lines.map(function (l) { return l.text; }).join(' '));
+    });
+    w.initial = {};
+    Object.keys(w.store).forEach(function (id) { w.initial[id] = true; });
+    return w;
+  }
+
+  function buildGoal(setup, solution) {
+    var w = buildWorld(setup);
+    splitCommands(solution).forEach(function (cmd) {
+      var res = run(w, cmd);
+      if (!res.ok) throw new Error('Chyba v řešení úrovně: ' + cmd + ' → ' + res.lines.map(function (l) { return l.text; }).join(' '));
+    });
+    return w;
+  }
+
+  return {
+    newWorld: newWorld, run: run, splitCommands: splitCommands, tokenize: tokenize,
+    buildWorld: buildWorld, buildGoal: buildGoal, compare: compare, clone: clone,
+    headCommit: headCommit, ancestors: ancestors, reachable: reachable, baseId: baseId,
+    resolve: resolve, decorations: decorations, aheadBehind: aheadBehind, commitsBetween: commitsBetween
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = GitSim;
+
+</script>
+<script>
+/* ==========================================================================
+   Git simulátor — vykreslení grafu commitů do SVG (s animací přesunů)
+   Barvy se berou z CSS proměnných přes style="", takže graf sám reaguje
+   na přepnutí světlého/tmavého režimu.
+   ========================================================================== */
+var GitView = (function () {
+  'use strict';
+
+  var PALETTE = ['green', 'purple', 'orange', 'pink', 'brown', 'red', 'yellow'];
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function colorOf(name) {
+    var b = name.replace(/^origin\//, '');
+    if (b === 'main' || b === 'master') return 'blue';
+    var h = 0;
+    for (var i = 0; i < b.length; i++) h = (h * 31 + b.charCodeAt(i)) >>> 0;
+    return PALETTE[h % PALETTE.length];
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+
+  function textW(s, mini) { return s.length * (mini ? 6.4 : 7.25) + (mini ? 10 : 14); }
+
+  /* ---------- Rozložení ---------- */
+
+  function layout(w, repo, isRemote, mini) {
+    var S = w.store;
+    var shown = Object.keys(repo.known || {}).filter(function (id) { return S[id]; });
+    shown.sort(function (a, b) { return S[a].seq - S[b].seq; });
+    var shownSet = {}; shown.forEach(function (id) { shownSet[id] = true; });
+
+    // dosažitelnost z referencí
+    var refs = [];
+    Object.keys(repo.branches).forEach(function (b) { refs.push(repo.branches[b]); });
+    Object.keys(repo.tags).forEach(function (b) { refs.push(repo.tags[b]); });
+    if (!isRemote) {
+      Object.keys(repo.tracking || {}).forEach(function (b) { refs.push(repo.tracking[b]); });
+      var hc = GitSim.headCommit(repo); if (hc) refs.push(hc);
+    }
+    var reach = {};
+    refs.forEach(function (r) { var a = GitSim.ancestors(w, r); for (var k in a) reach[k] = true; });
+
+    // barvy podle větví (main první)
+    var names = Object.keys(repo.branches).sort(function (a, b) {
+      if (a === 'main') return -1; if (b === 'main') return 1; return a < b ? -1 : 1;
+    });
+    var color = {};
+    names.forEach(function (b) {
+      var c = repo.branches[b];
+      while (c && !color[c]) { color[c] = colorOf(b); c = S[c].parents[0]; }
+    });
+
+    // hloubka
+    var depth = {};
+    shown.forEach(function (id) {
+      var d = 0;
+      S[id].parents.forEach(function (p) { if (shownSet[p]) d = Math.max(d, depth[p] + 1); });
+      depth[id] = d;
+    });
+
+    // strom podle prvního rodiče
+    var mainLine = {};
+    var mainTip = repo.branches.main !== undefined ? repo.branches.main : (names.length ? repo.branches[names[0]] : null);
+    if (mainTip) { var c2 = mainTip; while (c2) { mainLine[c2] = true; c2 = S[c2].parents[0]; } }
+    var kids = {}, roots = [];
+    shown.forEach(function (id) {
+      var p = S[id].parents[0];
+      if (p && shownSet[p]) (kids[p] = kids[p] || []).push(id);
+      else roots.push(id);
+    });
+    function prio(id) { return (mainLine[id] ? 0 : reach[id] ? 1 : 2); }
+    Object.keys(kids).forEach(function (k) {
+      kids[k].sort(function (a, b) { return prio(a) - prio(b) || S[a].seq - S[b].seq; });
+    });
+    var width = {};
+    function wOf(id) {
+      if (width[id] !== undefined) return width[id];
+      var s = 0; (kids[id] || []).forEach(function (k) { s += wOf(k); });
+      return (width[id] = Math.max(1, s));
+    }
+    var col = {}, nextCol = 0;
+    function place(id, left) {
+      col[id] = left;
+      var cur = left;
+      (kids[id] || []).forEach(function (k) { place(k, cur); cur += wOf(k); });
+    }
+    roots.forEach(function (r) { place(r, nextCol); nextCol += wOf(r); });
+
+    // štítky
+    var labels = {};
+    function add(id, l) { (labels[id] = labels[id] || []).push(l); }
+    if (!isRemote && repo.head && repo.head.detached) add(repo.head.detached, { kind: 'head', text: 'HEAD' });
+    names.forEach(function (b) {
+      var attached = !isRemote && repo.head && repo.head.branch === b;
+      add(repo.branches[b], { kind: 'branch', text: b, head: attached, color: colorOf(b) });
+    });
+    if (!isRemote) Object.keys(repo.tracking || {}).sort().forEach(function (b) {
+      add(repo.tracking[b], { kind: 'remote', text: 'origin/' + b, color: colorOf(b) });
+    });
+    Object.keys(repo.tags).sort().forEach(function (t) { add(repo.tags[t], { kind: 'tag', text: t }); });
+
+    function labelsWidth(id) {
+      var tot = 0;
+      (labels[id] || []).forEach(function (l) {
+        l.w = textW(l.text, mini) + (l.head ? textW('HEAD', mini) : 0) + (l.kind === 'tag' ? 8 : 0);
+        tot += l.w + 6;
+      });
+      return tot;
+    }
+
+    // šířky sloupců podle nejdelší řady štítků
+    var R = mini ? 12 : 17, GAPX = mini ? 30 : 44, GAPY = mini ? 44 : 64;
+    var colW = [];
+    shown.forEach(function (id) { colW[col[id]] = Math.max(colW[col[id]] || 0, labelsWidth(id)); });
+    var colX = [], x = R + 4;
+    for (var i = 0; i < nextCol; i++) { colX[i] = x; x += 2 * R + GAPX + (colW[i] || 0); }
+
+    var nodes = {};
+    var maxX = 0, maxY = 0;
+    shown.forEach(function (id) {
+      var n = {
+        id: id, x: colX[col[id]], y: R + 6 + depth[id] * GAPY,
+        color: reach[id] ? (color[id] || 'gray') : 'gray',
+        orphan: !reach[id], parents: S[id].parents.filter(function (p) { return shownSet[p]; }),
+        labels: labels[id] || [], msg: S[id].msg, merge: S[id].parents.length > 1
+      };
+      nodes[id] = n;
+      maxX = Math.max(maxX, n.x + R + 8 + labelsWidth(id));
+      maxY = Math.max(maxY, n.y + R + 6);
+    });
+    return { nodes: nodes, order: shown, R: R, width: maxX + 4, height: maxY + 4 };
+  }
+
+  /* ---------- Kreslení ---------- */
+
+  function pill(l, x, y, mini) {
+    var h = mini ? 16 : 22, fs = mini ? 10 : 12, s = '';
+    var top = y - h / 2;
+    if (l.kind === 'head') {
+      s += '<rect x="' + x + '" y="' + top + '" width="' + l.w + '" height="' + h + '" rx="' + h / 2 + '" style="fill:var(--accent)"/>';
+      s += '<text x="' + (x + l.w / 2) + '" y="' + (y + fs * 0.36) + '" text-anchor="middle" class="gv-lbl" style="fill:var(--accent-contrast);font-size:' + fs + 'px;font-weight:700">HEAD</text>';
+      return s;
+    }
+    if (l.kind === 'branch') {
+      var hw = l.head ? textW('HEAD', mini) : 0;
+      s += '<rect x="' + x + '" y="' + top + '" width="' + l.w + '" height="' + h + '" rx="' + h / 2 + '" style="fill:var(--c-' + l.color + '-bg);stroke:var(--c-' + l.color + ');stroke-width:1.5"/>';
+      if (l.head) {
+        s += '<path d="M' + (x + h / 2) + ' ' + top + 'H' + (x + hw) + 'V' + (top + h) + 'H' + (x + h / 2) + 'A' + h / 2 + ' ' + h / 2 + ' 0 0 1 ' + (x + h / 2) + ' ' + top + 'Z" style="fill:var(--accent)"/>';
+        s += '<text x="' + (x + hw / 2 + 1) + '" y="' + (y + fs * 0.36) + '" text-anchor="middle" class="gv-lbl" style="fill:var(--accent-contrast);font-size:' + (fs - 1) + 'px;font-weight:700">HEAD</text>';
+      }
+      s += '<text x="' + (x + hw + (l.w - hw) / 2) + '" y="' + (y + fs * 0.36) + '" text-anchor="middle" class="gv-lbl" style="fill:var(--c-' + l.color + ');font-size:' + fs + 'px;font-weight:600">' + esc(l.text) + '</text>';
+      return s;
+    }
+    if (l.kind === 'remote') {
+      s += '<rect x="' + x + '" y="' + top + '" width="' + l.w + '" height="' + h + '" rx="' + h / 2 + '" style="fill:var(--surface);stroke:var(--c-' + l.color + ');stroke-width:1.2;stroke-dasharray:4 3"/>';
+      s += '<text x="' + (x + l.w / 2) + '" y="' + (y + fs * 0.36) + '" text-anchor="middle" class="gv-lbl" style="fill:var(--text-muted);font-size:' + fs + 'px">' + esc(l.text) + '</text>';
+      return s;
+    }
+    // tag
+    s += '<path d="M' + x + ' ' + y + 'L' + (x + 8) + ' ' + top + 'H' + (x + l.w) + 'V' + (top + h) + 'H' + (x + 8) + 'Z" style="fill:var(--c-yellow-bg);stroke:var(--c-yellow);stroke-width:1.2;stroke-linejoin:round"/>';
+    s += '<circle cx="' + (x + 8) + '" cy="' + y + '" r="2" style="fill:var(--c-yellow)"/>';
+    s += '<text x="' + (x + 8 + (l.w - 8) / 2) + '" y="' + (y + fs * 0.36) + '" text-anchor="middle" class="gv-lbl" style="fill:var(--c-yellow);font-size:' + fs + 'px;font-weight:600">' + esc(l.text) + '</text>';
+    return s;
+  }
+
+  function View(svg, opts) {
+    this.svg = svg;
+    this.opts = opts || {};
+    this.pos = {};       // aktuálně vykreslené pozice
+    this.vb = null;
+    this.anim = null;
+    var self = this;
+    if (this.opts.onCommitClick) {
+      svg.addEventListener('click', function (e) {
+        var g = e.target.closest && e.target.closest('[data-id]');
+        if (g) self.opts.onCommitClick(g.getAttribute('data-id'));
+      });
+    }
+  }
+
+  View.prototype.update = function (w, repo, isRemote, instant) {
+    var mini = !!this.opts.mini;
+    if (!repo) { this.svg.innerHTML = ''; this.target = null; return; }
+    var L = layout(w, repo, isRemote, mini);
+    var self = this;
+    var k = mini ? 1 : 1.2, minW = (this.svg.clientWidth || (mini ? 160 : 320)) / k, minH = (this.svg.clientHeight || (mini ? 110 : 220)) / k;
+    this.last = [w, repo, isRemote];
+    var vb = { w: Math.max(minW, L.width), h: Math.max(minH, L.height) };
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // výchozí pozice nových commitů = pozice rodiče
+    var from = {};
+    L.order.forEach(function (id) {
+      var n = L.nodes[id];
+      if (self.pos[id]) from[id] = { x: self.pos[id].x, y: self.pos[id].y, o: self.pos[id].o };
+      else {
+        var p = n.parents[0] && (self.pos[n.parents[0]] || L.nodes[n.parents[0]]);
+        from[id] = p ? { x: p.x, y: p.y, o: 0 } : { x: n.x, y: n.y, o: 0 };
+      }
+    });
+    var vbFrom = this.vb || vb;
+    if (this.anim) cancelAnimationFrame(this.anim);
+    var t0 = performance.now(), dur = (instant || reduce || mini) ? 0 : 380;
+
+    function frame(now) {
+      var t = dur ? Math.min(1, (now - t0) / dur) : 1;
+      var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      var cur = {};
+      L.order.forEach(function (id) {
+        var f = from[id], n = L.nodes[id];
+        cur[id] = { x: f.x + (n.x - f.x) * e, y: f.y + (n.y - f.y) * e, o: f.o + (1 - f.o) * e };
+      });
+      var v = { w: vbFrom.w + (vb.w - vbFrom.w) * e, h: vbFrom.h + (vb.h - vbFrom.h) * e };
+      self.draw(L, cur, v, mini);
+      if (t < 1) self.anim = requestAnimationFrame(frame);
+      else { self.pos = cur; self.vb = vb; self.anim = null; }
+    }
+    if (dur) this.anim = requestAnimationFrame(frame); else frame(t0);
+    this.svg.setAttribute('aria-label', this.describe(w, repo, isRemote));
+  };
+
+  View.prototype.draw = function (L, cur, v, mini) {
+    var R = L.R, edges = '', nodes = '', lbls = '';
+    L.order.forEach(function (id) {
+      var n = L.nodes[id], c = cur[id];
+      n.parents.forEach(function (p) {
+        var q = cur[p]; if (!q) return;
+        var my = (c.y + q.y) / 2;
+        var d = Math.abs(c.x - q.x) < 0.5 ? 'M' + c.x + ' ' + c.y + 'L' + q.x + ' ' + q.y
+          : 'M' + c.x + ' ' + c.y + 'C' + c.x + ' ' + my + ' ' + q.x + ' ' + my + ' ' + q.x + ' ' + q.y;
+        edges += '<path d="' + d + '" class="gv-edge' + (n.orphan ? ' gv-edge--orphan' : '') + '" style="opacity:' + c.o.toFixed(2) + '"/>';
+      });
+      var cls = 'gv-node' + (n.orphan ? ' gv-node--orphan' : '') + (mini ? '' : ' gv-node--click');
+      nodes += '<g class="' + cls + '" data-id="' + id + '" style="opacity:' + (c.o * (n.orphan ? 0.45 : 1)).toFixed(2) + '">' +
+        '<title>' + esc(id + ' — ' + n.msg + (n.orphan ? ' (osiřelý: neukazuje na něj žádná větev)' : '')) + '</title>' +
+        '<circle cx="' + c.x + '" cy="' + c.y + '" r="' + R + '" style="fill:var(--c-' + n.color + '-bg);stroke:var(--c-' + n.color + ');stroke-width:' + (mini ? 1.5 : 2) + (n.orphan ? ';stroke-dasharray:4 3' : '') + '"/>' +
+        (n.merge ? '<circle cx="' + c.x + '" cy="' + c.y + '" r="' + (R - 4) + '" style="fill:none;stroke:var(--c-' + n.color + ');stroke-width:1;opacity:.6"/>' : '') +
+        '<text x="' + c.x + '" y="' + (c.y + (mini ? 3.5 : 4)) + '" text-anchor="middle" class="gv-id" style="font-size:' + (mini ? 9.5 : 11.5) + 'px">' + esc(id) + '</text></g>';
+      var lx = c.x + R + 8;
+      n.labels.forEach(function (l) {
+        lbls += '<g style="opacity:' + c.o.toFixed(2) + '">' + pill(l, lx, c.y, mini) + '</g>';
+        lx += l.w + 6;
+      });
+    });
+    this.svg.setAttribute('viewBox', '0 0 ' + v.w.toFixed(1) + ' ' + v.h.toFixed(1));
+    var ox = Math.max(0, (v.w - L.width) / 2);
+    this.svg.innerHTML = '<g transform="translate(' + ox.toFixed(1) + ' 0)">' + edges + nodes + lbls + '</g>';
+  };
+
+  View.prototype.describe = function (w, repo, isRemote) {
+    var parts = [];
+    if (!isRemote) parts.push(repo.head.branch ? 'HEAD na větvi ' + repo.head.branch : 'HEAD odpojená na ' + repo.head.detached);
+    Object.keys(repo.branches).forEach(function (b) { parts.push('větev ' + b + ' na ' + repo.branches[b]); });
+    Object.keys(repo.tags).forEach(function (t) { parts.push('značka ' + t + ' na ' + repo.tags[t]); });
+    if (!isRemote) Object.keys(repo.tracking || {}).forEach(function (b) { parts.push('origin/' + b + ' na ' + repo.tracking[b]); });
+    return (isRemote ? 'Vzdálený repozitář: ' : 'Lokální repozitář: ') + parts.join(', ');
+  };
+
+  View.prototype.refit = function () {
+    if (this.last) this.update(this.last[0], this.last[1], this.last[2], true);
+  };
+
+  View.prototype.reset = function () { this.pos = {}; this.vb = null; };
+
+  return { View: View, colorOf: colorOf };
+})();
+
+</script>
+<script>
+/* ==========================================================================
+   Git simulátor — úrovně
+   setup    = příkazy, které připraví výchozí stav (výchozí je C0 ← C1 na main)
+   solution = vzorové řešení; z něj se dopočítá cílový stav a optimální počet příkazů
+   ========================================================================== */
+var GIT_CHAPTERS = [
+  { title: 'Základy', desc: 'commit, větve, merge a rebase' },
+  { title: 'Pohyb v historii', desc: 'HEAD, relativní odkazy, vracení změn' },
+  { title: 'Přesouvání práce', desc: 'cherry-pick, amend, interaktivní rebase, tagy' },
+  { title: 'GitHub a spolupráce', desc: 'clone, fetch, pull, push, pull request' }
+];
+
+var GIT_LEVELS = [
+  /* ---------- 1. Základy ---------- */
+  {
+    id: 'commit', chapter: 0, title: 'První commity',
+    setup: '',
+    solution: 'git commit; git commit',
+    text: '<p><strong>Commit</strong> je uložený snímek celého projektu. Git si u každého commitu pamatuje jeho <em>rodiče</em> — předchozí commit — a tak vzniká historie.</p>' +
+      '<p>Kolečka v grafu jsou commity, šipka vede vždy od mladšího k rodiči. Štítek <code>main</code> je větev a <code>HEAD</code> ukazuje, kde právě jsi.</p>' +
+      '<p class="task"><strong>Úkol:</strong> vytvoř dva nové commity.</p>',
+    hint: 'Napiš <code>git commit</code> a potvrď Enterem. Dvakrát.'
+  },
+  {
+    id: 'branch', chapter: 0, title: 'Větve',
+    setup: '',
+    solution: 'git switch -c bugFix',
+    head: true,
+    text: '<p><strong>Větev</strong> je jen pohyblivý štítek, který ukazuje na commit. Vytvořit ji nic nestojí — nekopírují se žádné soubory.</p>' +
+      '<p><code>git branch &lt;název&gt;</code> větev vytvoří, <code>git switch &lt;název&gt;</code> (nebo starší <code>git checkout</code>) se na ni přepne. Obojí najednou udělá <code>git switch -c &lt;název&gt;</code>.</p>' +
+      '<p class="task"><strong>Úkol:</strong> vytvoř větev <code>bugFix</code> a přepni se na ni.</p>',
+    hint: 'Hvězdička u názvu větve znamená, že na ní stojí HEAD. Zkus <code>git branch bugFix</code> a potom <code>git switch bugFix</code>.'
+  },
+  {
+    id: 'merge', chapter: 0, title: 'Slučování (merge)',
+    setup: '',
+    solution: 'git switch -c bugFix; git commit; git switch main; git commit; git merge bugFix',
+    text: '<p>Když se práce rozdělí do dvou větví, je potřeba ji zase spojit. <code>git merge &lt;větev&gt;</code> vytvoří <strong>slučovací commit</strong>, který má dva rodiče — spojuje obě linie historie.</p>' +
+      '<p>Slučuje se vždy <em>do</em> větve, na které právě stojíš.</p>' +
+      '<p class="task"><strong>Úkol:</strong> vytvoř větev <code>bugFix</code> s jedním commitem, na <code>main</code> udělej taky jeden commit a pak <code>bugFix</code> slouči do <code>main</code>.</p>',
+    hint: 'Postup: <code>git switch -c bugFix</code>, <code>git commit</code>, <code>git switch main</code>, <code>git commit</code>, <code>git merge bugFix</code>.'
+  },
+  {
+    id: 'rebase', chapter: 0, title: 'Přeskládání (rebase)',
+    setup: '',
+    solution: 'git switch -c bugFix; git commit; git switch main; git commit; git switch bugFix; git rebase main',
+    text: '<p><strong>Rebase</strong> je druhý způsob, jak spojit práci. Místo slučovacího commitu vezme commity z tvé větve a <em>zkopíruje</em> je na konec jiné větve. Historie pak vypadá, jako by vznikla jedna po druhé.</p>' +
+      '<p>Zkopírované commity dostanou apostrof (C2 → C2\'). Původní zůstanou šedě jako osiřelé — žádná větev na ně neukazuje.</p>' +
+      '<p class="task"><strong>Úkol:</strong> vytvoř větev <code>bugFix</code> s jedním commitem, na <code>main</code> udělej jeden commit a potom větev <code>bugFix</code> přeskládej na <code>main</code>.</p>',
+    hint: 'Rebase se spouští z větve, kterou chceš přesunout: <code>git switch bugFix</code> a pak <code>git rebase main</code>.'
+  },
+
+  /* ---------- 2. Pohyb v historii ---------- */
+  {
+    id: 'detach', chapter: 1, title: 'Odpojená HEAD',
+    setup: 'git switch -c bugFix; git commit; git commit; git switch main; git commit',
+    solution: 'git checkout C3',
+    head: true,
+    text: '<p><strong>HEAD</strong> označuje commit, na kterém právě pracuješ. Obvykle ukazuje na větev (HEAD → main → C4).</p>' +
+      '<p>Když se přepneš přímo na commit, HEAD se od větve <em>odpojí</em> a ukazuje rovnou na commit. Hodí se to k prohlížení starších verzí.</p>' +
+      '<p class="task"><strong>Úkol:</strong> odpoj HEAD a nasměruj ji na commit <code>C3</code>, na kterém je větev <code>bugFix</code>.</p>',
+    hint: '<code>git checkout C3</code> (nebo <code>git switch --detach C3</code>). Na commit v grafu můžeš i klepnout — jeho název se vloží do příkazu.'
+  },
+  {
+    id: 'caret', chapter: 1, title: 'Relativní odkazy ^',
+    setup: 'git switch -c bugFix; git commit; git commit; git switch main; git commit',
+    solution: 'git checkout bugFix^',
+    head: true,
+    text: '<p>Psát názvy commitů je nepraktické — ve skutečném gitu mají podobu <code>3f9a2c1…</code>. Proto existují <strong>relativní odkazy</strong>.</p>' +
+      '<p><code>main^</code> znamená „rodič commitu, na který ukazuje main“. <code>main^^</code> je prarodič. Funguje to i s <code>HEAD^</code>.</p>' +
+      '<p class="task"><strong>Úkol:</strong> přesuň (odpoj) HEAD na rodiče commitu, na kterém je <code>bugFix</code>. Nepoužívej název commitu.</p>',
+    hint: '<code>git checkout bugFix^</code>'
+  },
+  {
+    id: 'tilde', chapter: 1, title: 'Operátor ~ a přesun větví',
+    setup: 'git switch -c bugFix; git commit; git commit; git switch main; git commit; git commit; git switch bugFix',
+    solution: 'git checkout HEAD~2; git branch -f main bugFix; git branch -f bugFix C0',
+    head: true,
+    text: '<p><code>HEAD~3</code> znamená „o tři commity zpět“ — kratší zápis než <code>HEAD^^^</code>.</p>' +
+      '<p>Větev lze násilně přesunout na libovolný commit: <code>git branch -f main HEAD~2</code>. Nejde to jen u větve, na které právě stojíš.</p>' +
+      '<p class="task"><strong>Úkol:</strong> HEAD odpoj na <code>C1</code>, větev <code>main</code> přesuň na <code>C3</code> a větev <code>bugFix</code> na úplně první commit <code>C0</code>.</p>',
+    hint: 'Nejdřív se odpoj, ať můžeš hýbat oběma větvemi: <code>git checkout HEAD~2</code>, pak <code>git branch -f main bugFix</code> a <code>git branch -f bugFix C0</code>.'
+  },
+  {
+    id: 'undo', chapter: 1, title: 'Vracení změn: reset a revert',
+    setup: 'git switch -c local; git commit; git switch main; git switch -c pushed; git commit',
+    solution: 'git revert HEAD; git switch local; git reset HEAD~1',
+    text: '<p><code>git reset</code> posune větev zpět, jako by poslední commity nikdy nevznikly. Hodí se jen pro <strong>lokální</strong> práci — historii, kterou už mají ostatní, by tím přepsal.</p>' +
+      '<p><code>git revert</code> naopak vytvoří <strong>nový commit</strong>, který změny zruší. Historie zůstane zachovaná, takže je bezpečný i pro odeslanou práci.</p>' +
+      '<p class="task"><strong>Úkol:</strong> na větvi <code>pushed</code> (už ji mají kolegové) zruš poslední commit pomocí revert. Na větvi <code>local</code> poslední commit zahoď pomocí reset.</p>',
+    hint: '<code>git revert HEAD</code>, potom <code>git switch local</code> a <code>git reset HEAD~1</code>.'
+  },
+
+  /* ---------- 3. Přesouvání práce ---------- */
+  {
+    id: 'cherry', chapter: 2, title: 'Cherry-pick',
+    setup: 'git switch -c side; git commit; git commit; git commit; git switch main; git switch -c bugFix; git commit; git switch main; git commit',
+    solution: 'git cherry-pick C3 C5',
+    text: '<p><code>git cherry-pick C3 C5</code> zkopíruje vybrané commity na místo, kde stojí HEAD — v zadaném pořadí. Je to nejjednodušší způsob, jak si „vyzobat“ jen to, co potřebuješ.</p>' +
+      '<p class="task"><strong>Úkol:</strong> na větev <code>main</code> zkopíruj commit <code>C3</code> z větve <code>side</code> a commit <code>C5</code> z větve <code>bugFix</code> (v tomto pořadí).</p>',
+    hint: '<code>git cherry-pick C3 C5</code>'
+  },
+  {
+    id: 'amend', chapter: 2, title: 'Oprava commitu (amend)',
+    setup: 'git switch -c feature; git commit; git commit -m "Pridan formular s preklepem"',
+    solution: 'git commit --amend -m "Pridan formular"',
+    text: '<p>Zapomněl jsi něco do commitu přidat nebo máš překlep ve zprávě? <code>git commit --amend</code> poslední commit <strong>nahradí</strong> opravenou verzí.</p>' +
+      '<p>Pozor — vznikne nový commit (C3 → C3\'). Commit, který už je na GitHubu, takhle neopravuj.</p>' +
+      '<p class="task"><strong>Úkol:</strong> oprav poslední commit na větvi <code>feature</code> pomocí <code>--amend</code>.</p>',
+    hint: '<code>git commit --amend</code> (zprávu můžeš změnit přes <code>-m "nová zpráva"</code>).'
+  },
+  {
+    id: 'interactive', chapter: 2, title: 'Úklid historie (rebase -i)',
+    setup: 'git switch -c feature; git commit -m "Prihlaseni"; git commit -m "Ladici vypisy"; git commit -m "Odhlaseni"; git commit -m "Oprava prihlaseni"',
+    solution: 'git rebase -i HEAD~4 --order C2,C5,C4',
+    text: '<p>Než práci odešleš, je slušnost historii uklidit. <code>git rebase -i HEAD~4</code> otevře seznam posledních čtyř commitů — můžeš měnit jejich pořadí nebo je vynechat.</p>' +
+      '<p class="task"><strong>Úkol:</strong> na větvi <code>feature</code> vyhoď commit <code>C3</code> (ladicí výpisy) a oprava přihlášení <code>C5</code> ať následuje hned za <code>C2</code>. Výsledné pořadí: C2, C5, C4.</p>',
+    hint: 'Spusť <code>git rebase -i HEAD~4</code>, v okně odškrtni C3 a šipkami posuň C5 nad C4. Jde to i přes <code>git reset</code> a <code>git cherry-pick</code>.'
+  },
+  {
+    id: 'tags', chapter: 2, title: 'Značky (tagy)',
+    setup: 'git commit; git commit',
+    solution: 'git tag v1 C1; git tag v2; git checkout v1',
+    head: true,
+    text: '<p>Větve se posouvají s každým commitem. <strong>Značka</strong> (tag) je naopak pevný štítek — typicky označuje vydanou verzi, např. <code>v1.0</code>.</p>' +
+      '<p><code>git tag v1 C1</code> označí commit C1, <code>git tag v2</code> označí aktuální commit.</p>' +
+      '<p class="task"><strong>Úkol:</strong> označ <code>C1</code> značkou <code>v1</code> a <code>C3</code> značkou <code>v2</code>. Pak se přepni na verzi <code>v1</code>.</p>',
+    hint: '<code>git tag v1 C1</code>, <code>git tag v2</code> a <code>git checkout v1</code>.'
+  },
+
+  /* ---------- 4. GitHub a spolupráce ---------- */
+  {
+    id: 'clone', chapter: 3, title: 'Vzdálený repozitář',
+    setup: '',
+    solution: 'git clone',
+    text: '<p>Dosud jsme pracovali jen na svém počítači. Pro spolupráci potřebujeme <strong>vzdálený repozitář</strong> — kopii projektu na serveru, typicky na GitHubu. Říká se mu <code>origin</code>.</p>' +
+      '<p>V lokálním repozitáři se objeví větve <code>origin/main</code> — to je tvoje poslední známá kopie stavu na GitHubu. Sama se nemění.</p>' +
+      '<p class="task"><strong>Úkol:</strong> vytvoř vzdálený repozitář příkazem <code>git clone</code>.</p>',
+    hint: '<code>git clone</code>'
+  },
+  {
+    id: 'fetch', chapter: 3, title: 'Stažení změn (fetch)',
+    setup: 'git clone; git fakeTeamwork 2',
+    solution: 'git fetch',
+    tracking: true,
+    text: '<p>Kolega mezitím odeslal na GitHub dva commity. Ty o nich zatím nevíš — <code>origin/main</code> u tebe pořád ukazuje na C1.</p>' +
+      '<p><code>git fetch</code> stáhne nové commity a posune <code>origin/main</code>. Tvoji větev <code>main</code> ale <strong>nezmění</strong>.</p>' +
+      '<p class="task"><strong>Úkol:</strong> stáhni změny z GitHubu.</p>',
+    hint: '<code>git fetch</code>'
+  },
+  {
+    id: 'pull', chapter: 3, title: 'Stažení a začlenění (pull)',
+    setup: 'git clone; git fakeTeamwork 2',
+    solution: 'git pull',
+    text: '<p><code>git pull</code> = <code>git fetch</code> + <code>git merge origin/main</code>. Stáhne nové commity a rovnou je začlení do tvé větve.</p>' +
+      '<p>Pokud jsi lokálně nic nového neudělal, merge proběhne jako <em>fast-forward</em> — větev se jen posune dopředu.</p>' +
+      '<p class="task"><strong>Úkol:</strong> aktualizuj svou větev <code>main</code> podle GitHubu.</p>',
+    hint: '<code>git pull</code> (nebo <code>git fetch</code> a <code>git merge origin/main</code>).'
+  },
+  {
+    id: 'push', chapter: 3, title: 'Odeslání práce (push)',
+    setup: 'git clone',
+    solution: 'git commit; git commit; git push',
+    text: '<p><code>git push</code> odešle tvoje nové commity na GitHub a posune tam větev. Zároveň se posune i <code>origin/main</code> u tebe.</p>' +
+      '<p class="task"><strong>Úkol:</strong> vytvoř dva commity a odešli je na GitHub.</p>',
+    hint: '<code>git commit</code>, <code>git commit</code>, <code>git push</code>.'
+  },
+  {
+    id: 'rejected', chapter: 3, title: 'Odmítnutý push',
+    setup: 'git clone; git fakeTeamwork; git commit',
+    solution: 'git pull --rebase; git push',
+    text: '<p>Udělal jsi commit C3, ale kolega mezitím odeslal C2. Když teď zkusíš <code>git push</code>, GitHub ho <strong>odmítne</strong> — tvoje historie neobsahuje jeho práci.</p>' +
+      '<p>Řešení: nejdřív změny stáhnout a začlenit. <code>git pull --rebase</code> přeskládá tvoje commity za kolegovy, takže historie zůstane rovná.</p>' +
+      '<p class="task"><strong>Úkol:</strong> dostaň svůj commit na GitHub tak, aby historie na <code>main</code> byla lineární (bez slučovacího commitu).</p>',
+    hint: 'Zkus nejdřív <code>git push</code> a přečti si chybu. Pak <code>git pull --rebase</code> a znovu <code>git push</code>.'
+  },
+  {
+    id: 'pr', chapter: 3, title: 'Feature větev a pull request',
+    setup: 'git clone',
+    solution: 'git switch -c feature; git commit; git commit; git push -u origin feature; gh pr create; gh pr merge; git switch main; git pull',
+    branches: ['main', 'feature'], remoteBranches: ['main'],
+    text: '<p>V týmu se do <code>main</code> nepíše napřímo. Každá úloha vznikne ve vlastní větvi, ta se odešle na GitHub a založí se <strong>pull request</strong> — žádost o začlenění, kterou kolegové zkontrolují.</p>' +
+      '<p>Novou větev odešleš poprvé příkazem <code>git push -u origin feature</code> (<code>-u</code> si zapamatuje, kam patří). PR vytvoříš a sloučíš nástrojem GitHubu <code>gh</code>: <code>gh pr create</code> a <code>gh pr merge</code>.</p>' +
+      '<p class="task"><strong>Úkol:</strong> ve větvi <code>feature</code> vytvoř dva commity, odešli ji, založ a sluč pull request (slučovacím commitem) a nakonec si aktualizuj lokální <code>main</code>.</p>',
+    hint: '<code>git switch -c feature</code>, 2× <code>git commit</code>, <code>git push -u origin feature</code>, <code>gh pr create</code>, <code>gh pr merge</code>, <code>git switch main</code>, <code>git pull</code>.'
+  }
+];
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { GIT_LEVELS: GIT_LEVELS, GIT_CHAPTERS: GIT_CHAPTERS };
+
+</script>
+<script>
+/* ==========================================================================
+   Git simulátor — aplikace (úrovně, pískoviště, terminál)
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  var STORE_KEY = 'va-git-v1';
+  var saved = load();
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) { /* soukromý režim */ }
+  }
+  saved.solved = saved.solved || {};
+
+  var ICON_PR = '<svg class="icon icon--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>';
+
+  var HELP = [
+    ['Lokální repozitář', ''],
+    ['git commit [-m "zpráva"] [--amend]', 'nový commit / oprava posledního'],
+    ['git branch [x] [-d x] [-f x C3]', 'větve: vypsat, vytvořit, smazat, přesunout'],
+    ['git switch [-c] x  ·  git checkout [-b] x', 'přepnout (a vytvořit) větev / commit'],
+    ['git merge x [--no-ff]', 'sloučit větev x do aktuální'],
+    ['git rebase x  ·  git rebase -i HEAD~3', 'přeskládat / upravit historii'],
+    ['git cherry-pick C2 C4', 'zkopírovat commity'],
+    ['git reset [--hard] HEAD~1  ·  git revert C3', 'vrátit změny'],
+    ['git tag v1 [C2]', 'značka'],
+    ['git log  ·  git status  ·  git show C2', 'výpisy'],
+    ['GitHub', ''],
+    ['git clone', 'vytvořit vzdálený repozitář origin'],
+    ['git fetch  ·  git pull [--rebase]', 'stáhnout (a začlenit) změny'],
+    ['git push [-u origin x] [--force]', 'odeslat změny'],
+    ['gh pr create  ·  gh pr list  ·  gh pr merge [--squash]', 'pull requesty'],
+    ['git fakeTeamwork [větev] [počet]', 'kolega odešle commit (jen simulátor)'],
+    ['Ovládání', ''],
+    ['undo  ·  clear  ·  help', 'vrátit krok, smazat výpis, nápověda'],
+    ['↑ ↓  ·  Tab', 'historie příkazů, doplnění názvu']
+  ];
+
+  var CHIPS_LOCAL = ['git commit', 'git branch ', 'git switch ', 'git switch -c ', 'git checkout ', 'git merge ', 'git rebase ', 'git cherry-pick ', 'git reset ', 'git revert ', 'git log'];
+  var CHIPS_REMOTE = ['git clone', 'git fetch', 'git pull', 'git push', 'gh pr create', 'gh pr merge'];
+
+  /* ---------- Session = graf + terminál nad jedním světem ---------- */
+
+  function Session(host, opts) {
+    var tpl = document.getElementById('tplSession');
+    host.appendChild(tpl.content.cloneNode(true));
+    this.host = host;
+    this.opts = opts || {};
+    this.repos = host.querySelector('.repos');
+    this.remoteBox = host.querySelector('.repo--remote');
+    this.prsBox = host.querySelector('.prs');
+    this.log = host.querySelector('.term__log');
+    this.input = host.querySelector('.term__input');
+    this.form = host.querySelector('.term__form');
+    this.chipsBox = host.querySelector('.chips');
+    this.history = [];
+    this.hIdx = -1;
+    this.undoStack = [];
+    this.busy = false;
+    var self = this;
+    var click = function (id) { self.insert(id + ' '); };
+    this.vLocal = new GitView.View(host.querySelector('.g-local'), { onCommitClick: click });
+    this.vRemote = new GitView.View(host.querySelector('.g-remote'), {});
+
+    this.form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (self.busy) return;
+      var v = self.input.value.trim();
+      self.input.value = '';
+      if (v) self.submit(v);
+    });
+    this.input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if (!self.history.length) return;
+        e.preventDefault();
+        if (e.key === 'ArrowUp') self.hIdx = self.hIdx < 0 ? self.history.length - 1 : Math.max(0, self.hIdx - 1);
+        else self.hIdx = self.hIdx < 0 ? -1 : self.hIdx + 1;
+        if (self.hIdx >= self.history.length) self.hIdx = -1;
+        self.input.value = self.hIdx < 0 ? '' : self.history[self.hIdx];
+      } else if (e.key === 'Tab' && self.input.value) {
+        e.preventDefault();
+        self.complete();
+      }
+    });
+    this.renderChips();
+  }
+
+  Session.prototype.renderChips = function () {
+    var self = this;
+    var list = CHIPS_LOCAL.concat(this.world && this.world.remote ? CHIPS_REMOTE : this.opts.remoteChips ? CHIPS_REMOTE : []);
+    if (this._chips === list.join('|')) return;
+    this._chips = list.join('|');
+    this.chipsBox.innerHTML = '';
+    list.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = c.trim();
+      b.addEventListener('click', function () {
+        if (/ $/.test(c)) { self.input.value = c; self.input.focus(); }
+        else if (!self.busy) self.submit(c);
+      });
+      self.chipsBox.appendChild(b);
+    });
+  };
+
+  Session.prototype.insert = function (t) {
+    var v = this.input.value;
+    if (!v) v = 'git checkout ';
+    else if (!/\s$/.test(v)) v += ' ';
+    this.input.value = v + t;
+    this.input.focus();
+  };
+
+  Session.prototype.complete = function () {
+    var v = this.input.value, m = /(\S*)$/.exec(v), part = m[1];
+    var w = this.world, r = w.local, cands = [];
+    var subs = ['commit', 'branch', 'switch', 'checkout', 'merge', 'rebase', 'cherry-pick', 'reset', 'revert', 'tag', 'log', 'status', 'show', 'clone', 'fetch', 'pull', 'push', 'fakeTeamwork'];
+    var words = v.trim().split(/\s+/);
+    if (words.length <= 2 && words[0] === 'git' && /\S$/.test(v)) cands = subs;
+    else {
+      cands = Object.keys(r.branches).concat(Object.keys(r.tags), Object.keys(r.tracking).map(function (b) { return 'origin/' + b; }), ['HEAD', 'origin', '--hard', '--rebase', '--amend', '--no-ff', '--force']);
+      Object.keys(r.known || {}).forEach(function (id) { cands.push(id); });
+    }
+    var hits = cands.filter(function (c) { return c.toLowerCase().indexOf(part.toLowerCase()) === 0; });
+    if (hits.length === 1) this.input.value = v.slice(0, v.length - part.length) + hits[0] + ' ';
+    else if (hits.length > 1) this.print([{ text: hits.join('   '), cls: 'out' }]);
+  };
+
+  Session.prototype.setWorld = function (w, instant) {
+    this.world = w;
+    this.undoStack = [];
+    if (instant) { this.vLocal.reset(); this.vRemote.reset(); }
+    this.render(true);
+  };
+
+  Session.prototype.render = function (instant) {
+    var w = this.world;
+    var showRemote = !!w.remote || !!this.opts.alwaysRemote;
+    this.repos.classList.toggle('has-remote', showRemote);
+    this.remoteBox.hidden = !showRemote;
+    this.vLocal.update(w, w.local, false, instant);
+    if (w.remote) {
+      this.remoteBox.classList.remove('repo--empty');
+      this.vRemote.update(w, w.remote, true, instant);
+    } else if (showRemote) this.vRemote.update(w, null);
+    this.prsBox.innerHTML = (w.prs || []).map(function (p) {
+      return '<div class="pr' + (p.state === 'merged' ? ' pr--merged' : '') + '">' + ICON_PR +
+        '<span>#' + p.num + ' ' + escapeHtml(p.head) + ' → ' + escapeHtml(p.base) + ' · ' + (p.state === 'merged' ? 'sloučen' : 'otevřený') + '</span></div>';
+    }).join('');
+    this.renderChips();
+  };
+
+  Session.prototype.print = function (lines) {
+    var frag = document.createDocumentFragment();
+    lines.forEach(function (l) {
+      var d = document.createElement('div');
+      d.className = 'l-' + l.cls;
+      d.textContent = l.text;
+      frag.appendChild(d);
+    });
+    this.log.appendChild(frag);
+    while (this.log.childNodes.length > 400) this.log.removeChild(this.log.firstChild);
+    this.log.scrollTop = this.log.scrollHeight;
+  };
+
+  Session.prototype.clearLog = function () { this.log.innerHTML = ''; };
+
+  Session.prototype.submit = function (line, silentEcho) {
+    this.history.push(line); this.hIdx = -1;
+    var cmds = GitSim.splitCommands(line);
+    for (var i = 0; i < cmds.length; i++) {
+      if (!this.exec(cmds[i], silentEcho)) break;
+    }
+  };
+
+  /** Provede jeden příkaz; vrací false při chybě (zastaví řetězec). */
+  Session.prototype.exec = function (cmd, silentEcho) {
+    var self = this;
+    if (!silentEcho) this.print([{ text: cmd, cls: 'cmd' }]);
+    var low = cmd.trim().toLowerCase();
+    if (low === 'help' || low === 'git help' || low === 'nápověda' || low === '?') { this.printHelp(); return true; }
+    if (low === 'clear' || low === 'cls') { this.clearLog(); return true; }
+    if (low === 'undo' || low === 'zpět') { this.undo(); return true; }
+
+    var snap = GitSim.clone(this.world);
+    var res = GitSim.run(this.world, cmd, {
+      interactive: function (info) { self.openRebase(info, snap); }
+    });
+    this.print(res.lines);
+    if (res.ok && res.counted && !res.pending) {
+      this.undoStack.push(snap);
+      this.render();
+      if (this.opts.onChange) this.opts.onChange(this, cmd);
+    }
+    return res.ok;
+  };
+
+  Session.prototype.undo = function () {
+    if (!this.undoStack.length) { this.print([{ text: 'Není co vracet.', cls: 'hint' }]); return; }
+    this.world = this.undoStack.pop();
+    this.render();
+    this.print([{ text: 'Vrácen poslední krok.', cls: 'info' }]);
+    if (this.opts.onUndo) this.opts.onUndo(this);
+  };
+
+  Session.prototype.printHelp = function () {
+    var lines = [];
+    HELP.forEach(function (h) {
+      if (!h[1]) lines.push({ text: '— ' + h[0] + ' —', cls: 'info' });
+      else lines.push({ text: h[0] + '\n    ' + h[1], cls: 'out' });
+    });
+    this.print(lines);
+  };
+
+  /* ---------- Interaktivní rebase ---------- */
+
+  var dlg = document.getElementById('rbDialog');
+  var rbState = null;
+
+  Session.prototype.openRebase = function (info, snap) {
+    var w = this.world;
+    rbState = {
+      session: this, upstream: info.upstream, snap: snap,
+      items: info.commits.map(function (id) { return { id: id, msg: w.store[id].msg, keep: true }; })
+    };
+    drawRebase();
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  };
+
+  function drawRebase() {
+    var ul = document.getElementById('rbList');
+    ul.innerHTML = '';
+    rbState.items.forEach(function (it, i) {
+      var li = document.createElement('li');
+      li.className = 'rb__item' + (it.keep ? '' : ' dropped');
+      li.innerHTML =
+        '<input type="checkbox" ' + (it.keep ? 'checked' : '') + ' aria-label="Použít commit ' + it.id + '">' +
+        '<span class="rb__id">' + it.id + '</span><span class="rb__msg">' + escapeHtml(it.msg) + '</span>' +
+        '<button class="btn btn--sm btn--icon" type="button" data-mv="-1" ' + (i === 0 ? 'disabled' : '') + ' title="Posunout výš"><span class="visually-hidden">Posunout ' + it.id + ' výš</span>' +
+        '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>' +
+        '<button class="btn btn--sm btn--icon" type="button" data-mv="1" ' + (i === rbState.items.length - 1 ? 'disabled' : '') + ' title="Posunout níž"><span class="visually-hidden">Posunout ' + it.id + ' níž</span>' +
+        '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg></button>';
+      li.querySelector('input').addEventListener('change', function (e) { it.keep = e.target.checked; li.classList.toggle('dropped', !it.keep); });
+      li.querySelectorAll('[data-mv]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var j = i + parseInt(b.getAttribute('data-mv'), 10);
+          var t = rbState.items[i]; rbState.items[i] = rbState.items[j]; rbState.items[j] = t;
+          drawRebase();
+          var again = document.querySelectorAll('#rbList .rb__item')[j].querySelector('[data-mv="' + b.getAttribute('data-mv') + '"]');
+          (again && !again.disabled ? again : document.querySelectorAll('#rbList .rb__item')[j].querySelector('input')).focus();
+        });
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  function closeRebase() { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+
+  document.getElementById('rbCancel').addEventListener('click', function () {
+    closeRebase();
+    if (rbState) rbState.session.print([{ text: 'Interaktivní rebase zrušen.', cls: 'hint' }]);
+    rbState = null;
+  });
+  dlg.addEventListener('cancel', function () { rbState = null; });
+  document.getElementById('rbOk').addEventListener('click', function () {
+    if (!rbState) return;
+    var s = rbState.session, order = rbState.items.filter(function (i) { return i.keep; }).map(function (i) { return i.id; });
+    var cmd = 'git rebase -i ' + rbState.upstream + ' --order ' + (order.length ? order.join(',') : '-');
+    closeRebase();
+    rbState = null;
+    s.print([{ text: 'pořadí: ' + (order.length ? order.join(', ') : '(vše vynecháno)'), cls: 'info' }]);
+    s.exec(cmd, true);
+    s.input.focus();
+  });
+
+  /* ---------- Úrovně ---------- */
+
+  var levelIdx = Math.min(GIT_LEVELS.length - 1, Math.max(0, saved.level || 0));
+  var level = null, goal = null, count = 0, assisted = false, solvedNow = false, playing = null;
+  var goalLocal = new GitView.View(document.getElementById('goalLocal'), { mini: true });
+  var goalRemote = new GitView.View(document.getElementById('goalRemote'), { mini: true });
+
+  var lvlSession = new Session(document.querySelector('[data-session="level"]'), {
+    onChange: function () { count++; checkLevel(); },
+    onUndo: function () { count = Math.max(0, count - 1); updateCounter(); }
+  });
+
+  function cmpOpts(L) { return { head: L.head, branches: L.branches, remoteBranches: L.remoteBranches, tracking: L.tracking }; }
+
+  function optimum(L) { return GitSim.splitCommands(L.solution).length; }
+
+  function buildPicker() {
+    var box = document.getElementById('levelPicker');
+    box.innerHTML = '';
+    GIT_CHAPTERS.forEach(function (ch, ci) {
+      var div = document.createElement('div');
+      div.className = 'chapter';
+      div.innerHTML = '<div class="chapter__title">' + (ci + 1) + '. ' + ch.title + '</div><div class="chapter__desc">' + ch.desc + '</div><div class="lvl-btns"></div>';
+      var btns = div.querySelector('.lvl-btns');
+      GIT_LEVELS.forEach(function (L, i) {
+        if (L.chapter !== ci) return;
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'lvl' + (saved.solved[L.id] ? ' solved' : '');
+        b.textContent = i + 1;
+        var best = saved.solved[L.id];
+        var perfect = best && best <= optimum(L);
+        if (perfect) b.innerHTML += '<span class="star" aria-hidden="true">★</span>';
+        b.title = L.title + (best ? ' — vyřešeno (' + best + ' příkazů)' : '');
+        b.setAttribute('aria-label', 'Úroveň ' + (i + 1) + ': ' + L.title + (best ? ', vyřešeno' : ''));
+        b.setAttribute('aria-current', i === levelIdx ? 'true' : 'false');
+        b.addEventListener('click', function () { loadLevel(i); });
+        btns.appendChild(b);
+      });
+      box.appendChild(div);
+    });
+  }
+
+  function loadLevel(i, keepLog) {
+    stopPlayback();
+    levelIdx = i; level = GIT_LEVELS[i];
+    saved.level = i; save();
+    goal = GitSim.buildGoal(level.setup, level.solution);
+    count = 0; assisted = false; solvedNow = false;
+    var ch = GIT_CHAPTERS[level.chapter];
+    document.getElementById('lvlEyebrow').textContent = 'Úroveň ' + (i + 1) + ' z ' + GIT_LEVELS.length + ' · ' + ch.title;
+    document.getElementById('lvlTitle').textContent = level.title;
+    document.getElementById('lvlText').innerHTML = level.text;
+    var hint = document.getElementById('lvlHint');
+    hint.hidden = true; hint.innerHTML = '<strong>Nápověda:</strong> ' + level.hint;
+    document.getElementById('lvlDiff').hidden = true;
+    document.getElementById('lvlSuccess').hidden = true;
+    document.getElementById('btnNext').disabled = i >= GIT_LEVELS.length - 1;
+
+    var hasRemote = !!goal.remote;
+    document.getElementById('goalRemoteWrap').hidden = !hasRemote;
+    document.getElementById('goalGrid').classList.toggle('has-remote', hasRemote);
+    lvlSession.opts.remoteChips = level.chapter === 3;
+    lvlSession.setWorld(GitSim.buildWorld(level.setup), true);
+    goalLocal.reset(); goalRemote.reset();
+    requestAnimationFrame(function () {
+      goalLocal.update(goal, goal.local, false, true);
+      if (hasRemote) goalRemote.update(goal, goal.remote, true, true);
+    });
+    if (!keepLog) lvlSession.clearLog();
+    lvlSession.print([{ text: 'Úroveň ' + (i + 1) + ': ' + level.title + ' — napiš příkaz níže, nápovědu vypíše help.', cls: 'info' }]);
+    updateCounter();
+    buildPicker();
+  }
+
+  function updateCounter() {
+    var best = saved.solved[level.id];
+    document.getElementById('lvlCounter').innerHTML = 'Příkazů: <strong>' + count + '</strong> · nejkratší řešení: <strong>' + optimum(level) + '</strong>' +
+      (best ? ' · tvůj rekord: <strong>' + best + '</strong>' : '');
+  }
+
+  function checkLevel() {
+    updateCounter();
+    document.getElementById('lvlDiff').hidden = true;
+    if (solvedNow) return;
+    var diffs = GitSim.compare(lvlSession.world, goal, cmpOpts(level));
+    if (diffs.length) return;
+    solvedNow = true;
+    var opt = optimum(level), box = document.getElementById('lvlSuccess');
+    var msg;
+    if (assisted) msg = '<strong>Takhle vypadá řešení.</strong> Zkus si úroveň projít znovu sám — tlačítko Začít znovu.';
+    else {
+      var prev = saved.solved[level.id];
+      if (!prev || count < prev) saved.solved[level.id] = count;
+      save();
+      msg = '<strong>Hotovo!</strong> ' + (count <= opt ? 'Na ' + count + ' příkaz' + (count === 1 ? '' : count < 5 ? 'y' : 'ů') + ' — nejkratší možné řešení. ★' :
+        'Použil jsi ' + count + ' příkazů, jde to i na ' + opt + '.');
+      buildPicker();
+    }
+    box.innerHTML = msg;
+    box.hidden = false;
+    lvlSession.print([{ text: '✓ Úroveň splněna.', cls: 'ok' }]);
+    updateCounter();
+    if (levelIdx < GIT_LEVELS.length - 1) document.getElementById('btnNext').focus({ preventScroll: true });
+  }
+
+  function stopPlayback() {
+    if (playing) { clearTimeout(playing); playing = null; lvlSession.busy = false; }
+    document.getElementById('btnSolution').disabled = false;
+  }
+
+  document.getElementById('btnHint').addEventListener('click', function () {
+    var h = document.getElementById('lvlHint'); h.hidden = !h.hidden;
+  });
+  document.getElementById('btnDiff').addEventListener('click', function () {
+    var box = document.getElementById('lvlDiff');
+    var diffs = GitSim.compare(lvlSession.world, goal, cmpOpts(level));
+    box.innerHTML = diffs.length ? '<strong>Ještě chybí:</strong><ul style="margin:var(--space-1) 0 0 var(--space-4)">' + diffs.map(function (d) { return '<li>' + escapeHtml(d) + '</li>'; }).join('') + '</ul>'
+      : 'Stav odpovídá cíli.';
+    box.hidden = false;
+  });
+  document.getElementById('btnRestart').addEventListener('click', function () { loadLevel(levelIdx); lvlSession.input.focus(); });
+  document.getElementById('btnUndo').addEventListener('click', function () { if (!playing) lvlSession.undo(); });
+  document.getElementById('btnNext').addEventListener('click', function () {
+    if (levelIdx < GIT_LEVELS.length - 1) { loadLevel(levelIdx + 1); lvlSession.input.focus({ preventScroll: true }); }
+  });
+  document.getElementById('btnSolution').addEventListener('click', function () {
+    loadLevel(levelIdx);
+    assisted = true;
+    var cmds = GitSim.splitCommands(level.solution), i = 0;
+    lvlSession.print([{ text: 'Přehrávám vzorové řešení…', cls: 'info' }]);
+    lvlSession.busy = true;
+    this.disabled = true;
+    var btn = this;
+    (function step() {
+      if (i >= cmds.length) { playing = null; lvlSession.busy = false; btn.disabled = false; return; }
+      lvlSession.exec(cmds[i++]);
+      playing = setTimeout(step, 1000);
+    })();
+  });
+
+  /* ---------- Pískoviště ---------- */
+
+  var sbSession = new Session(document.querySelector('[data-session="sandbox"]'), {
+    remoteChips: true,
+    onChange: function (s) { saveSandbox(s); }
+  });
+  function saveSandbox(s) { saved.sandbox = s.world; save(); }
+  function freshSandbox() {
+    var w = GitSim.newWorld();
+    w.initial = {};
+    return w;
+  }
+  var sbStart = saved.sandbox && saved.sandbox.local && saved.sandbox.store ? saved.sandbox : freshSandbox();
+  sbSession.setWorld(sbStart, true);
+  sbSession.print([{ text: 'Pískoviště: zkoušej cokoli. Seznam příkazů vypíše help.', cls: 'info' }]);
+  var origUndo = sbSession.undo;
+  sbSession.undo = function () { origUndo.call(this); saveSandbox(this); };
+  document.getElementById('sbUndo').addEventListener('click', function () { sbSession.undo(); });
+  document.getElementById('sbReset').addEventListener('click', function () {
+    sbSession.setWorld(freshSandbox(), true);
+    sbSession.clearLog();
+    sbSession.print([{ text: 'Nový repozitář: C0 a C1 na větvi main.', cls: 'info' }]);
+    saveSandbox(sbSession);
+  });
+  document.getElementById('sbClone').addEventListener('click', function () { sbSession.exec('git clone'); });
+  document.getElementById('sbTeam').addEventListener('click', function () {
+    var w = sbSession.world;
+    if (!w.remote) { sbSession.exec('git clone'); if (!sbSession.world.remote) return; }
+    sbSession.exec('git fakeTeamwork');
+  });
+
+  /* ---------- Záložky ---------- */
+
+  var tabViews = { levels: [lvlSession], sandbox: [sbSession] };
+  window.openTab = function (id) {
+    document.querySelectorAll('.tab-content').forEach(function (el) {
+      var on = el.id === id;
+      el.classList.toggle('active', on);
+      el.hidden = !on;
+    });
+    document.querySelectorAll('.tabs[role="tablist"] .tab').forEach(function (b) {
+      var on = b.getAttribute('aria-controls') === id;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+    });
+    (tabViews[id] || []).forEach(function (s) { s.vLocal.refit(); s.vRemote.refit(); });
+    if (id === 'levels') { goalLocal.refit(); goalRemote.refit(); }
+    saved.tab = id; save();
+  };
+
+  var resizeT = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(function () {
+      [lvlSession, sbSession].forEach(function (s) { s.vLocal.refit(); s.vRemote.refit(); });
+      goalLocal.refit(); goalRemote.refit();
+    }, 120);
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+
+  loadLevel(levelIdx);
+  if (saved.tab && saved.tab !== 'levels' && document.getElementById(saved.tab)) openTab(saved.tab);
+
+  // pro testy
+  window.__git = { lvl: lvlSession, sb: sbSession, loadLevel: loadLevel, get level() { return level; } };
+})();
+
+</script>
+<script>
+    /* Ovládání záložek šipkami */
+    document.querySelectorAll('.tabs[role="tablist"]').forEach(function (bar) {
+        bar.addEventListener('keydown', function (e) {
+            if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+            var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab:not(:disabled)'));
+            var i = tabs.indexOf(document.activeElement);
+            if (i === -1) return;
+            e.preventDefault();
+            var next = e.key === 'Home' ? 0
+                : e.key === 'End' ? tabs.length - 1
+                : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+            tabs[next].focus();
+            tabs[next].click();
+        });
+    });
+</script>
+</body>
+</html>

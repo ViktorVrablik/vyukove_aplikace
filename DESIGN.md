@@ -73,7 +73,7 @@ Použité ikony: `book-open`, `hash`, `code`, `repeat`, `bar-chart-2`, `share-2`
 `refresh-cw`, `activity`, `grid`, `crosshair`, `disc`, `zoom-in`, `zoom-out`, `maximize`,
 `trash-2`, `edit-2`, `corner-up-left`, `help-circle`, `x`, `play-circle`, `stop-circle`,
 `git-branch`, `message-square`, `download`, `upload`, `image`, `file-text`, `file`,
-`camera`, `music`, `film`, `monitor`.
+`camera`, `music`, `film`, `monitor`, `cloud`, `users`, `rotate-ccw`, `target`, `list`, `git-pull-request`.
 
 ## Komponenty
 
