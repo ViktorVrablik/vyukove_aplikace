@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Šifrování a bezpečnost | Výukové aplikace</title>
+    <meta name="description" content="Základy kryptografie: operace XOR, Caesarova a Vigenèrova šifra, frekvenční analýza, výměna klíče Diffie–Hellman, RSA na malých číslech, hashovací funkce a síla hesla. S interaktivními ukázkami.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Šifrování a bezpečnost">
+    <meta property="og:description" content="Základy kryptografie: operace XOR, Caesarova a Vigenèrova šifra, frekvenční analýza, výměna klíče Diffie–Hellman, RSA na malých číslech, hashovací funkce a síla hesla. S interaktivními ukázkami.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ==================================================================
+           Specifika stránky Šifrování a bezpečnost
+           ================================================================== */
+
+        .lead { font-size: var(--fs-md); color: var(--text-muted); max-width: 70ch; }
+        .tab-content > p, .tab-content li { max-width: 78ch; }
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+        .center { text-align: center; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-0 { margin-bottom: 0 !important; }
+        .ok   { color: var(--c-green); font-weight: 600; }
+        .bad  { color: var(--c-red);   font-weight: 600; }
+        .warn { color: var(--c-orange); font-weight: 600; }
+
+        /* Výpis binárních / hexadecimálních dat */
+        .code-box {
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow-wrap: anywhere;
+        }
+        .code-box--pre { white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+
+        .field { margin-bottom: var(--space-5); }
+        .field--inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-5); }
+        .field--inline > div { min-width: 0; }
+        .field--inline input[type="number"] { width: 9rem; }
+        .field--inline input[type="text"] { min-width: 12rem; }
+        .grow { flex: 1 1 220px; }
+
+        /* Dvousloupcové rozložení, na mobilu pod sebou */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Segmentový přepínač (volba režimu) */
+        .seg {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 2px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .seg button {
+            min-height: 30px;
+            padding: var(--space-1) var(--space-3);
+            font: inherit;
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .seg button:hover { color: var(--text); background: var(--hover-bg); }
+        .seg button[aria-pressed="true"] {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Přehledové hodnoty */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .stat {
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            min-width: 0;
+        }
+        .stat__label { display: block; font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px; }
+        .stat__value { display: block; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+        .stat__value small { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); }
+
+        /* Vzorec / postup výpočtu */
+        .formula {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+        }
+        .formula b { color: var(--text); }
+
+        /* ---------- Bity ---------- */
+        .bits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2) var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+        .bits__group { display: flex; gap: 2px; }
+        .bit {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 36px;
+            padding: 0 2px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-base);
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--dur-fast) var(--ease);
+        }
+        .bit:hover { border-color: var(--accent); }
+        .bit[aria-pressed="true"] { color: var(--text); background: var(--c-blue-bg); border-color: var(--c-blue); }
+        .bit__w { font-size: 9px; font-weight: 500; color: var(--text-faint); line-height: 1; margin-top: 1px; }
+        .bit--s { box-shadow: inset 0 -3px 0 var(--c-red); }
+        .bit--e { box-shadow: inset 0 -3px 0 var(--c-green); }
+        .bit--m { box-shadow: inset 0 -3px 0 var(--c-blue); }
+        .bit--p { box-shadow: inset 0 -3px 0 var(--c-orange); }
+        .bit--err { background: var(--c-red-bg) !important; border-color: var(--c-red) !important; color: var(--c-red) !important; }
+        .bit--static { cursor: default; }
+        .bit--static:hover { border-color: var(--border-strong); }
+
+        .bit-sign { color: var(--c-red); font-weight: 700; }
+        .bit-exp  { color: var(--c-green); font-weight: 700; }
+        .bit-mant { color: var(--c-blue); font-weight: 700; }
+        .u8-prefix { color: var(--c-orange); font-weight: 700; }
+        .u8-payload { color: var(--text); }
+
+        /* ---------- Paměťový pás (datové typy) ---------- */
+        .mem-strip { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: var(--space-3); font-family: var(--font-mono); font-size: var(--fs-sm); }
+        .mem-byte {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .rg0 { background: var(--c-blue-bg);   border-color: var(--c-blue)   !important; }
+        .rg1 { background: var(--c-orange-bg); border-color: var(--c-orange) !important; }
+        .rg2 { background: var(--c-green-bg);  border-color: var(--c-green)  !important; }
+        .rg3 { background: var(--c-purple-bg); border-color: var(--c-purple) !important; }
+        .rg4 { background: var(--c-pink-bg);   border-color: var(--c-pink)   !important; }
+        .rg5 { background: var(--c-yellow-bg); border-color: var(--c-yellow) !important; }
+        .rg6 { background: var(--c-red-bg);    border-color: var(--c-red)    !important; }
+        .rg7 { background: var(--c-brown-bg);  border-color: var(--c-brown)  !important; }
+        .legend__swatch[class*="rg"] { border: 1px solid; }
+
+        .controls-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+            gap: var(--space-4);
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .controls-box .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); font-weight: 500; }
+        .controls-box .label output, .controls-box .label span { color: var(--text); font-weight: 600; }
+
+        /* ---------- XOR ---------- */
+        .xor-grid { display: grid; grid-template-columns: auto repeat(var(--n, 4), minmax(76px, 1fr)); gap: 2px var(--space-3); align-items: center; font-family: var(--font-mono); font-size: var(--fs-sm); min-width: max-content; }
+        .xor-grid .rl { font-family: var(--font-sans); color: var(--text-muted); font-size: var(--fs-xs); white-space: nowrap; }
+        .xor-grid .ch { font-size: var(--fs-md); font-weight: 700; text-align: center; }
+        .xor-grid .c { text-align: center; }
+        .xor-grid .res { font-weight: 700; color: var(--c-purple); }
+        .xor-grid .sep { grid-column: 1 / -1; border-top: 1px solid var(--border-strong); margin: 2px 0; }
+        .scroll-x { overflow-x: auto; margin-bottom: var(--space-5); padding: var(--space-4); background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-md); }
+
+        /* ---------- Abeceda ---------- */
+        .alpha { display: grid; grid-template-columns: auto repeat(26, minmax(22px, 1fr)); gap: 2px; font-family: var(--font-mono); font-size: var(--fs-sm); min-width: 640px; }
+        .alpha .rl { font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--text-muted); padding-right: var(--space-2); align-self: center; white-space: nowrap; }
+        .alpha span.l { display: flex; align-items: center; justify-content: center; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); }
+        .alpha span.l.out { background: var(--c-blue-bg); border-color: var(--c-blue); font-weight: 700; }
+        .alpha span.l.hl { outline: 2px solid var(--c-orange); outline-offset: -1px; }
+        .big-out { font-family: var(--font-mono); font-size: var(--fs-md); letter-spacing: 0.04em; }
+
+        .vig-table td, .vig-table th { text-align: center !important; font-family: var(--font-mono); padding: var(--space-1) var(--space-2) !important; min-width: 30px; }
+        .vig-table th { font-family: var(--font-sans); text-align: left !important; }
+        .vig-table tr.res td { font-weight: 700; background: var(--c-blue-bg); }
+
+        /* ---------- Frekvence ---------- */
+        .freq { display: grid; grid-template-columns: repeat(26, minmax(16px, 1fr)); gap: 3px; align-items: end; height: 190px; min-width: 560px; padding-top: var(--space-2); }
+        .freq .col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 2px; }
+        .freq .pair { display: flex; align-items: flex-end; gap: 1px; flex: 1; width: 100%; }
+        .freq .bar { flex: 1; min-height: 1px; border-radius: 2px 2px 0 0; }
+        .freq .bar.obs { background: var(--c-blue); }
+        .freq .bar.exp { background: var(--border-strong); }
+        .freq .lt { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+        .freq .col.top .lt { color: var(--c-blue); font-weight: 700; }
+        .brute { max-height: 340px; overflow-y: auto; }
+        .brute td { font-family: var(--font-mono); font-size: var(--fs-sm); }
+        .brute tr.best td { background: var(--c-green-bg); font-weight: 600; }
+
+        /* ---------- Výměna klíče ---------- */
+        .parties { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }
+        .party { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+        .party h4 { margin-top: 0; }
+        .party--eve { background: var(--surface-sunken); border-style: dashed; }
+        .party .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); font-weight: 500; }
+        .party .formula { margin-bottom: var(--space-3); }
+        .secret { color: var(--c-red); font-weight: 700; }
+        .public { color: var(--c-green); font-weight: 700; }
+
+        /* ---------- Hash ---------- */
+        .hash-out { font-family: var(--font-mono); font-size: var(--fs-sm); overflow-wrap: anywhere; line-height: 1.8; }
+        .hash-out .d { background: var(--c-yellow-bg); color: var(--c-orange); font-weight: 700; border-radius: 2px; }
+        .meter { height: 10px; border-radius: var(--radius-full); background: var(--surface-sunken); border: 1px solid var(--border); overflow: hidden; margin-bottom: var(--space-3); }
+        .meter > span { display: block; height: 100%; width: 0; transition: width var(--dur-base) var(--ease), background var(--dur-base) var(--ease); }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="inf">Informatika</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">Šifrování a bezpečnost</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <h1>Šifrování a bezpečnost</h1>
+            <p class="subtitle">Od Caesarovy šifry po veřejný klíč — jak se zprávy utajují a jak se šifry lámou</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Kapitoly">
+        <button class="tab active" type="button" role="tab" id="t-zaklady" aria-controls="zaklady" aria-selected="true" tabindex="0">Základy</button>
+        <button class="tab" type="button" role="tab" id="t-caesar" aria-controls="caesar" aria-selected="false" tabindex="-1">Caesarova šifra</button>
+        <button class="tab" type="button" role="tab" id="t-vigenere" aria-controls="vigenere" aria-selected="false" tabindex="-1">Vigenèrova šifra</button>
+        <button class="tab" type="button" role="tab" id="t-lamani" aria-controls="lamani" aria-selected="false" tabindex="-1">Lámání šifer</button>
+        <button class="tab" type="button" role="tab" id="t-verejny-klic" aria-controls="verejny-klic" aria-selected="false" tabindex="-1">Veřejný klíč</button>
+        <button class="tab" type="button" role="tab" id="t-hash" aria-controls="hash" aria-selected="false" tabindex="-1">Hash a hesla</button>
+    </div>
+
+    <!-- ================================================================
+         1. ZÁKLADY
+         ================================================================ -->
+    <section id="zaklady" class="tab-content active" role="tabpanel" aria-labelledby="t-zaklady">
+        <h2>Co je šifrování</h2>
+        <p class="lead">Šifrování převede čitelnou zprávu na nesrozumitelnou tak, aby ji zpět dokázal přečíst jen ten, kdo zná <strong>klíč</strong>. Používáš ho denně, aniž o tom víš — při každém přihlášení, platbě kartou i odeslání zprávy v mobilu.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Pojem</th><th>Význam</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Otevřený text</strong></td><td>původní čitelná zpráva</td></tr>
+                <tr><td><strong>Šifrový text</strong></td><td>zpráva po zašifrování — bez klíče nedává smysl</td></tr>
+                <tr><td><strong>Šifra</strong> (algoritmus)</td><td>postup, jak zprávu zašifrovat a dešifrovat</td></tr>
+                <tr><td><strong>Klíč</strong></td><td>tajná informace, která řídí šifrování — stejná šifra s jiným klíčem dá jiný výsledek</td></tr>
+                <tr><td><strong>Kryptoanalýza</strong></td><td>lámání šifer — čtení zprávy bez znalosti klíče</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--info">
+            <strong>Kerckhoffsův princip:</strong> bezpečnost šifry nesmí záviset na utajení postupu, ale jen na utajení klíče. Moderní šifry jsou veřejně známé a prověřené tisíci odborníků — tajný je pouze klíč.
+        </div>
+
+        <h3>Co má bezpečná komunikace zajistit</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Cíl</th><th>Otázka</th><th>Čím se řeší</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Důvěrnost</strong></td><td>Nepřečte si zprávu někdo cizí?</td><td>šifrování</td></tr>
+                <tr><td><strong>Integrita</strong></td><td>Nezměnil zprávu někdo cestou?</td><td>hashovací funkce</td></tr>
+                <tr><td><strong>Autenticita</strong></td><td>Opravdu ji poslal ten, kdo tvrdí?</td><td>elektronický podpis, certifikáty</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Dva druhy šifer</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>Symetrické šifrování</th><th>Asymetrické šifrování</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Klíče</strong></td><td>jeden společný tajný klíč</td><td>dvojice: veřejný klíč (zamyká) a soukromý klíč (odemyká)</td></tr>
+                <tr><td><strong>Rychlost</strong></td><td>velmi rychlé</td><td>pomalé — stovky až tisíckrát pomalejší</td></tr>
+                <tr><td><strong>Slabé místo</strong></td><td>jak si klíč bezpečně předat?</td><td>je třeba ověřit, komu veřejný klíč patří</td></tr>
+                <tr><td><strong>Příklady</strong></td><td>Caesar, Vigenère, Enigma, AES</td><td>RSA, eliptické křivky, Diffie–Hellman</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>XOR — stavební kámen moderních šifer</h3>
+        <p>Počítač nešifruje písmena, ale bity. Nejjednodušší operací je <strong>XOR</strong> (výlučné nebo): výsledek je 1, když se bity <em>liší</em>. Má kouzelnou vlastnost — když stejný klíč použiješ podruhé, dostaneš zpět původní zprávu: <code>(zpráva ⊕ klíč) ⊕ klíč = zpráva</code>.</p>
+        <div class="field--inline">
+            <div><label class="label" for="xorMsg">Zpráva (nejvýše 6 znaků)</label><input type="text" id="xorMsg" value="AHOJ" maxlength="6" autocomplete="off" spellcheck="false"></div>
+            <div><label class="label" for="xorKey">Klíč</label><input type="text" id="xorKey" value="K9" maxlength="6" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <div class="scroll-x"><div class="xor-grid" id="xorGrid" aria-live="polite"></div></div>
+        <p class="muted text-sm" id="xorNote"></p>
+        <div class="callout callout--neutral">
+            Pokud je klíč <strong>stejně dlouhý jako zpráva, zcela náhodný a použije se jen jednou</strong>, je taková šifra (Vernamova šifra, <em>one-time pad</em>) dokázaně neprolomitelná. Je ale nepraktická — klíč je stejně velký jako data. Skutečné šifry jako AES proto z krátkého klíče vyrábějí dlouhou, náhodně vypadající posloupnost bitů.
+        </div>
+
+        <h3>Stručná historie</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Období</th><th>Šifra</th><th>Čím je zajímavá</th></tr></thead>
+                <tbody>
+                <tr><td>1. stol. př. n. l.</td><td>Caesarova šifra</td><td>posun abecedy; jen 25 možných klíčů</td></tr>
+                <tr><td>16. století</td><td>Vigenèrova šifra</td><td>několik posunů podle hesla; 300 let považována za nerozluštitelnou</td></tr>
+                <tr><td>1918–1945</td><td>Enigma</td><td>elektromechanický stroj; její prolomení zkrátilo druhou světovou válku</td></tr>
+                <tr><td>1976–1977</td><td>Diffie–Hellman, RSA</td><td>první šifrování s veřejným klíčem</td></tr>
+                <tr><td>2001</td><td>AES</td><td>dnešní standard symetrického šifrování — Wi-Fi, disky, HTTPS</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         2. CAESAR
+         ================================================================ -->
+    <section id="caesar" class="tab-content" role="tabpanel" aria-labelledby="t-caesar" hidden>
+        <h2>Caesarova šifra</h2>
+        <p class="lead">Julius Caesar prý psal svým generálům tak, že každé písmeno nahradil písmenem o tři místa dál v abecedě. Z <code>A</code> se stane <code>D</code>, z <code>B</code> <code>E</code> — a na konci abecedy se pokračuje znovu od začátku.</p>
+
+        <div class="formula">šifrování: &nbsp;&nbsp;c = (p + k) mod 26<br>dešifrování: p = (c − k) mod 26<br><span class="muted">p, c … pořadí písmene (A = 0, B = 1, … Z = 25), k … klíč (posun)</span></div>
+
+        <div class="field">
+            <label class="label" for="cText">Text</label>
+            <input type="text" id="cText" value="Přijď zítra v osm ke škole" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field--inline">
+            <div>
+                <span class="label">Směr</span>
+                <div class="seg" id="cMode" role="group" aria-label="Směr">
+                    <button type="button" data-v="enc" aria-pressed="true">šifrovat</button>
+                    <button type="button" data-v="dec" aria-pressed="false">dešifrovat</button>
+                </div>
+            </div>
+            <div class="grow">
+                <label class="label" for="cShift" style="text-transform:none;letter-spacing:0">Klíč (posun): <output id="cShiftV" class="mono">3</output></label>
+                <input type="range" id="cShift" min="0" max="25" value="3">
+            </div>
+            <div class="seg" id="cPresets" role="group" aria-label="Známé posuny">
+                <button type="button" data-k="3">Caesar (3)</button>
+                <button type="button" data-k="13">ROT13</button>
+            </div>
+        </div>
+        <div class="scroll-x"><div class="alpha" id="cAlpha"></div></div>
+        <span class="label">Výsledek</span>
+        <div class="code-box big-out" id="cOut" aria-live="polite"></div>
+        <p class="muted text-sm">Text se nejdřív převede na velká písmena bez diakritiky (Ř → R, Š → S). Mezery a interpunkce zůstávají. Najeď na písmeno v abecedě a uvidíš jeho protějšek.</p>
+
+        <div class="callout callout--warn">
+            <strong>Slabina:</strong> existuje jen 25 různých klíčů. Stačí je všechny vyzkoušet — to je <em>útok hrubou silou</em>. Podívej se na záložku <a href="#lamani" data-tab>Lámání šifer</a>.
+            Posun 13 (ROT13) se dodnes používá na skrytí vyzrazení děje nebo vtipů; je zajímavý tím, že šifrování a dešifrování je tatáž operace.
+        </div>
+    </section>
+
+    <!-- ================================================================
+         3. VIGENÈRE
+         ================================================================ -->
+    <section id="vigenere" class="tab-content" role="tabpanel" aria-labelledby="t-vigenere" hidden>
+        <h2>Vigenèrova šifra</h2>
+        <p class="lead">Caesarova šifra posouvá všechna písmena stejně. Vigenèrova šifra používá <strong>heslo</strong>: každé písmeno hesla určuje jiný posun (A = 0, B = 1, … Z = 25). Heslo se opakuje, dokud nepokryje celou zprávu.</p>
+
+        <div class="field--inline">
+            <div class="grow"><label class="label" for="vText">Text</label><input type="text" id="vText" value="Sejdeme se u kašny" autocomplete="off" spellcheck="false"></div>
+            <div><label class="label" for="vKey">Heslo</label><input type="text" id="vKey" value="MATURITA" autocomplete="off" spellcheck="false"></div>
+            <div>
+                <span class="label">Směr</span>
+                <div class="seg" id="vMode" role="group" aria-label="Směr">
+                    <button type="button" data-v="enc" aria-pressed="true">šifrovat</button>
+                    <button type="button" data-v="dec" aria-pressed="false">dešifrovat</button>
+                </div>
+            </div>
+        </div>
+        <div class="table-wrap"><table class="notion-table vig-table" id="vTable"></table></div>
+        <span class="label">Výsledek</span>
+        <div class="code-box big-out" id="vOut" aria-live="polite"></div>
+        <p class="muted text-sm" id="vNote"></p>
+
+        <h3>Proč je lepší než Caesar</h3>
+        <p>Stejné písmeno zprávy se pokaždé zašifruje jinak — podle toho, pod které písmeno hesla zrovna padne. Tím se „rozmaže“ četnost písmen a jednoduchá frekvenční analýza přestane fungovat.</p>
+        <div class="stat-grid" id="vStats"></div>
+        <div class="callout callout--warn">
+            <strong>Slabina:</strong> heslo se opakuje. Kdo uhodne jeho délku (například podle opakujících se skupin písmen v šifrovém textu), rozdělí zprávu na několik obyčejných Caesarových šifer a každou rozluští zvlášť. Čím kratší heslo a delší zpráva, tím snazší to je.
+        </div>
+    </section>
+
+    <!-- ================================================================
+         4. LÁMÁNÍ ŠIFER
+         ================================================================ -->
+    <section id="lamani" class="tab-content" role="tabpanel" aria-labelledby="t-lamani" hidden>
+        <h2>Lámání šifer</h2>
+        <p class="lead">Kryptoanalytik nezná klíč, a přesto chce zprávu přečíst. Má dvě základní zbraně: vyzkoušet všechny klíče, nebo využít toho, že jazyk není náhodný.</p>
+
+        <div class="field">
+            <label class="label" for="brText">Zachycený šifrový text (Caesarova šifra)</label>
+            <textarea id="brText" rows="4" spellcheck="false" class="mono"></textarea>
+        </div>
+        <div class="row" style="margin-bottom:var(--space-5)">
+            <button class="btn" type="button" id="brSample">Nová ukázková zpráva</button>
+            <button class="btn" type="button" id="brShort">Krátká zpráva</button>
+        </div>
+
+        <h3>1. Frekvenční analýza</h3>
+        <p>V každém jazyce se některá písmena vyskytují častěji. V češtině (bez diakritiky) vedou <strong>E, O, A, I</strong>; naopak Q, W a X téměř nepotkáš. Posun abecedy tento „otisk“ jazyka nezničí — jen ho posune. Stačí najít, o kolik.</p>
+        <div class="legend">
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-blue)"></span>četnost v šifrovém textu po zkusmém posunu zpět</span>
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--border-strong)"></span>obvyklá četnost v češtině</span>
+        </div>
+        <div class="controls-box" style="grid-template-columns:1fr">
+            <div>
+                <label class="label" for="brShift">Zkusit posun zpět o: <output id="brShiftV" class="mono">0</output> — hýbej jezdcem, dokud modré sloupce nesednou na šedé</label>
+                <input type="range" id="brShift" min="0" max="25" value="0">
+            </div>
+        </div>
+        <div class="scroll-x" style="background:var(--surface)"><div class="freq" id="brFreq" role="img" aria-label="Sloupcový graf četnosti písmen"></div></div>
+        <span class="label">Text po tomto posunu</span>
+        <div class="code-box" id="brPreview" aria-live="polite"></div>
+        <div id="brMsg" aria-live="polite"></div>
+
+        <h3>2. Útok hrubou silou</h3>
+        <p>Klíčů je jen 26, počítač je vyzkouší okamžitě. Aby nemusel výsledky číst člověk, spočítá se u každého, jak moc se četnost písmen podobá češtině (čím menší odchylka, tím lépe).</p>
+        <div class="table-wrap brute"><table class="notion-table" id="brTable"></table></div>
+
+        <div class="callout callout--info">
+            <strong>Proč to u moderních šifer nejde:</strong> AES s 256bitovým klíčem má 2²⁵⁶ ≈ 10⁷⁷ možných klíčů. I kdyby všechny počítače světa zkoušely klíče od vzniku vesmíru, neprošly by ani nepatrný zlomek. A dobrá šifra dává výstup, který vypadá zcela náhodně — žádný „otisk“ jazyka v něm nezůstane.
+        </div>
+    </section>
+
+    <!-- ================================================================
+         5. VEŘEJNÝ KLÍČ
+         ================================================================ -->
+    <section id="verejny-klic" class="tab-content" role="tabpanel" aria-labelledby="t-verejny-klic" hidden>
+        <h2>Šifrování s veřejným klíčem</h2>
+        <p class="lead">Symetrické šifry mají háček: obě strany musí znát stejný tajný klíč. Jak si ho ale předat přes internet, kde může kdokoli poslouchat? Až v 70. letech 20. století se našlo řešení — a stojí na něm celý dnešní web.</p>
+
+        <h3>Výměna klíče Diffie–Hellman</h3>
+        <p>Alice a Bob si chtějí domluvit společné tajné číslo, přestože Eva slyší vše, co si pošlou. Veřejně se dohodnou na prvočísle <span class="mono public">p</span> a základu <span class="mono public">g</span>. Každý si zvolí <span class="secret">tajné číslo</span>, které nikomu neřekne.</p>
+        <div class="field--inline">
+            <div>
+                <label class="label" for="dhP">Veřejné parametry</label>
+                <select id="dhP">
+                    <option value="23,5">p = 23, g = 5</option>
+                    <option value="47,5">p = 47, g = 5</option>
+                    <option value="97,5">p = 97, g = 5</option>
+                    <option value="251,6">p = 251, g = 6</option>
+                </select>
+            </div>
+        </div>
+        <div class="parties">
+            <div class="party">
+                <h4>Alice</h4>
+                <label class="label" for="dhA">tajné číslo <span class="secret">a = <output id="dhAv">6</output></span></label>
+                <input type="range" id="dhA" min="2" max="21" value="6">
+                <div class="formula" id="dhAlice"></div>
+            </div>
+            <div class="party party--eve">
+                <h4>Eva (odposlouchává)</h4>
+                <p class="text-sm muted">Vidí jen to, co letí veřejným kanálem:</p>
+                <div class="formula" id="dhEve"></div>
+            </div>
+            <div class="party">
+                <h4>Bob</h4>
+                <label class="label" for="dhB">tajné číslo <span class="secret">b = <output id="dhBv">15</output></span></label>
+                <input type="range" id="dhB" min="2" max="21" value="15">
+                <div class="formula" id="dhBob"></div>
+            </div>
+        </div>
+        <div id="dhMsg" aria-live="polite"></div>
+        <p>Umocnit a spočítat zbytek je snadné. Opačný směr — z výsledku zjistit exponent (<em>diskrétní logaritmus</em>) — je pro velká čísla prakticky nemožný. Takovým operacím se říká <strong>jednosměrné funkce</strong>. Ve skutečnosti má <span class="mono">p</span> přes 600 číslic.</p>
+
+        <h3>RSA — šifrování veřejným klíčem</h3>
+        <p>Každý má dva klíče. <strong>Veřejný</strong> může dát komukoli — funguje jako otevřený visací zámek. <strong>Soukromý</strong> si nechá jen pro sebe — je to klíč od toho zámku. Kdokoli ti může zprávu „zamknout“, ale odemkneš ji jen ty.</p>
+        <div class="controls-box">
+            <div><label class="label" for="rsaP">prvočíslo p</label><select id="rsaP"></select></div>
+            <div><label class="label" for="rsaQ">prvočíslo q</label><select id="rsaQ"></select></div>
+            <div><label class="label" for="rsaE">veřejný exponent e</label><select id="rsaE"></select></div>
+        </div>
+        <span class="label">1. Výroba klíčů</span>
+        <div class="formula" id="rsaKeys"></div>
+        <div class="field--inline">
+            <div>
+                <label class="label" for="rsaM">2. Zpráva — jeden znak nebo číslo</label>
+                <input type="text" id="rsaM" value="A" maxlength="5" autocomplete="off" spellcheck="false" style="width:9rem">
+            </div>
+        </div>
+        <div class="two-col">
+            <div><span class="label">Odesílatel šifruje veřejným klíčem</span><div class="formula mb-0" id="rsaEnc"></div></div>
+            <div><span class="label">Příjemce dešifruje soukromým klíčem</span><div class="formula mb-0" id="rsaDec"></div></div>
+        </div>
+        <div class="callout callout--warn">
+            <strong>Na čem stojí bezpečnost:</strong> vynásobit dvě prvočísla je snadné, ale rozložit výsledek zpět na prvočísla je u velkých čísel nesmírně těžké. Tady má <span class="mono">n</span> pár číslic a rozložíš ho z hlavy; skutečné RSA používá <span class="mono">n</span> o 2048 bitech (přes 600 číslic).
+        </div>
+
+        <h3>Jak to funguje v praxi: HTTPS</h3>
+        <ol>
+            <li>Prohlížeč a server si pomocí <strong>asymetrické</strong> kryptografie bezpečně dohodnou společný klíč (dnes nejčastěji variantou Diffie–Hellman).</li>
+            <li>Server se prokáže <strong>certifikátem</strong> — potvrzením od důvěryhodné autority, že veřejný klíč opravdu patří dané doméně.</li>
+            <li>Samotná data se pak šifrují rychlou <strong>symetrickou</strong> šifrou AES s dohodnutým klíčem.</li>
+        </ol>
+        <p>Opačné použití klíčů dává <strong>elektronický podpis</strong>: autor „zamkne“ otisk dokumentu svým soukromým klíčem a kdokoli si veřejným klíčem ověří, že podpis vytvořil právě on a dokument se nezměnil.</p>
+    </section>
+
+    <!-- ================================================================
+         6. HASH A HESLA
+         ================================================================ -->
+    <section id="hash" class="tab-content" role="tabpanel" aria-labelledby="t-hash" hidden>
+        <h2>Hashovací funkce</h2>
+        <p class="lead">Hash je „otisk prstu“ dat. Hashovací funkce vezme libovolně dlouhý vstup — heslo, fotku i celý film — a vyrobí z něj krátký otisk pevné délky. Na rozdíl od šifrování <strong>nejde vrátit zpět</strong>: neexistuje žádný klíč.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Vlastnost</th><th>Co znamená</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Pevná délka</strong></td><td>SHA-256 vždy vrátí 256 bitů (64 hex číslic), ať je vstup jakkoli dlouhý</td></tr>
+                <tr><td><strong>Jednosměrnost</strong></td><td>z otisku nejde zjistit původní vstup</td></tr>
+                <tr><td><strong>Lavinový efekt</strong></td><td>změna jediného znaku změní zhruba polovinu bitů otisku</td></tr>
+                <tr><td><strong>Odolnost proti kolizím</strong></td><td>je prakticky nemožné najít dva různé vstupy se stejným otiskem</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Vyzkoušej si SHA-256</h3>
+        <p>Změň ve druhém textu jediné písmeno a sleduj, jak se otisk změní.</p>
+        <div class="two-col">
+            <div><label class="label" for="h1">Text 1</label><input type="text" id="h1" value="Ahoj světe" autocomplete="off" spellcheck="false"></div>
+            <div><label class="label" for="h2">Text 2</label><input type="text" id="h2" value="Ahoj svete" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <span class="label">Otisk textu 1</span>
+        <div class="code-box hash-out" id="h1Out"></div>
+        <span class="label">Otisk textu 2 — zvýrazněné číslice se liší</span>
+        <div class="code-box hash-out" id="h2Out"></div>
+        <div class="stat-grid" id="hStats"></div>
+
+        <h3>K čemu se hash používá</h3>
+        <ul>
+            <li><strong>Ukládání hesel.</strong> Služba si neukládá heslo, ale jeho otisk. Při přihlášení zahashuje, co jsi zadal, a porovná otisky. Když databázi někdo ukradne, hesla v ní nenajde.</li>
+            <li><strong>Sůl.</strong> Před hashováním se k heslu přidá náhodný řetězec, pro každého uživatele jiný. Dva lidé se stejným heslem pak mají různé otisky a útočníkovi nepomohou předpočítané tabulky.</li>
+            <li><strong>Kontrola stažených souborů.</strong> Výrobce zveřejní otisk instalačního souboru; když se tvůj otisk shoduje, soubor se cestou nepoškodil ani ho nikdo nepodvrhl.</li>
+            <li><strong>Git</strong> označuje každý commit otiskem jeho obsahu — viz <a href="../programovani/git_simulator.html">simulátor Gitu</a>.</li>
+        </ul>
+
+        <h3>Síla hesla</h3>
+        <p>Útočník, který získá otisk hesla, může jen zkoušet: zahashovat kandidáta a porovnat. Rozhoduje tedy, <strong>kolik možností musí projít</strong>. To závisí na délce hesla a na počtu různých znaků, ze kterých může být složeno.</p>
+        <div class="formula">počet možností = (velikost abecedy)<sup>délka</sup></div>
+        <div class="field">
+            <label class="label" for="pw">Zkus nějaké heslo (ne své skutečné)</label>
+            <input type="text" id="pw" value="Kocka2024" autocomplete="off" spellcheck="false" class="mono">
+        </div>
+        <div class="meter" aria-hidden="true"><span id="pwBar"></span></div>
+        <div class="stat-grid" id="pwStats"></div>
+        <div id="pwMsg" aria-live="polite"></div>
+        <p class="muted text-sm">Odhad počítá s útočníkem, který zkouší 10 miliard hesel za sekundu (výkonné grafické karty proti rychlému hashi) a v průměru projde polovinu možností. Heslo se nikam neodesílá — vše se počítá ve tvém prohlížeči.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table" id="pwTable">
+                <thead><tr><th>Délka</th><th>jen malá písmena (26)</th><th>písmena + číslice (62)</th><th>všechny znaky (94)</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="callout callout--success">
+            <strong>Doporučení:</strong> délka je důležitější než složitost. Čtyři náhodná slova (<code>kolo-mrak-citron-vydra</code>) se pamatují lépe a lámou hůř než <code>P@ssw0rd1</code>. Pro každou službu jiné heslo, ukládat do správce hesel a zapnout dvoufázové ověření.
+        </div>
+    </section>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
+<script>
+/* ======================================================================
+   Šifrování a bezpečnost — společné pomocné funkce a záložky
+   ====================================================================== */
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/** Hodnota CSS proměnné (barvy pro canvas a SVG). */
+function tok(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** Escapování textu pro innerHTML. */
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Číslo s českým oddělovačem tisíců a desetinnou čárkou. */
+function fmt(n, maxFrac) {
+    if (typeof n === 'bigint') return n.toString().replace(/^-/, '−').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return Number(n).toLocaleString('cs-CZ', { maximumFractionDigits: maxFrac == null ? 2 : maxFrac }).replace(/^-/, '−');
+}
+
+function hex2(b) { return b.toString(16).toUpperCase().padStart(2, '0'); }
+function bin8(b) { return b.toString(2).padStart(8, '0'); }
+
+/** Lidsky čitelná velikost v bajtech (desítkové předpony, jak je uvádějí výrobci). */
+function humanBytes(bytes) {
+    var units = ['B', 'kB', 'MB', 'GB', 'TB'];
+    var i = 0, v = bytes;
+    while (v >= 1000 && i < units.length - 1) { v /= 1000; i++; }
+    return fmt(v, i === 0 ? 0 : 2) + ' ' + units[i];
+}
+
+/** Statistická dlaždice. */
+function stat(label, value, small) {
+    return '<div class="stat"><span class="stat__label">' + label + '</span><span class="stat__value">' +
+        value + (small ? ' <small>' + small + '</small>' : '') + '</span></div>';
+}
+
+/** Segmentový přepínač: vrátí aktuální hodnotu a volá cb při změně. */
+function bindSeg(el, cb) {
+    el.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !el.contains(b)) return;
+        el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.dataset.v, b);
+    });
+}
+function segValue(el) {
+    var b = el.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.v : null;
+}
+
+/* ----------------------------------------------------------------------
+   Záložky: přepínání, ARIA stavy, šipky, odkaz přes #kotvu
+   ---------------------------------------------------------------------- */
+function showTab(id, focus) {
+    var panel = $(id);
+    if (!panel || !panel.classList.contains('tab-content')) return;
+    document.querySelectorAll('main > .tab-content').forEach(function (p) {
+        p.classList.toggle('active', p === panel);
+        p.hidden = (p !== panel);
+    });
+    document.querySelectorAll('.tabs .tab').forEach(function (b) {
+        var on = b.getAttribute('aria-controls') === id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        if (on) {
+            if (focus) b.focus();
+            if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// v některých prohlížečích */ }
+    window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: id } }));
+}
+
+(function initTabs() {
+    var bar = document.querySelector('.tabs[role="tablist"]');
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (b) showTab(b.getAttribute('aria-controls'));
+    });
+    bar.addEventListener('keydown', function (e) {
+        if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        var next = e.key === 'Home' ? 0
+            : e.key === 'End' ? tabs.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        showTab(tabs[next].getAttribute('aria-controls'), true);
+    });
+    // Odkazy uvnitř stránky na jinou záložku (<a href="#zvuk" data-tab>)
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-tab]');
+        if (!a) return;
+        e.preventDefault();
+        showTab(a.getAttribute('href').slice(1));
+        window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+    });
+    var h = (location.hash || '').slice(1);
+    if (h && $(h) && $(h).classList.contains('tab-content')) showTab(h);
+})();
+
+/* ======================================================================
+   Společné: abeceda, normalizace textu, klasické šifry
+   ====================================================================== */
+var ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** Velká písmena bez diakritiky; ostatní znaky zůstávají. */
+function normText(s) {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+}
+function caesar(text, k) {
+    k = ((k % 26) + 26) % 26;
+    return normText(text).replace(/[A-Z]/g, function (c) { return ABC[(c.charCodeAt(0) - 65 + k) % 26]; });
+}
+function vigenere(text, key, dec) {
+    var ks = normText(key).replace(/[^A-Z]/g, ''), i = 0;
+    if (!ks) return normText(text);
+    return normText(text).replace(/[A-Z]/g, function (c) {
+        var k = ks.charCodeAt(i++ % ks.length) - 65;
+        return ABC[(c.charCodeAt(0) - 65 + (dec ? 26 - k : k)) % 26];
+    });
+}
+
+/** Přibližná četnost písmen v češtině po odstranění diakritiky (v %). */
+var CZ_FREQ = { A: 8.6, B: 1.6, C: 2.6, D: 3.6, E: 10.6, F: 0.3, G: 0.3, H: 2.4, I: 7.6, J: 2.1, K: 3.7, L: 3.9, M: 3.2, N: 6.6, O: 8.7, P: 3.4, Q: 0.01, R: 4.9, S: 5.4, T: 5.7, U: 3.9, V: 4.6, W: 0.05, X: 0.08, Y: 2.9, Z: 3.2 };
+(function () { var s = 0; for (var k in CZ_FREQ) s += CZ_FREQ[k]; for (k in CZ_FREQ) CZ_FREQ[k] = CZ_FREQ[k] / s * 100; })();
+
+function letterFreq(text) {
+    var cnt = {}, n = 0;
+    ABC.split('').forEach(function (c) { cnt[c] = 0; });
+    normText(text).replace(/[A-Z]/g, function (c) { cnt[c]++; n++; return c; });
+    return { cnt: cnt, n: n };
+}
+/** Odchylka od češtiny (chí-kvadrát) — čím menší, tím „češtější“ text. */
+function czScore(text) {
+    var f = letterFreq(text), s = 0;
+    if (!f.n) return Infinity;
+    ABC.split('').forEach(function (c) {
+        var exp = CZ_FREQ[c] / 100 * f.n;
+        s += Math.pow(f.cnt[c] - exp, 2) / exp;
+    });
+    return s / f.n;
+}
+
+/* ======================================================================
+   1. ZÁKLADY — XOR
+   ====================================================================== */
+(function () {
+    function show(c) { return c >= 33 && c < 127 ? esc(String.fromCharCode(c)) : c === 32 ? '␣' : '·'; }
+    function update() {
+        var m = Array.from(new TextEncoder().encode($('xorMsg').value)).slice(0, 8);
+        var k = Array.from(new TextEncoder().encode($('xorKey').value));
+        var g = $('xorGrid');
+        if (!m.length || !k.length) { g.innerHTML = '<span class="rl">Zadej zprávu i klíč.</span>'; $('xorNote').textContent = ''; return; }
+        g.style.setProperty('--n', m.length);
+        var row = function (label, cells, cls) { return '<span class="rl">' + label + '</span>' + cells.map(function (c) { return '<span class="c ' + (cls || '') + '">' + c + '</span>'; }).join(''); };
+        var kk = m.map(function (_, i) { return k[i % k.length]; });
+        var x = m.map(function (b, i) { return b ^ kk[i]; });
+        g.innerHTML =
+            row('znak zprávy', m.map(show), 'ch') +
+            row('zpráva', m.map(bin8)) +
+            row('klíč „' + esc(k.map(function (c) { return String.fromCharCode(c); }).join('')) + '“', kk.map(function (b, i) { return bin8(b) + ' ' + show(b); })) +
+            '<span class="sep"></span>' +
+            row('zpráva ⊕ klíč', x.map(bin8), 'res') +
+            row('šifrový text (hex)', x.map(hex2), 'res') +
+            '<span class="sep"></span>' +
+            row('znovu ⊕ klíč', x.map(function (b, i) { return bin8(b ^ kk[i]); })) +
+            row('dešifrováno', x.map(function (b, i) { return show(b ^ kk[i]); }), 'ch');
+        $('xorNote').textContent = (k.length < m.length ? 'Klíč je kratší než zpráva, proto se opakuje. ' : '') +
+            (new TextEncoder().encode($('xorMsg').value).length !== Array.from($('xorMsg').value).length ? 'Znaky s diakritikou zabírají v UTF-8 dva bajty, proto jsou ve dvou sloupcích. ' : '') +
+            'Šifrový text často obsahuje netisknutelné znaky, proto se zapisuje šestnáctkově.';
+    }
+    $('xorMsg').addEventListener('input', update);
+    $('xorKey').addEventListener('input', update);
+    update();
+})();
+
+/* ======================================================================
+   2. CAESAR
+   ====================================================================== */
+(function () {
+    function update() {
+        var k = +$('cShift').value, dec = segValue($('cMode')) === 'dec';
+        $('cShiftV').textContent = k;
+        var eff = dec ? 26 - k : k;
+        var h = '<span class="rl">' + (dec ? 'šifrový text' : 'otevřený text') + '</span>';
+        for (var i = 0; i < 26; i++) h += '<span class="l" data-i="' + i + '">' + ABC[i] + '</span>';
+        h += '<span class="rl">' + (dec ? 'otevřený text' : 'šifrový text') + '</span>';
+        for (i = 0; i < 26; i++) h += '<span class="l out" data-i="' + i + '">' + ABC[(i + eff) % 26] + '</span>';
+        $('cAlpha').innerHTML = h;
+        $('cOut').textContent = caesar($('cText').value, eff) || '—';
+    }
+    $('cAlpha').addEventListener('mouseover', function (e) {
+        var l = e.target.closest('.l');
+        $('cAlpha').querySelectorAll('.l').forEach(function (x) { x.classList.toggle('hl', !!l && x.dataset.i === l.dataset.i); });
+    });
+    $('cAlpha').addEventListener('mouseleave', function () { $('cAlpha').querySelectorAll('.hl').forEach(function (x) { x.classList.remove('hl'); }); });
+    $('cText').addEventListener('input', update);
+    $('cShift').addEventListener('input', update);
+    bindSeg($('cMode'), update);
+    $('cPresets').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (b) { $('cShift').value = b.dataset.k; update(); }
+    });
+    update();
+})();
+
+/* ======================================================================
+   3. VIGENÈRE
+   ====================================================================== */
+(function () {
+    function update() {
+        var text = $('vText').value, dec = segValue($('vMode')) === 'dec';
+        var ks = normText($('vKey').value).replace(/[^A-Z]/g, '');
+        var letters = normText(text).replace(/[^A-Z]/g, '');
+        var out = vigenere(text, ks, dec);
+        $('vOut').textContent = out || '—';
+        if (!ks) { $('vTable').innerHTML = ''; $('vNote').textContent = 'Zadej heslo složené z písmen.'; $('vStats').innerHTML = ''; return; }
+        var n = Math.min(letters.length, 24), res = out.replace(/[^A-Z]/g, '');
+        var cells = function (fn, tag) { var s = ''; for (var i = 0; i < n; i++) s += '<' + (tag || 'td') + '>' + fn(i) + '</' + (tag || 'td') + '>'; return s; };
+        $('vTable').innerHTML =
+            '<tr><th>' + (dec ? 'šifrový text' : 'zpráva') + '</th>' + cells(function (i) { return letters[i]; }) + '</tr>' +
+            '<tr><th>heslo</th>' + cells(function (i) { return ks[i % ks.length]; }) + '</tr>' +
+            '<tr><th>posun</th>' + cells(function (i) { return (dec ? '−' : '+') + (ks.charCodeAt(i % ks.length) - 65); }) + '</tr>' +
+            '<tr class="res"><th>' + (dec ? 'zpráva' : 'šifrový text') + '</th>' + cells(function (i) { return res[i]; }) + '</tr>';
+        $('vNote').textContent = letters.length > n ? 'Tabulka ukazuje prvních ' + n + ' písmen.' : '';
+
+        // jak se zašifrovalo nejčastější písmeno zprávy
+        var f = letterFreq(dec ? out : text), top = ABC[0];
+        ABC.split('').forEach(function (c) { if (f.cnt[c] > f.cnt[top]) top = c; });
+        var plain = (dec ? out : normText(text)).replace(/[^A-Z]/g, ''), ciph = (dec ? normText(text) : out).replace(/[^A-Z]/g, '');
+        var set = new Set();
+        for (var i = 0; i < plain.length; i++) if (plain[i] === top) set.add(ciph[i]);
+        $('vStats').innerHTML =
+            stat('Délka hesla', ks.length, 'různých posunů: ' + new Set(ks.split('')).size) +
+            stat('Možných hesel této délky', ks.length > 12 ? '26<sup>' + ks.length + '</sup>' : fmt(Math.pow(26, ks.length))) +
+            (f.cnt[top] > 1 ? stat('Písmeno ' + top + ' (' + f.cnt[top] + '× ve zprávě)', Array.from(set).join(', '), 'se zašifrovalo jako') : '');
+    }
+    ['vText', 'vKey'].forEach(function (id) { $(id).addEventListener('input', update); });
+    bindSeg($('vMode'), update);
+    update();
+})();
+
+/* ======================================================================
+   4. LÁMÁNÍ ŠIFER
+   ====================================================================== */
+(function () {
+    var SAMPLES = [
+        'Sejdeme se zítra ráno před školou. Vezmi s sebou učebnici informatiky a nezapomeň na nabíječku k notebooku. Po vyučování půjdeme do knihovny, kde si připravíme prezentaci o historii šifrování. Nikomu o tom zatím neříkej, bude to překvapení pro celou třídu.',
+        'Tajná zpráva pro agenta: poklad je zakopán pod starou lípou na kopci za vesnicí. Kopej přesně tři kroky na sever od kmene. Truhlu otevřeš klíčem, který najdeš pod kamenem u studny. Zprávu po přečtení okamžitě znič a nikomu nic neprozrazuj.',
+        'Počítač je stroj, který zpracovává data podle předem daného programu. Skládá se z procesoru, operační paměti, úložiště a vstupních a výstupních zařízení. Všechna data jsou uvnitř uložena jako posloupnosti nul a jedniček, kterým říkáme bity.'
+    ];
+    var SHORT = ['Ahoj', 'Sraz v pet', 'Kyz zvon'];
+    var si = 0;
+
+    function best(text) {
+        var b = 0, bs = Infinity;
+        for (var k = 0; k < 26; k++) { var sc = czScore(caesar(text, 26 - k)); if (sc < bs) { bs = sc; b = k; } }
+        return b;
+    }
+    function update() {
+        var text = $('brText').value, k = +$('brShift').value;
+        $('brShiftV').textContent = k;
+        var dec = caesar(text, 26 - k);
+        var f = letterFreq(dec), max = 1;
+        ABC.split('').forEach(function (c) { max = Math.max(max, f.n ? f.cnt[c] / f.n * 100 : 0, CZ_FREQ[c]); });
+        var top = ABC[0];
+        ABC.split('').forEach(function (c) { if (f.cnt[c] > f.cnt[top]) top = c; });
+        $('brFreq').innerHTML = ABC.split('').map(function (c) {
+            var o = f.n ? f.cnt[c] / f.n * 100 : 0;
+            return '<div class="col' + (c === top && f.n ? ' top' : '') + '" title="' + c + ': ' + fmt(o, 1) + ' % (čeština ' + fmt(CZ_FREQ[c], 1) + ' %)">' +
+                '<div class="pair"><div class="bar obs" style="height:' + (o / max * 100) + '%"></div><div class="bar exp" style="height:' + (CZ_FREQ[c] / max * 100) + '%"></div></div><span class="lt">' + c + '</span></div>';
+        }).join('');
+        $('brPreview').textContent = dec.length > 260 ? dec.slice(0, 260) + '…' : dec || '—';
+
+        var b = best(text), msg = $('brMsg');
+        if (!f.n) msg.innerHTML = '';
+        else if (f.n < 25) msg.innerHTML = '<div class="callout callout--warn">Text má jen ' + f.n + ' písmen — to je na frekvenční analýzu málo, graf nemusí pomoci. Krátké zprávy se lámou spíš hrubou silou a čtením výsledků.</div>';
+        else if (k === b) msg.innerHTML = '<div class="callout callout--success"><strong>Sedí!</strong> Při posunu ' + k + ' odpovídá četnost písmen češtině a text dává smysl. Klíč šifry byl ' + k + '.</div>';
+        else msg.innerHTML = '<div class="callout callout--neutral">Nejčastější písmeno je teď <strong>' + top + '</strong>. V češtině bývá nejčastější E — zkus posun, který z něj E udělá.</div>';
+
+        var rows = '';
+        for (var s = 0; s < 26; s++) {
+            var d = caesar(text, 26 - s), sc = czScore(d);
+            rows += '<tr' + (s === b && f.n ? ' class="best"' : '') + '><td>' + s + '</td><td>' + (isFinite(sc) ? fmt(sc, 2) : '—') + '</td><td>' + esc(d.slice(0, 60)) + (d.length > 60 ? '…' : '') + '</td></tr>';
+        }
+        $('brTable').innerHTML = '<thead><tr><th>Posun</th><th>Odchylka od češtiny</th><th>Začátek textu</th></tr></thead><tbody>' + rows + '</tbody>';
+    }
+    function load(plain) {
+        var k = 1 + Math.floor(Math.random() * 25);
+        $('brText').value = caesar(plain, k);
+        $('brShift').value = 0;
+        update();
+    }
+    $('brSample').addEventListener('click', function () { load(SAMPLES[si++ % SAMPLES.length]); });
+    $('brShort').addEventListener('click', function () { load(SHORT[Math.floor(Math.random() * SHORT.length)]); });
+    $('brText').addEventListener('input', update);
+    $('brShift').addEventListener('input', update);
+    $('brText').value = caesar(SAMPLES[0], 7); si = 1;
+    update();
+})();
+
+/* ======================================================================
+   5. VEŘEJNÝ KLÍČ
+   ====================================================================== */
+function modpow(b, e, m) {
+    b = BigInt(b); e = BigInt(e); m = BigInt(m);
+    var r = 1n; b %= m;
+    while (e > 0n) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; }
+    return Number(r);
+}
+function gcd(a, b) { while (b) { var t = a % b; a = b; b = t; } return a; }
+function modinv(e, phi) {
+    var a = e, b = phi, x0 = 1, x1 = 0;
+    while (b) { var q = Math.floor(a / b), t = a % b; a = b; b = t; t = x0 - q * x1; x0 = x1; x1 = t; }
+    return ((x0 % phi) + phi) % phi;
+}
+
+(function () {
+    /* --- Diffie–Hellman --- */
+    function dh() {
+        var pg = $('dhP').value.split(',').map(Number), p = pg[0], g = pg[1];
+        ['dhA', 'dhB'].forEach(function (id) { $(id).max = p - 2; if (+$(id).value > p - 2) $(id).value = p - 2; });
+        var a = +$('dhA').value, b = +$('dhB').value;
+        $('dhAv').textContent = a; $('dhBv').textContent = b;
+        var A = modpow(g, a, p), B = modpow(g, b, p), sA = modpow(B, a, p), sB = modpow(A, b, p);
+        var S = function (x) { return '<span class="secret">' + x + '</span>'; }, P = function (x) { return '<span class="public">' + x + '</span>'; };
+        $('dhAlice').innerHTML = 'pošle Bobovi:<br>A = g<sup>a</sup> mod p = ' + g + '<sup>' + S(a) + '</sup> mod ' + p + ' = ' + P(A) +
+            '<br><br>dostane B = ' + P(B) + ' a spočítá:<br>B<sup>a</sup> mod p = ' + B + '<sup>' + S(a) + '</sup> mod ' + p + ' = <b>' + S(sA) + '</b>';
+        $('dhBob').innerHTML = 'pošle Alici:<br>B = g<sup>b</sup> mod p = ' + g + '<sup>' + S(b) + '</sup> mod ' + p + ' = ' + P(B) +
+            '<br><br>dostane A = ' + P(A) + ' a spočítá:<br>A<sup>b</sup> mod p = ' + A + '<sup>' + S(b) + '</sup> mod ' + p + ' = <b>' + S(sB) + '</b>';
+        $('dhEve').innerHTML = 'p = ' + P(p) + ', g = ' + P(g) + '<br>A = ' + P(A) + '<br>B = ' + P(B) + '<br><br>a = ? &nbsp; b = ?<br>společný klíč = ?';
+        $('dhMsg').innerHTML = '<div class="callout callout--success">Alice i Bob došli ke stejnému číslu <strong>' + sA + '</strong>, přestože si ho nikdy neposlali. Použijí ho jako klíč pro symetrickou šifru. Eva by musela z čísel ' + A + ' a ' + B +
+            ' zjistit tajné exponenty' + (p < 100 ? ' — u takhle malého p stačí vyzkoušet ' + (p - 2) + ' možností, u skutečných čísel je to nad síly všech počítačů světa.' : '.') + '</div>';
+    }
+    ['dhP', 'dhA', 'dhB'].forEach(function (id) { $(id).addEventListener('input', dh); });
+    dh();
+
+    /* --- RSA --- */
+    var PR = [11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61];
+    PR.forEach(function (x) { $('rsaP').add(new Option(x, x)); $('rsaQ').add(new Option(x, x)); });
+    $('rsaP').value = 17; $('rsaQ').value = 23;
+
+    function rsa(keepE) {
+        var p = +$('rsaP').value, q = +$('rsaQ').value;
+        if (p === q) { $('rsaKeys').innerHTML = '<span class="bad">Prvočísla p a q musí být různá.</span>'; $('rsaEnc').innerHTML = $('rsaDec').innerHTML = ''; return; }
+        var n = p * q, phi = (p - 1) * (q - 1);
+        var es = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31].filter(function (e) { return e < phi && gcd(e, phi) === 1; });
+        var selE = $('rsaE'), old = +selE.value;
+        if (!keepE || es.indexOf(old) === -1) {
+            selE.innerHTML = '';
+            es.forEach(function (e) { selE.add(new Option(e, e)); });
+            selE.value = es.indexOf(old) !== -1 ? old : es[0];
+        }
+        var e = +selE.value, d = modinv(e, phi);
+        $('rsaKeys').innerHTML =
+            'n = p · q = ' + p + ' · ' + q + ' = <b>' + n + '</b><br>' +
+            'φ = (p − 1) · (q − 1) = ' + (p - 1) + ' · ' + (q - 1) + ' = ' + phi + '<br>' +
+            'e = ' + e + ' &nbsp;<span class="muted">(nesmí mít s φ společného dělitele)</span><br>' +
+            'd = ' + d + ' &nbsp;<span class="muted">(protože e · d = ' + e + ' · ' + d + ' = ' + fmt(e * d) + ' dává po dělení ' + phi + ' zbytek 1)</span><br><br>' +
+            '<span class="public">veřejný klíč: (e = ' + e + ', n = ' + n + ')</span> &nbsp; <span class="secret">soukromý klíč: (d = ' + d + ', n = ' + n + ')</span>';
+
+        var raw = $('rsaM').value.trim(), m, desc;
+        if (/^\d+$/.test(raw)) { m = +raw; desc = 'm = ' + m; }
+        else if (raw) { m = raw.codePointAt(0); desc = 'znak „' + esc(Array.from(raw)[0]) + '“ má kód m = ' + m; }
+        else { $('rsaEnc').innerHTML = 'Zadej zprávu.'; $('rsaDec').innerHTML = ''; return; }
+        if (m >= n) {
+            $('rsaEnc').innerHTML = desc + '<br><span class="bad">Zpráva musí být menší než n = ' + n + '.</span> Zvol větší prvočísla nebo menší číslo.';
+            $('rsaDec').innerHTML = ''; return;
+        }
+        var c = modpow(m, e, n), back = modpow(c, d, n);
+        $('rsaEnc').innerHTML = desc + '<br>c = m<sup>e</sup> mod n<br>c = ' + m + '<sup>' + e + '</sup> mod ' + n + ' = <b>' + c + '</b><br><span class="muted">po síti letí jen číslo ' + c + '</span>';
+        $('rsaDec').innerHTML = 'c = ' + c + '<br>m = c<sup>d</sup> mod n<br>m = ' + c + '<sup>' + d + '</sup> mod ' + n + ' = <b>' + back + '</b>' +
+            (!/^\d+$/.test(raw) ? ' → „' + esc(String.fromCodePoint(back)) + '“' : '') + '<br><span class="' + (back === m ? 'ok">zpráva se vrátila v pořádku' : 'bad">chyba') + '</span>';
+    }
+    $('rsaP').addEventListener('change', function () { rsa(false); });
+    $('rsaQ').addEventListener('change', function () { rsa(false); });
+    $('rsaE').addEventListener('change', function () { rsa(true); });
+    $('rsaM').addEventListener('input', function () { rsa(true); });
+    rsa(false);
+})();
+
+/* ======================================================================
+   6. HASH A HESLA
+   ====================================================================== */
+/** SHA-256 nad polem bajtů, vrací 32 bajtů. Vlastní implementace, aby
+    stránka fungovala i po otevření z disku bez Web Crypto. */
+var sha256 = (function () {
+    var K = [], H0 = [], n = 0, c = 2;
+    function isPrime(x) { for (var i = 2; i * i <= x; i++) if (x % i === 0) return false; return true; }
+    function frac(x) { return ((x - Math.floor(x)) * 4294967296) | 0; }
+    while (n < 64) {
+        if (isPrime(c)) { if (n < 8) H0[n] = frac(Math.pow(c, 1 / 2)); K[n++] = frac(Math.pow(c, 1 / 3)); }
+        c++;
+    }
+    function rotr(x, k) { return (x >>> k) | (x << (32 - k)); }
+    return function (bytes) {
+        var H = H0.slice(), len = bytes.length, msg = bytes.slice();
+        msg.push(0x80);
+        while (msg.length % 64 !== 56) msg.push(0);
+        var bits = len * 8;
+        msg.push(0, 0, 0, Math.floor(bits / 4294967296) & 255, (bits >>> 24) & 255, (bits >>> 16) & 255, (bits >>> 8) & 255, bits & 255);
+        var w = new Array(64);
+        for (var off = 0; off < msg.length; off += 64) {
+            for (var i = 0; i < 16; i++) w[i] = (msg[off + i * 4] << 24) | (msg[off + i * 4 + 1] << 16) | (msg[off + i * 4 + 2] << 8) | msg[off + i * 4 + 3];
+            for (i = 16; i < 64; i++) {
+                var s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+                var s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+                w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+            }
+            var a = H[0], b = H[1], cc = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+            for (i = 0; i < 64; i++) {
+                var S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25), ch = (e & f) ^ (~e & g);
+                var t1 = (h + S1 + ch + K[i] + w[i]) | 0;
+                var S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22), maj = (a & b) ^ (a & cc) ^ (b & cc);
+                var t2 = (S0 + maj) | 0;
+                h = g; g = f; f = e; e = (d + t1) | 0; d = cc; cc = b; b = a; a = (t1 + t2) | 0;
+            }
+            H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + cc) | 0; H[3] = (H[3] + d) | 0;
+            H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+        }
+        var out = [];
+        H.forEach(function (x) { out.push((x >>> 24) & 255, (x >>> 16) & 255, (x >>> 8) & 255, x & 255); });
+        return out;
+    };
+})();
+function sha256hex(str) { return sha256(Array.from(new TextEncoder().encode(str))).map(function (b) { return b.toString(16).padStart(2, '0'); }).join(''); }
+
+(function () {
+    function group(hex, other) {
+        var out = '';
+        for (var i = 0; i < hex.length; i++) {
+            out += other && hex[i] !== other[i] ? '<span class="d">' + hex[i] + '</span>' : hex[i];
+            if (i % 8 === 7 && i < hex.length - 1) out += ' ';
+        }
+        return out;
+    }
+    function update() {
+        var a = $('h1').value, b = $('h2').value, ha = sha256hex(a), hb = sha256hex(b);
+        $('h1Out').innerHTML = group(ha);
+        $('h2Out').innerHTML = group(hb, ha);
+        var bits = 0, hexd = 0;
+        for (var i = 0; i < 64; i++) {
+            var x = parseInt(ha[i], 16) ^ parseInt(hb[i], 16);
+            if (x) hexd++;
+            while (x) { bits += x & 1; x >>= 1; }
+        }
+        $('hStats').innerHTML =
+            stat('Délka textu 1', new TextEncoder().encode(a).length + ' B') +
+            stat('Délka textu 2', new TextEncoder().encode(b).length + ' B') +
+            stat('Délka otisku', '256 b', 'vždy') +
+            stat('Lišících se bitů', a === b ? '0' : bits + ' z 256', a === b ? 'texty jsou stejné' : '≈ ' + fmt(bits / 256 * 100, 0) + ' %');
+    }
+    $('h1').addEventListener('input', update);
+    $('h2').addEventListener('input', update);
+    update();
+
+    /* --- Síla hesla --- */
+    var COMMON = ['123456', '123456789', '12345678', '12345', '111111', '000000', 'password', 'heslo', 'heslo123', 'qwerty', 'qwertz', 'abc123', 'iloveyou', 'admin', 'martin', 'lokomotiva', 'internet', 'slunicko', 'milacek', 'ahoj', 'ahoj123', 'password1', 'letmein', 'dragon', 'monkey', 'michal', 'tomas', 'lucie', 'veronika', 'sparta', 'slavia'];
+    var RATE = 1e10;
+
+    function human(sec) {
+        if (sec < 1) return 'okamžitě';
+        var u = [[60, 'sekund'], [60, 'minut'], [24, 'hodin'], [365.25, 'dní']], v = sec;
+        for (var i = 0; i < u.length; i++) { if (v < u[i][0]) return fmt(v, v < 10 ? 1 : 0) + ' ' + u[i][1]; v /= u[i][0]; }
+        if (v < 1e3) return fmt(v, v < 10 ? 1 : 0) + ' let';
+        if (v < 1e6) return fmt(v / 1e3, 0) + ' tisíc let';
+        if (v < 1e9) return fmt(v / 1e6, 0) + ' milionů let';
+        if (v < 1.38e10) return fmt(v / 1e9, 1) + ' miliardy let';
+        if (v < 1e15) return fmt(v / 1.38e10, 0) + '× stáří vesmíru';
+        return 'nepředstavitelně dlouho';
+    }
+    function pool(pw) {
+        var p = 0, parts = [];
+        if (/[a-z]/.test(pw)) { p += 26; parts.push('malá písmena (26)'); }
+        if (/[A-Z]/.test(pw)) { p += 26; parts.push('velká písmena (26)'); }
+        if (/\d/.test(pw)) { p += 10; parts.push('číslice (10)'); }
+        if (/[^a-zA-Z0-9\u0080-￿]/.test(pw)) { p += 32; parts.push('symboly (32)'); }
+        if (/[\u0080-￿]/.test(pw)) { p += 30; parts.push('znaky s diakritikou (30)'); }
+        return { n: p, parts: parts };
+    }
+    function updatePw() {
+        var pw = $('pw').value, len = Array.from(pw).length, pl = pool(pw);
+        if (!len) { $('pwStats').innerHTML = ''; $('pwMsg').innerHTML = ''; $('pwBar').style.width = '0'; return; }
+        var bits = len * Math.log2(pl.n), sec = Math.pow(2, bits - 1) / RATE;
+        var low = pw.toLowerCase();
+        var common = COMMON.indexOf(low) !== -1;
+        var wordYear = /^[a-zA-Z\u0080-￿]+\d{1,4}[!.?]?$/.test(pw);
+        var onlyDigits = /^\d+$/.test(pw);
+        var pct = Math.max(4, Math.min(100, bits / 90 * 100));
+        var bar = $('pwBar');
+        bar.style.width = (common ? 4 : pct) + '%';
+        bar.style.background = common || bits < 40 ? 'var(--c-red)' : bits < 60 ? 'var(--c-orange)' : 'var(--c-green)';
+        $('pwStats').innerHTML =
+            stat('Délka', len, 'znaků') +
+            stat('Velikost abecedy', pl.n, pl.parts.map(function (x) { return x.replace(/ \(\d+\)/, ''); }).join(' + ')) +
+            stat('Počet možností', pl.n + '<sup>' + len + '</sup>', '≈ 2<sup>' + fmt(bits, 0) + '</sup>') +
+            stat('Doba prolomení hrubou silou', common ? '<span class="bad">okamžitě</span>' : human(sec));
+        var m;
+        if (common) m = ['danger', '<strong>Tohle heslo je na seznamech nejpoužívanějších hesel.</strong> Útočník je zkouší jako první — výpočet výše pro něj neplatí.'];
+        else if (onlyDigits) m = ['danger', 'Samé číslice: abeceda má jen 10 znaků, takže i dlouhé heslo padne rychle. Navíc to bývá datum nebo telefonní číslo.'];
+        else if (wordYear && len < 14) m = ['warn', 'Vzor <em>slovo + číslo</em> je velmi častý. Útočníci nezkoušejí znaky naslepo, ale kombinují slovníky s letopočty — skutečná doba prolomení bude mnohem kratší než odhad.'];
+        else if (bits < 40) m = ['danger', 'Slabé heslo. Přidej znaky — každý další znak násobí počet možností ' + pl.n + '×.'];
+        else if (bits < 60) m = ['warn', 'Průměrné heslo. Proti cílenému útoku nemusí obstát; prodluž ho.'];
+        else m = ['success', 'Silné heslo — pokud není složené z předvídatelných slov a nepoužíváš ho jinde.'];
+        $('pwMsg').innerHTML = '<div class="callout callout--' + m[0] + '">' + m[1] + '</div>';
+    }
+    $('pw').addEventListener('input', updatePw);
+    updatePw();
+
+    $('pwTable').querySelector('tbody').innerHTML = [6, 8, 10, 12, 14, 16].map(function (L) {
+        return '<tr><td class="mono">' + L + ' znaků</td>' + [26, 62, 94].map(function (p) { return '<td>' + human(Math.pow(p, L) / 2 / RATE) + '</td>'; }).join('') + '</tr>';
+    }).join('');
+})();
+</script>
+</body>
+</html>

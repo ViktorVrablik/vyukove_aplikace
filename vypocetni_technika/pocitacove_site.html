@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Počítačové sítě | Výukové aplikace</title>
+    <meta name="description" content="Modely ISO/OSI a TCP/IP se zapouzdřením krok za krokem, IP adresy v4 a v6, maska podsítě, dělení sítě na podsítě a cesta paketu přes switch a router včetně DHCP, DNS a NAT. S interaktivními ukázkami.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Počítačové sítě">
+    <meta property="og:description" content="Modely ISO/OSI a TCP/IP se zapouzdřením krok za krokem, IP adresy v4 a v6, maska podsítě, dělení sítě na podsítě a cesta paketu přes switch a router včetně DHCP, DNS a NAT. S interaktivními ukázkami.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ==================================================================
+           Specifika stránky Počítačové sítě
+           ================================================================== */
+
+        .lead { font-size: var(--fs-md); color: var(--text-muted); max-width: 70ch; }
+        .tab-content > p, .tab-content li { max-width: 78ch; }
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+        .center { text-align: center; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-0 { margin-bottom: 0 !important; }
+        .ok   { color: var(--c-green); font-weight: 600; }
+        .bad  { color: var(--c-red);   font-weight: 600; }
+        .warn { color: var(--c-orange); font-weight: 600; }
+
+        /* Výpis binárních / hexadecimálních dat */
+        .code-box {
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow-wrap: anywhere;
+        }
+        .code-box--pre { white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+
+        .field { margin-bottom: var(--space-5); }
+        .field--inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-5); }
+        .field--inline > div { min-width: 0; }
+        .field--inline input[type="number"] { width: 9rem; }
+        .field--inline input[type="text"] { min-width: 12rem; }
+        .grow { flex: 1 1 220px; }
+
+        /* Dvousloupcové rozložení, na mobilu pod sebou */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Segmentový přepínač (volba režimu) */
+        .seg {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 2px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .seg button {
+            min-height: 30px;
+            padding: var(--space-1) var(--space-3);
+            font: inherit;
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .seg button:hover { color: var(--text); background: var(--hover-bg); }
+        .seg button[aria-pressed="true"] {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Přehledové hodnoty */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .stat {
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            min-width: 0;
+        }
+        .stat__label { display: block; font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px; }
+        .stat__value { display: block; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+        .stat__value small { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); }
+
+        /* Vzorec / postup výpočtu */
+        .formula {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+        }
+        .formula b { color: var(--text); }
+
+        /* ---------- Bity ---------- */
+        .bits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2) var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+        .bits__group { display: flex; gap: 2px; }
+        .bit {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 36px;
+            padding: 0 2px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-base);
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--dur-fast) var(--ease);
+        }
+        .bit:hover { border-color: var(--accent); }
+        .bit[aria-pressed="true"] { color: var(--text); background: var(--c-blue-bg); border-color: var(--c-blue); }
+        .bit__w { font-size: 9px; font-weight: 500; color: var(--text-faint); line-height: 1; margin-top: 1px; }
+        .bit--s { box-shadow: inset 0 -3px 0 var(--c-red); }
+        .bit--e { box-shadow: inset 0 -3px 0 var(--c-green); }
+        .bit--m { box-shadow: inset 0 -3px 0 var(--c-blue); }
+        .bit--p { box-shadow: inset 0 -3px 0 var(--c-orange); }
+        .bit--err { background: var(--c-red-bg) !important; border-color: var(--c-red) !important; color: var(--c-red) !important; }
+        .bit--static { cursor: default; }
+        .bit--static:hover { border-color: var(--border-strong); }
+
+        .bit-sign { color: var(--c-red); font-weight: 700; }
+        .bit-exp  { color: var(--c-green); font-weight: 700; }
+        .bit-mant { color: var(--c-blue); font-weight: 700; }
+        .u8-prefix { color: var(--c-orange); font-weight: 700; }
+        .u8-payload { color: var(--text); }
+
+        /* ---------- Paměťový pás (datové typy) ---------- */
+        .mem-strip { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: var(--space-3); font-family: var(--font-mono); font-size: var(--fs-sm); }
+        .mem-byte {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .rg0 { background: var(--c-blue-bg);   border-color: var(--c-blue)   !important; }
+        .rg1 { background: var(--c-orange-bg); border-color: var(--c-orange) !important; }
+        .rg2 { background: var(--c-green-bg);  border-color: var(--c-green)  !important; }
+        .rg3 { background: var(--c-purple-bg); border-color: var(--c-purple) !important; }
+        .rg4 { background: var(--c-pink-bg);   border-color: var(--c-pink)   !important; }
+        .rg5 { background: var(--c-yellow-bg); border-color: var(--c-yellow) !important; }
+        .rg6 { background: var(--c-red-bg);    border-color: var(--c-red)    !important; }
+        .rg7 { background: var(--c-brown-bg);  border-color: var(--c-brown)  !important; }
+        .legend__swatch[class*="rg"] { border: 1px solid; }
+
+        .controls-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+            gap: var(--space-4);
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .controls-box .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); font-weight: 500; }
+        .controls-box .label output, .controls-box .label span { color: var(--text); font-weight: 600; }
+
+        /* ---------- IP adresa ---------- */
+        .octets { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
+        .octet { text-align: center; }
+        .octet .bits { margin-bottom: var(--space-1); }
+        .octet__val { font-family: var(--font-mono); font-size: var(--fs-lg); font-weight: 600; }
+        .net  { color: var(--c-green); font-weight: 700; }
+        .host { color: var(--c-blue);  font-weight: 700; }
+        .bit--net  { box-shadow: inset 0 -3px 0 var(--c-green); }
+        .bit--host { box-shadow: inset 0 -3px 0 var(--c-blue); }
+        .calc-lines { white-space: pre; }
+
+        /* ---------- Adresní prostor ---------- */
+        .addr-bar {
+            display: flex;
+            height: 46px;
+            margin-bottom: var(--space-2);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .addr-bar > div {
+            display: flex; align-items: center; justify-content: center;
+            min-width: 0;
+            font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600;
+            white-space: nowrap; overflow: hidden;
+            border-right: 1px solid var(--border-strong);
+        }
+        .addr-bar > div:last-child { border-right: 0; }
+        .addr-bar .free { background: repeating-linear-gradient(45deg, var(--surface-sunken), var(--surface-sunken) 6px, var(--surface) 6px, var(--surface) 12px); color: var(--text-muted); border-color: var(--border-strong) !important; }
+        .addr-scale { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--space-5); }
+        td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; border: 1px solid; margin-right: var(--space-2); }
+
+        /* ---------- Cesta paketu ---------- */
+        .topo-wrap { overflow-x: auto; margin-bottom: var(--space-4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+        .topo-wrap svg { display: block; min-width: 640px; width: 100%; height: auto; }
+        .topo text { font-family: var(--font-sans); fill: var(--text); }
+        .topo .sub { fill: var(--text-muted); font-family: var(--font-mono); }
+        .topo .node rect, .topo .node ellipse { fill: var(--surface-sunken); stroke: var(--border-strong); stroke-width: 1.5; }
+        .topo .node.is-active rect, .topo .node.is-active ellipse { fill: var(--c-blue-bg); stroke: var(--accent); stroke-width: 2.5; }
+        .topo .link { stroke: var(--border-strong); stroke-width: 2; }
+        .topo .link.is-active { stroke: var(--accent); stroke-width: 3.5; }
+        .topo .zone { fill: none; stroke: var(--border); stroke-dasharray: 6 5; }
+        .topo .zone-label { fill: var(--text-faint); font-size: 11px; }
+        .topo .packet { fill: var(--c-orange); stroke: var(--surface); stroke-width: 2; }
+        .step-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); }
+        .step-nav .count { color: var(--text-muted); font-size: var(--fs-sm); margin-left: var(--space-2); }
+        .hdr-table td.changed { background: var(--c-yellow-bg); font-weight: 600; }
+        .hdr-table td, .hdr-table th { font-size: var(--fs-sm); }
+        tr.is-match td { background: var(--c-green-bg); font-weight: 600; }
+
+        /* ---------- Vrstvy a zapouzdření ---------- */
+        .L-app  { --lc: var(--c-purple); --lb: var(--c-purple-bg); }
+        .L-tr   { --lc: var(--c-green);  --lb: var(--c-green-bg); }
+        .L-net  { --lc: var(--c-orange); --lb: var(--c-orange-bg); }
+        .L-link { --lc: var(--c-blue);   --lb: var(--c-blue-bg); }
+        .L-phys { --lc: var(--c-gray);   --lb: var(--c-gray-bg); }
+        .layers-table tr > td:first-child { border-left: 4px solid var(--lc); }
+        .layers-table tr > td:first-child strong { color: var(--lc); }
+
+        .stacks { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--space-3); align-items: stretch; margin-bottom: var(--space-4); }
+        .stack-title { font-size: var(--fs-sm); font-weight: 600; margin-bottom: var(--space-2); }
+        .stack-title .muted { font-family: var(--font-mono); font-weight: 400; font-size: var(--fs-xs); }
+        .layer {
+            display: flex; justify-content: space-between; align-items: center; gap: var(--space-2);
+            padding: var(--space-2) var(--space-3); margin-bottom: 3px;
+            border: 1px solid var(--border); border-left: 4px solid var(--lc);
+            border-radius: var(--radius-sm); background: var(--surface);
+            font-size: var(--fs-sm); color: var(--text-muted);
+        }
+        .layer__name { font-weight: 600; }
+        .layer__pdu { font-size: var(--fs-xs); text-align: right; }
+        .layer.is-on { background: var(--lb); border-color: var(--lc); color: var(--text); box-shadow: 0 0 0 1px var(--lc); }
+        .stack-wire { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: var(--space-2); color: var(--text-faint); font-size: var(--fs-xs); }
+        .stack-wire.is-on { color: var(--accent); font-weight: 700; }
+        @media (max-width: 640px) {
+            .stacks { grid-template-columns: minmax(0, 1fr); }
+            .stack-wire { flex-direction: row; justify-content: center; gap: var(--space-2); padding: 0; }
+            .stack-wire svg { transform: rotate(90deg); }
+            .layer__pdu { display: none; }
+        }
+
+        .pdu-wrap { overflow-x: auto; margin-bottom: var(--space-4); padding-bottom: 2px; }
+        .pdu { display: flex; min-width: max-content; border-radius: var(--radius-md); }
+        .pdu-part {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 56px; padding: var(--space-2) var(--space-4);
+            font: inherit; font-size: var(--fs-sm); font-weight: 600; white-space: nowrap;
+            color: var(--lc); background: var(--lb);
+            border: 1px solid var(--lc); border-right-width: 0;
+            cursor: pointer;
+        }
+        .pdu-part:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+        .pdu-part:last-child { border-right-width: 1px; border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+        .pdu-part:only-child { border-radius: var(--radius-md); }
+        .pdu-part[data-id="data"] { min-width: 150px; }
+        .pdu-part small { font-family: var(--font-mono); font-weight: 400; font-size: var(--fs-xs); color: var(--text-muted); }
+        .pdu-part.is-sel { box-shadow: inset 0 -4px 0 var(--lc); }
+        .pdu-bits { padding: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text); background: var(--lb); border: 1px solid var(--lc); border-radius: var(--radius-md); white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="vypocet">Výpočetní technika</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">Počítačové sítě</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <h1>Počítačové sítě</h1>
+            <p class="subtitle">Vrstvy a zapouzdření, IP adresy a podsítě — a jak paket najde cestu k cíli</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Kapitoly">
+        <button class="tab active" type="button" role="tab" id="t-vrstvy" aria-controls="vrstvy" aria-selected="true" tabindex="0">Vrstvy a zapouzdření</button>
+        <button class="tab" type="button" role="tab" id="t-ip-adresa" aria-controls="ip-adresa" aria-selected="false" tabindex="-1">IP adresa</button>
+        <button class="tab" type="button" role="tab" id="t-maska" aria-controls="maska" aria-selected="false" tabindex="-1">Maska a síť</button>
+        <button class="tab" type="button" role="tab" id="t-podsite" aria-controls="podsite" aria-selected="false" tabindex="-1">Dělení na podsítě</button>
+        <button class="tab" type="button" role="tab" id="t-cesta-paketu" aria-controls="cesta-paketu" aria-selected="false" tabindex="-1">Cesta paketu</button>
+    </div>
+
+    <!-- ================================================================
+         0. VRSTVY A ZAPOUZDŘENÍ
+         ================================================================ -->
+    <section id="vrstvy" class="tab-content active" role="tabpanel" aria-labelledby="t-vrstvy">
+        <h2>Síťové vrstvy: ISO/OSI a TCP/IP</h2>
+        <p class="lead">Poslat data po síti je složitý úkol. Proto je rozdělen na <strong>vrstvy</strong> — každá řeší jen svůj kus práce a o ostatní se nestará. Prohlížeč nemusí vědět, jestli jsi připojen kabelem nebo přes Wi-Fi, a síťová karta nemusí rozumět webovým stránkám.</p>
+
+        <p>Funguje to jako posílání dopisu: napíšeš <em>dopis</em>, vložíš ho do <em>obálky</em> s adresou, pošta dá obálku do <em>pytle</em> pro cílové město a pytel naloží do <em>auta</em>. Každý v řetězci čte jen „svůj“ obal. Příjemce pak obaly v opačném pořadí rozbalí.</p>
+
+        <h3>Dva modely</h3>
+        <p><strong>ISO/OSI</strong> je teoretický model se 7 vrstvami — používá se k výuce a k popisu („to je problém na třetí vrstvě“). <strong>TCP/IP</strong> je model se 4 vrstvami, podle kterého skutečně funguje internet.</p>
+        <div class="table-wrap">
+            <table class="notion-table layers-table">
+                <thead><tr><th>ISO/OSI</th><th>TCP/IP</th><th>Co vrstva řeší</th><th>Jednotka dat</th><th>Příklady</th></tr></thead>
+                <tbody>
+                <tr class="L-app"><td><strong>7 Aplikační</strong></td><td rowspan="3"><strong>Aplikační</strong></td><td>služby pro programy: web, pošta, přenos souborů</td><td rowspan="3">data</td><td rowspan="3">HTTP, HTTPS, DNS, SMTP, FTP, DHCP</td></tr>
+                <tr class="L-app"><td><strong>6 Prezentační</strong></td><td>podoba dat: kódování znaků, komprese, šifrování</td></tr>
+                <tr class="L-app"><td><strong>5 Relační</strong></td><td>zahájení, udržování a ukončení spojení (relace)</td></tr>
+                <tr class="L-tr"><td><strong>4 Transportní</strong></td><td><strong>Transportní</strong></td><td>doručení správné <em>aplikaci</em> (číslo portu); TCP navíc hlídá pořadí a ztráty</td><td>segment (TCP), datagram (UDP)</td><td>TCP, UDP</td></tr>
+                <tr class="L-net"><td><strong>3 Síťová</strong></td><td><strong>Síťová</strong> (internetová)</td><td>doručení správnému <em>počítači</em> přes více sítí (IP adresa, směrování)</td><td>paket</td><td>IP, ICMP; <em>router</em></td></tr>
+                <tr class="L-link"><td><strong>2 Linková</strong> (spojová)</td><td rowspan="2"><strong>Síťového rozhraní</strong></td><td>doručení <em>sousednímu zařízení</em> v téže síti (MAC adresa), kontrola chyb</td><td>rámec</td><td>Ethernet, Wi-Fi; <em>switch</em></td></tr>
+                <tr class="L-phys"><td><strong>1 Fyzická</strong></td><td>přenos jednotlivých bitů — napětí, světlo, rádiové vlny</td><td>bity</td><td>kabel UTP, optické vlákno; <em>hub</em></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted text-sm">Pomůcka pro pořadí vrstev OSI od první po sedmou: <strong>F</strong>yzická, <strong>L</strong>inková, <strong>S</strong>íťová, <strong>T</strong>ransportní, <strong>R</strong>elační, <strong>P</strong>rezentační, <strong>A</strong>plikační.</p>
+
+        <h3>Zapouzdření krok za krokem</h3>
+        <p>Když data putují vrstvami dolů, každá vrstva před ně přidá svou <strong>hlavičku</strong> s údaji, které potřebuje její protějšek na druhé straně. Tomu se říká <strong>zapouzdření</strong>. U příjemce jdou data vrstvami nahoru a hlavičky se zase odebírají.</p>
+
+        <div class="field--inline">
+            <div>
+                <span class="label">Co posíláme</span>
+                <div class="seg" id="enApp" role="group" aria-label="Aplikace">
+                    <button type="button" data-v="http" aria-pressed="true">webová stránka (HTTP, TCP)</button>
+                    <button type="button" data-v="dns" aria-pressed="false">dotaz DNS (UDP)</button>
+                </div>
+            </div>
+            <div>
+                <span class="label">Zobrazit vrstvy podle</span>
+                <div class="seg" id="enModel" role="group" aria-label="Model vrstev">
+                    <button type="button" data-v="tcpip" aria-pressed="true">TCP/IP</button>
+                    <button type="button" data-v="osi" aria-pressed="false">ISO/OSI</button>
+                </div>
+            </div>
+        </div>
+        <div class="field">
+            <label class="label" for="enData">Data aplikace</label>
+            <input type="text" id="enData" class="mono" value="" spellcheck="false" autocomplete="off" maxlength="120">
+        </div>
+
+        <div class="stacks">
+            <div class="stack-col">
+                <div class="stack-title">Odesílatel — tvůj počítač <span class="muted">192.168.1.10</span></div>
+                <div id="enS"></div>
+            </div>
+            <div class="stack-wire" id="enWire" aria-hidden="true">
+                <svg class="icon icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                <span>síť</span>
+            </div>
+            <div class="stack-col">
+                <div class="stack-title">Příjemce — server <span class="muted" id="enRip">93.184.216.34</span></div>
+                <div id="enR"></div>
+            </div>
+        </div>
+
+        <div class="step-nav">
+            <button class="btn" type="button" id="enPrev">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </button>
+            <button class="btn btn--primary" type="button" id="enNext">
+                Další krok
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="btn btn--ghost" type="button" id="enReset">Od začátku</button>
+            <span class="count" id="enCount"></span>
+        </div>
+        <div class="callout callout--neutral" id="enText" aria-live="polite" style="min-height:6em"></div>
+
+        <span class="label" id="enPduLabel">Jednotka dat</span>
+        <div class="pdu-wrap"><div class="pdu" id="enPdu" role="group" aria-label="Části datové jednotky, klepnutím zobrazíš obsah hlavičky"></div></div>
+        <div class="stat-grid" id="enStats"></div>
+
+        <span class="label" id="enFieldsLabel">Obsah hlavičky</span>
+        <div class="table-wrap"><table class="notion-table hdr-table" id="enFields"></table></div>
+        <p class="muted text-sm">Klepnutím na barevnou část si zobrazíš, co v ní je. Hodnoty jsou zjednodušené; skutečné hlavičky mají polí více.</p>
+
+        <h3>Kdo čte kterou vrstvu</h3>
+        <p>Cestou sítí se data nerozbalují celá. Každé zařízení se podívá jen tak hluboko, jak potřebuje ke své práci:</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Zařízení</th><th>Pracuje do vrstvy</th><th>Co čte</th><th>Co s daty udělá</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Hub, opakovač, kabel</strong></td><td>1 — fyzická</td><td>jen bity</td><td>zesílí signál a pošle ho všem</td></tr>
+                <tr><td><strong>Switch</strong></td><td>2 — linková</td><td>hlavičku rámce (MAC adresy)</td><td>pošle rámec na správný port; obsah nemění</td></tr>
+                <tr><td><strong>Router</strong></td><td>3 — síťová</td><td>hlavičku paketu (IP adresy)</td><td>rámec rozbalí, vybere cestu, sníží TTL a paket zabalí do <em>nového</em> rámce</td></tr>
+                <tr><td><strong>Počítač, server</strong></td><td>7 — aplikační</td><td>všechno</td><td>rozbalí všechny vrstvy a předá data programu</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>Jak to vypadá na cestě přes switch a router, ukazuje záložka <a href="#cesta-paketu" data-tab>Cesta paketu</a>.</p>
+
+        <h3>TCP a UDP</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>TCP</th><th>UDP</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Spojení</strong></td><td>nejdřív naváže spojení („podání ruky“ ve třech krocích)</td><td>posílá rovnou, bez domluvy</td></tr>
+                <tr><td><strong>Spolehlivost</strong></td><td>potvrzuje přijetí, ztracená data pošle znovu, hlídá pořadí</td><td>nic nezaručuje — co se ztratí, je pryč</td></tr>
+                <tr><td><strong>Hlavička</strong></td><td>20 bajtů</td><td>8 bajtů</td></tr>
+                <tr><td><strong>Hodí se pro</strong></td><td>web, e-mail, soubory — vše, kde nesmí chybět ani bajt</td><td>hovory, videopřenosy, hry, DNS — kde je důležitější rychlost</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         1. IP ADRESA
+         ================================================================ -->
+    <section id="ip-adresa" class="tab-content" role="tabpanel" aria-labelledby="t-ip-adresa" hidden>
+        <h2>IP adresa</h2>
+        <p class="lead">Každé zařízení v síti potřebuje adresu, podobně jako dům potřebuje adresu pro pošťáka. <strong>IP adresa</strong> (verze 4) je 32bitové číslo. Aby se dobře četlo, zapisuje se jako čtyři čísla 0–255 oddělená tečkami — každé číslo je jeden bajt (oktet).</p>
+
+        <h3>Adresa jako 32 bitů</h3>
+        <p>Zadej adresu, nebo přepínej jednotlivé bity klepnutím.</p>
+        <div class="field--inline">
+            <div>
+                <label class="label" for="ipInput">IP adresa</label>
+                <input type="text" id="ipInput" class="mono" value="192.168.1.10" spellcheck="false" autocomplete="off" inputmode="decimal">
+            </div>
+            <div class="seg" id="ipPresets" role="group" aria-label="Ukázkové adresy">
+                <button type="button" data-ip="192.168.1.10">domácí síť</button>
+                <button type="button" data-ip="10.0.0.5">firemní síť</button>
+                <button type="button" data-ip="127.0.0.1">localhost</button>
+                <button type="button" data-ip="8.8.8.8">veřejná</button>
+                <button type="button" data-ip="169.254.12.7">bez DHCP</button>
+                <button type="button" data-ip="255.255.255.255">broadcast</button>
+            </div>
+        </div>
+        <div class="octets" id="ipOctets"></div>
+        <div id="ipKind" aria-live="polite"></div>
+        <div class="stat-grid" id="ipStats"></div>
+
+        <h3>Zvláštní rozsahy adres</h3>
+        <p>Ne každou adresu potkáš na internetu. Některé rozsahy jsou vyhrazené — nejdůležitější jsou <strong>privátní adresy</strong>, které může použít kdokoli ve své domácí nebo firemní síti. Na internetu se nesměrují, ven se dostanou jen přes překlad adres (NAT) na routeru.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Rozsah</th><th>Zápis</th><th>K čemu slouží</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">10.0.0.0 – 10.255.255.255</td><td class="mono">10.0.0.0/8</td><td>privátní — velké firemní sítě</td></tr>
+                <tr><td class="mono">172.16.0.0 – 172.31.255.255</td><td class="mono">172.16.0.0/12</td><td>privátní — středně velké sítě</td></tr>
+                <tr><td class="mono">192.168.0.0 – 192.168.255.255</td><td class="mono">192.168.0.0/16</td><td>privátní — domácí sítě a malé firmy</td></tr>
+                <tr><td class="mono">127.0.0.0 – 127.255.255.255</td><td class="mono">127.0.0.0/8</td><td>loopback — počítač mluví sám se sebou (<code>localhost</code>)</td></tr>
+                <tr><td class="mono">169.254.0.0 – 169.254.255.255</td><td class="mono">169.254.0.0/16</td><td>automatická adresa, když počítač nedostane adresu od DHCP serveru</td></tr>
+                <tr><td class="mono">224.0.0.0 – 239.255.255.255</td><td class="mono">224.0.0.0/4</td><td>multicast — vysílání skupině zařízení</td></tr>
+                <tr><td class="mono">255.255.255.255</td><td>—</td><td>broadcast — všem v místní síti</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>IPv4 a IPv6</h3>
+        <p>32 bitů dává jen asi 4,3 miliardy adres — méně, než je lidí na Zemi. Volné adresy IPv4 už došly, proto se postupně přechází na <strong>IPv6</strong> se 128 bity.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>IPv4</th><th>IPv6</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Délka</strong></td><td>32 bitů</td><td>128 bitů</td></tr>
+                <tr><td><strong>Počet adres</strong></td><td class="mono">2³² ≈ 4,3 · 10⁹</td><td class="mono">2¹²⁸ ≈ 3,4 · 10³⁸</td></tr>
+                <tr><td><strong>Zápis</strong></td><td>4 desítková čísla oddělená tečkou</td><td>8 skupin po 4 hex číslicích oddělených dvojtečkou</td></tr>
+                <tr><td><strong>Příklad</strong></td><td class="mono">192.168.1.10</td><td class="mono">2001:db8::8a2e:370:7334</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>Adresa IPv6 je dlouhá, proto se zkracuje dvěma pravidly: v každé skupině se vynechají <strong>úvodní nuly</strong> a <strong>jedna</strong> nejdelší řada nulových skupin se nahradí dvěma dvojtečkami <code>::</code>.</p>
+        <div class="field">
+            <label class="label" for="v6Input">Adresa IPv6 (plná nebo zkrácená)</label>
+            <input type="text" id="v6Input" class="mono" value="2001:0db8:0000:0000:0000:8a2e:0370:7334" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="formula" id="v6Out" aria-live="polite"></div>
+    </section>
+
+    <!-- ================================================================
+         2. MASKA A SÍŤ
+         ================================================================ -->
+    <section id="maska" class="tab-content" role="tabpanel" aria-labelledby="t-maska" hidden>
+        <h2>Maska podsítě</h2>
+        <p class="lead">IP adresa má dvě části: <span class="net">adresu sítě</span> (jako název ulice) a <span class="host">adresu zařízení</span> v té síti (číslo domu). Kde je mezi nimi hranice, určuje <strong>maska</strong>.</p>
+
+        <p>Maska je také 32bitové číslo: zleva samé jedničky (část sítě), pak samé nuly (část zařízení). Zkráceně se zapisuje jako <strong>prefix</strong> — počet jedniček za lomítkem. Maska <code>255.255.255.0</code> je totéž co <code>/24</code>.</p>
+
+        <div class="field--inline">
+            <div>
+                <label class="label" for="mIp">IP adresa zařízení</label>
+                <input type="text" id="mIp" class="mono" value="192.168.1.10" spellcheck="false" autocomplete="off" inputmode="decimal">
+            </div>
+            <div class="grow">
+                <label class="label" for="mPrefix" style="text-transform:none;letter-spacing:0">Prefix: <output id="mPrefixV" class="mono">/24</output> — hranici posouvej jezdcem</label>
+                <input type="range" id="mPrefix" min="0" max="32" value="24">
+            </div>
+        </div>
+        <div class="legend">
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-green)"></span>část sítě</span>
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-blue)"></span>část zařízení (hostitele)</span>
+        </div>
+        <div class="formula calc-lines" id="mCalc" aria-live="polite"></div>
+        <div class="stat-grid" id="mStats"></div>
+
+        <div class="callout callout--info">
+            <strong>Jak se počítá:</strong>
+            adresa sítě = IP <strong>AND</strong> maska (bity zařízení se vynulují) ·
+            broadcast = bity zařízení samé jedničky ·
+            počet zařízení = 2<sup>počet nul v masce</sup> − 2 (adresa sítě a broadcast se nepřidělují).
+        </div>
+
+        <h3>Jsou dvě zařízení ve stejné síti?</h3>
+        <p>Než počítač cokoli odešle, položí si právě tuhle otázku. Pokud ano, pošle data <strong>přímo</strong>. Pokud ne, pošle je <strong>výchozí bráně</strong> (routeru), ať se postará.</p>
+        <div class="field--inline">
+            <div><label class="label" for="sA">Počítač A</label><input type="text" id="sA" class="mono" value="192.168.1.10" spellcheck="false" autocomplete="off"></div>
+            <div><label class="label" for="sB">Počítač B</label><input type="text" id="sB" class="mono" value="192.168.2.20" spellcheck="false" autocomplete="off"></div>
+            <div><label class="label" for="sP">Prefix</label>
+                <select id="sP"></select></div>
+        </div>
+        <div class="formula calc-lines" id="sCalc"></div>
+        <div id="sMsg" aria-live="polite"></div>
+
+        <h3>Přehled masek</h3>
+        <div class="table-wrap">
+            <table class="notion-table" id="maskTable">
+                <thead><tr><th>Prefix</th><th>Maska</th><th>Adres celkem</th><th>Použitelných pro zařízení</th><th>Typické použití</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         3. DĚLENÍ NA PODSÍTĚ
+         ================================================================ -->
+    <section id="podsite" class="tab-content" role="tabpanel" aria-labelledby="t-podsite" hidden>
+        <h2>Dělení sítě na podsítě</h2>
+        <p class="lead">Jednu velkou síť je často lepší rozdělit na menší — učebny, kanceláře, hosty na Wi-Fi. Sítě jsou pak přehlednější, bezpečnější a rušivý provoz (broadcast) zůstane v malé části.</p>
+        <p>Princip: z části zařízení si „půjčíme“ několik bitů a přidáme je k části sítě. Každý půjčený bit <strong>zdvojnásobí počet podsítí</strong> a <strong>zmenší každou na polovinu</strong>.</p>
+
+        <div class="field--inline">
+            <div>
+                <label class="label" for="subNet">Výchozí síť</label>
+                <input type="text" id="subNet" class="mono" value="192.168.10.0" spellcheck="false" autocomplete="off">
+            </div>
+            <div>
+                <label class="label" for="subPrefix">Prefix</label>
+                <select id="subPrefix"></select>
+            </div>
+            <div>
+                <span class="label">Způsob dělení</span>
+                <div class="seg" id="subMode" role="group" aria-label="Způsob dělení">
+                    <button type="button" data-v="equal" aria-pressed="true">stejně velké podsítě</button>
+                    <button type="button" data-v="vlsm" aria-pressed="false">podle potřeby (VLSM)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="subEqual">
+            <div class="controls-box" style="grid-template-columns:1fr">
+                <div>
+                    <label class="label" for="subBorrow">Půjčené bity: <output id="subBorrowV">2</output> → <output id="subCountV">4</output> podsítě</label>
+                    <input type="range" id="subBorrow" min="0" max="6" value="2">
+                </div>
+            </div>
+        </div>
+        <div id="subVlsm" hidden>
+            <p><strong>VLSM</strong> (masky proměnné délky) dovolí udělat každou podsíť jinak velkou. Postup: seřaď požadavky od největšího, každému přiděl nejmenší blok o velikosti mocniny dvou, do kterého se vejde (počet zařízení + 2).</p>
+            <div class="field">
+                <label class="label" for="subNeeds">Kolik zařízení má mít každá podsíť (odděl čárkou)</label>
+                <input type="text" id="subNeeds" value="60, 25, 12, 2" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="formula calc-lines" id="subBits"></div>
+        <span class="label">Adresní prostor výchozí sítě</span>
+        <div class="addr-bar" id="subBar"></div>
+        <div class="addr-scale" id="subScale"></div>
+        <div id="subMsg" aria-live="polite"></div>
+        <div class="table-wrap">
+            <table class="notion-table" id="subTable"></table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         4. CESTA PAKETU
+         ================================================================ -->
+    <section id="cesta-paketu" class="tab-content" role="tabpanel" aria-labelledby="t-cesta-paketu" hidden>
+        <h2>Cesta paketu sítí</h2>
+        <p class="lead">Data putují sítí po malých balíčcích — <strong>paketech</strong>. Každý nese adresu odesílatele a příjemce. Vyber situaci a projdi si krok za krokem, kudy paket jde a co se s ním cestou děje.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Zařízení</th><th>Podle čeho rozhoduje</th><th>Co dělá</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Switch</strong> (přepínač)</td><td>MAC adresa — fyzická adresa síťové karty</td><td>propojuje zařízení <em>uvnitř</em> jedné sítě</td></tr>
+                <tr><td><strong>Router</strong> (směrovač)</td><td>IP adresa a směrovací tabulka</td><td>propojuje <em>různé</em> sítě, hledá cestu dál</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="field--inline">
+            <div>
+                <span class="label">Vyber situaci</span>
+                <div class="seg" id="pkTarget" role="group" aria-label="Situace"></div>
+            </div>
+        </div>
+
+        <div class="topo-wrap"><svg class="topo" id="topo" viewBox="0 0 760 330" role="img" aria-label="Schéma sítě: dvě místní sítě propojené routerem a připojené k internetu s webovým serverem a serverem DNS"></svg></div>
+
+        <div class="step-nav">
+            <button class="btn" type="button" id="pkPrev">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </button>
+            <button class="btn btn--primary" type="button" id="pkNext">
+                Další krok
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="btn btn--ghost" type="button" id="pkReset">Od začátku</button>
+            <span class="count" id="pkCount"></span>
+        </div>
+        <div class="callout callout--neutral" id="pkText" aria-live="polite" style="min-height:7em"></div>
+
+        <div class="two-col">
+            <div>
+                <span class="label">Hlavičky paketu v tomto kroku</span>
+                <div class="table-wrap mb-0">
+                    <table class="notion-table hdr-table" id="pkHdr"></table>
+                </div>
+                <p class="muted text-sm mt-4">Žlutě je označeno, co se oproti předchozímu kroku změnilo.</p>
+            </div>
+            <div>
+                <span class="label">Směrovací tabulka routeru</span>
+                <div class="table-wrap mb-0">
+                    <table class="notion-table hdr-table" id="pkRoute"></table>
+                </div>
+                <p class="muted text-sm mt-4">Router hledá řádek, do jehož sítě cílová adresa patří. Když žádný nesedí, použije výchozí cestu <code>0.0.0.0/0</code>.</p>
+            </div>
+        </div>
+
+        <div class="callout callout--info">
+            <strong>Co si zapamatovat:</strong> switch se dívá jen do hlavičky rámce (2. vrstva), router rozbalí rámec a čte hlavičku paketu (3. vrstva) — podrobněji v záložce <a href="#vrstvy" data-tab>Vrstvy a zapouzdření</a>. IP adresy odesílatele a příjemce zůstávají po celou cestu stejné (výjimkou je překlad NAT na hranici s internetem). MAC adresy se mění na <em>každém</em> úseku — vždy patří dvěma sousedním zařízením. A každý router sníží hodnotu <strong>TTL</strong> o 1; při nule paket zahodí, aby v síti nebloudil věčně.
+        </div>
+    </section>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
+<script>
+/* ======================================================================
+   Počítačové sítě — společné pomocné funkce a záložky
+   ====================================================================== */
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/** Hodnota CSS proměnné (barvy pro canvas a SVG). */
+function tok(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** Escapování textu pro innerHTML. */
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Číslo s českým oddělovačem tisíců a desetinnou čárkou. */
+function fmt(n, maxFrac) {
+    if (typeof n === 'bigint') return n.toString().replace(/^-/, '−').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return Number(n).toLocaleString('cs-CZ', { maximumFractionDigits: maxFrac == null ? 2 : maxFrac }).replace(/^-/, '−');
+}
+
+function hex2(b) { return b.toString(16).toUpperCase().padStart(2, '0'); }
+function bin8(b) { return b.toString(2).padStart(8, '0'); }
+
+/** Lidsky čitelná velikost v bajtech (desítkové předpony, jak je uvádějí výrobci). */
+function humanBytes(bytes) {
+    var units = ['B', 'kB', 'MB', 'GB', 'TB'];
+    var i = 0, v = bytes;
+    while (v >= 1000 && i < units.length - 1) { v /= 1000; i++; }
+    return fmt(v, i === 0 ? 0 : 2) + ' ' + units[i];
+}
+
+/** Statistická dlaždice. */
+function stat(label, value, small) {
+    return '<div class="stat"><span class="stat__label">' + label + '</span><span class="stat__value">' +
+        value + (small ? ' <small>' + small + '</small>' : '') + '</span></div>';
+}
+
+/** Segmentový přepínač: vrátí aktuální hodnotu a volá cb při změně. */
+function bindSeg(el, cb) {
+    el.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !el.contains(b)) return;
+        el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.dataset.v, b);
+    });
+}
+function segValue(el) {
+    var b = el.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.v : null;
+}
+
+/* ----------------------------------------------------------------------
+   Záložky: přepínání, ARIA stavy, šipky, odkaz přes #kotvu
+   ---------------------------------------------------------------------- */
+function showTab(id, focus) {
+    var panel = $(id);
+    if (!panel || !panel.classList.contains('tab-content')) return;
+    document.querySelectorAll('main > .tab-content').forEach(function (p) {
+        p.classList.toggle('active', p === panel);
+        p.hidden = (p !== panel);
+    });
+    document.querySelectorAll('.tabs .tab').forEach(function (b) {
+        var on = b.getAttribute('aria-controls') === id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        if (on) {
+            if (focus) b.focus();
+            if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// v některých prohlížečích */ }
+    window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: id } }));
+}
+
+(function initTabs() {
+    var bar = document.querySelector('.tabs[role="tablist"]');
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (b) showTab(b.getAttribute('aria-controls'));
+    });
+    bar.addEventListener('keydown', function (e) {
+        if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        var next = e.key === 'Home' ? 0
+            : e.key === 'End' ? tabs.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        showTab(tabs[next].getAttribute('aria-controls'), true);
+    });
+    // Odkazy uvnitř stránky na jinou záložku (<a href="#zvuk" data-tab>)
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-tab]');
+        if (!a) return;
+        e.preventDefault();
+        showTab(a.getAttribute('href').slice(1));
+        window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+    });
+    var h = (location.hash || '').slice(1);
+    if (h && $(h) && $(h).classList.contains('tab-content')) showTab(h);
+})();
+
+/* ======================================================================
+   0. VRSTVY A ZAPOUZDŘENÍ
+   ====================================================================== */
+(function () {
+    // Řádky zásobníku vrstev pro oba modely; "ids" říká, které kroky zapouzdření řádek pokrývá.
+    var MODELS = {
+        tcpip: [
+            { ids: ['app'], name: 'Aplikační', pdu: 'data', ex: 'HTTP, DNS' },
+            { ids: ['tr'], name: 'Transportní', pdu: 'segment / datagram', ex: 'TCP, UDP' },
+            { ids: ['net'], name: 'Síťová', pdu: 'paket', ex: 'IP' },
+            { ids: ['link', 'phys'], name: 'Síťového rozhraní', pdu: 'rámec → bity', ex: 'Ethernet, Wi-Fi' }
+        ],
+        osi: [
+            { ids: ['app'], name: '7 Aplikační', pdu: 'data', ex: 'HTTP, DNS' },
+            { ids: ['app'], name: '6 Prezentační', pdu: 'data', ex: 'kódování, šifrování' },
+            { ids: ['app'], name: '5 Relační', pdu: 'data', ex: 'řízení spojení' },
+            { ids: ['tr'], name: '4 Transportní', pdu: 'segment / datagram', ex: 'TCP, UDP' },
+            { ids: ['net'], name: '3 Síťová', pdu: 'paket', ex: 'IP' },
+            { ids: ['link'], name: '2 Linková', pdu: 'rámec', ex: 'Ethernet, Wi-Fi' },
+            { ids: ['phys'], name: '1 Fyzická', pdu: 'bity', ex: 'kabel, vlákno, rádio' }
+        ]
+    };
+    var APPS = {
+        http: { data: 'GET /index.html HTTP/1.1', proto: 'TCP', tl: 20, sport: 49152, dport: 80, svc: 'webový server (HTTP)', ipProto: '6 (TCP)', ip: '93.184.216.34' },
+        dns: { data: 'Jakou IP adresu má www.skola.cz?', proto: 'UDP', tl: 8, sport: 53124, dport: 53, svc: 'server DNS', ipProto: '17 (UDP)', ip: '8.8.8.8' }
+    };
+    var MAC_S = '3C:52:82:1F:A0:0A', MAC_GW = '00:1A:2B:3C:4D:01';
+    // krok → [strana, vrstva]
+    var STEPS = [['s', 'app'], ['s', 'tr'], ['s', 'net'], ['s', 'link'], ['w', 'phys'], ['r', 'link'], ['r', 'net'], ['r', 'tr'], ['r', 'app']];
+
+    var step = 0, sel = null;
+
+    function app() { return APPS[segValue($('enApp'))]; }
+    function dataLen() { return new TextEncoder().encode($('enData').value).length; }
+
+    /** Části datové jednotky v daném kroku (zleva doprava, jak jdou po drátě). */
+    function parts(i) {
+        var a = app(), n = dataLen();
+        var depth = [0, 1, 2, 3, 3, 3, 2, 1, 0][i];
+        var p = [{ id: 'data', cls: 'L-app', name: 'data', len: n }];
+        if (depth >= 1) p.unshift({ id: 'tr', cls: 'L-tr', name: 'hlavička ' + a.proto, len: a.tl });
+        if (depth >= 2) p.unshift({ id: 'net', cls: 'L-net', name: 'hlavička IP', len: 20 });
+        if (depth >= 3) { p.unshift({ id: 'link', cls: 'L-link', name: 'hlavička Ethernet', len: 14 }); p.push({ id: 'fcs', cls: 'L-link', name: 'kontrolní součet', len: 4 }); }
+        return p;
+    }
+    function pduName(i) {
+        var a = app();
+        return ['data', a.proto === 'TCP' ? 'segment' : 'datagram', 'paket', 'rámec', 'bity', 'rámec', 'paket', a.proto === 'TCP' ? 'segment' : 'datagram', 'data'][i];
+    }
+    function fields(id) {
+        var a = app(), n = dataLen();
+        switch (id) {
+            case 'data': return [['Obsah', esc($('enData').value) || '<span class="muted">(prázdné)</span>'], ['Velikost', n + ' B'], ['Komu rozumí', 'jen aplikace na obou koncích — ' + a.svc]];
+            case 'tr': return a.proto === 'TCP'
+                ? [['Zdrojový port', a.sport + ' <span class="muted">— náhodné číslo, podle něj se odpověď vrátí správnému oknu prohlížeče</span>'], ['Cílový port', a.dport + ' <span class="muted">— ' + a.svc + '</span>'], ['Pořadové číslo', '1000 <span class="muted">— aby šly segmenty seřadit</span>'], ['Číslo potvrzení', '5001 <span class="muted">— co už jsem od protistrany dostal</span>'], ['Kontrolní součet', '0x4F2A'], ['Velikost hlavičky', '20 B']]
+                : [['Zdrojový port', a.sport], ['Cílový port', a.dport + ' <span class="muted">— ' + a.svc + '</span>'], ['Délka', (8 + n) + ' B'], ['Kontrolní součet', '0x9C11'], ['Velikost hlavičky', '8 B <span class="muted">— žádná čísla pořadí ani potvrzení</span>']];
+            case 'net': return [['Verze', '4 (IPv4)'], ['Zdrojová IP adresa', '192.168.1.10'], ['Cílová IP adresa', a.ip], ['TTL', '64 <span class="muted">— každý router sníží o 1</span>'], ['Protokol uvnitř', a.ipProto], ['Celková délka', (20 + a.tl + n) + ' B'], ['Velikost hlavičky', '20 B']];
+            case 'link': return [['Cílová MAC adresa', MAC_GW + ' <span class="muted">— výchozí brána (router), ne cílový server!</span>'], ['Zdrojová MAC adresa', MAC_S], ['Typ obsahu', '0x0800 (IPv4)'], ['Velikost hlavičky', '14 B']];
+            case 'fcs': return [['Kontrolní součet rámce (CRC-32)', '0x1D0F84B2 <span class="muted">— příjemce ho spočítá znovu; když nesedí, rámec zahodí</span>'], ['Velikost', '4 B']];
+        }
+    }
+    function text(i) {
+        var a = app(), n = dataLen(), seg = a.proto === 'TCP' ? 'segment' : 'datagram';
+        return [
+            '<strong>1. Aplikační vrstva (odesílatel).</strong> Program připravil data — ' + (a.proto === 'TCP' ? 'prohlížeč žádá o stránku protokolem HTTP' : 'počítač se ptá na IP adresu protokolem DNS') + '. Zatím je to jen ' + n + ' bajtů bez jakékoli adresy.' +
+                (segValue($('enModel')) === 'osi' ? ' V modelu OSI by se tu ještě zvlášť řešila podoba dat (prezentační vrstva) a řízení spojení (relační vrstva); v praxi to dělá aplikace sama.' : ''),
+            '<strong>2. Transportní vrstva.</strong> Před data se přidá hlavička ' + a.proto + ' s <strong>čísly portů</strong>. Cílový port ' + a.dport + ' říká, které aplikaci na serveru data patří. Vznikl <strong>' + seg + '</strong>.' +
+                (a.proto === 'TCP' ? ' TCP přidá i pořadové číslo, aby šlo poznat ztrátu nebo přeházené pořadí.' : ' UDP nic dalšího neřeší, proto je jeho hlavička tak malá.'),
+            '<strong>3. Síťová vrstva.</strong> ' + seg.charAt(0).toUpperCase() + seg.slice(1) + ' se celý stane nákladem a před něj se přidá hlavička IP se <strong>zdrojovou a cílovou IP adresou</strong>. Vznikl <strong>paket</strong>. Podle cílové IP adresy ho budou routery posílat dál.',
+            '<strong>4. Linková vrstva.</strong> Paket se zabalí do <strong>rámce</strong>: vpředu hlavička Ethernet s <strong>MAC adresami</strong>, vzadu kontrolní součet. Cílová MAC patří nejbližšímu zařízení na cestě (routeru), ne serveru.',
+            '<strong>5. Fyzická vrstva.</strong> Rámec se odešle jako řada bitů — elektrickým napětím v kabelu, světlem ve vlákně nebo rádiovými vlnami u Wi-Fi. Celkem ' + fmt((n + a.tl + 38) * 8) + ' bitů. Cestou rámec několikrát rozbalí a znovu zabalí routery; tady to pro jednoduchost přeskočíme.',
+            '<strong>6. Linková vrstva (příjemce).</strong> Síťová karta serveru složí z bitů rámec, ověří kontrolní součet a zkontroluje, že cílová MAC adresa je její. Hlavičku i součet <strong>odstraní</strong> a paket předá výš.',
+            '<strong>7. Síťová vrstva.</strong> Server zkontroluje, že cílová IP adresa je jeho. Podle pole „protokol“ pozná, že uvnitř je ' + a.proto + '. Hlavičku IP <strong>odstraní</strong>.',
+            '<strong>8. Transportní vrstva.</strong> Podle cílového portu ' + a.dport + ' se pozná, které aplikaci data patří.' + (a.proto === 'TCP' ? ' TCP zkontroluje pořadí a pošle odesílateli potvrzení.' : ' UDP nic nepotvrzuje.') + ' Hlavička ' + a.proto + ' se <strong>odstraní</strong>.',
+            '<strong>9. Aplikační vrstva (příjemce).</strong> ' + (a.proto === 'TCP' ? 'Webový server' : 'Server DNS') + ' dostal přesně ta data, která odesílatel poslal — bez jediné hlavičky. Odpověď půjde stejnou cestou zpět.'
+        ][i];
+    }
+
+    function renderStack(el, side) {
+        var cur = STEPS[step], rows = MODELS[segValue($('enModel'))];
+        el.innerHTML = rows.map(function (r) {
+            var on = (cur[0] === side || (cur[0] === 'w' && r.ids.indexOf('phys') !== -1)) && r.ids.indexOf(cur[1]) !== -1;
+            var cls = 'L-' + (r.ids[0] === 'link' && cur[1] === 'phys' && on ? 'phys' : r.ids[0]);
+            return '<div class="layer ' + cls + (on ? ' is-on' : '') + '"><span class="layer__name">' + r.name + '</span><span class="layer__pdu">' + r.pdu + '</span></div>';
+        }).join('');
+    }
+    function render() {
+        var cur = STEPS[step], p = parts(step), a = app();
+        renderStack($('enS'), 's');
+        renderStack($('enR'), 'r');
+        $('enRip').textContent = a.ip;
+        $('enWire').classList.toggle('is-on', cur[0] === 'w');
+        $('enText').innerHTML = text(step);
+        $('enCount').textContent = 'krok ' + (step + 1) + ' z ' + STEPS.length;
+        $('enPrev').disabled = step === 0;
+        $('enNext').disabled = step === STEPS.length - 1;
+
+        var total = p.reduce(function (s, x) { return s + x.len; }, 0);
+        $('enPduLabel').textContent = 'Jednotka dat: ' + pduName(step) + ' (' + total + ' B)';
+        if (!p.some(function (x) { return x.id === sel; })) sel = p[0].id;
+        if (cur[1] === 'phys') {
+            // prvních pár bajtů rámce jako bity
+            var bytes = MAC_GW.split(':').map(function (h) { return parseInt(h, 16); });
+            $('enPdu').innerHTML = '<div class="pdu-bits L-phys">' + bytes.map(function (b) { return b.toString(2).padStart(8, '0'); }).join(' ') + ' …</div>';
+        } else {
+            $('enPdu').innerHTML = p.map(function (x) {
+                return '<button type="button" class="pdu-part ' + x.cls + (x.id === sel ? ' is-sel' : '') + '" data-id="' + x.id + '" aria-pressed="' + (x.id === sel) + '"><span>' + x.name + '</span><small>' + x.len + ' B</small></button>';
+            }).join('');
+        }
+        var n = dataLen(), over = total - n;
+        $('enStats').innerHTML =
+            stat('Data aplikace', n + ' B') +
+            stat('Hlavičky navíc', over + ' B', p.length > 1 ? (p.length - 1) + ' ' + (p.length - 1 === 1 ? 'část' : p.length - 1 < 5 ? 'části' : 'částí') : 'zatím žádné') +
+            stat('Celkem', total + ' B', '= ' + fmt(total * 8) + ' bitů') +
+            stat('Podíl režie', total ? fmt(over / total * 100, 0) + ' %' : '—');
+
+        var cp = p.filter(function (x) { return x.id === sel; })[0];
+        $('enFieldsLabel').textContent = cur[1] === 'phys' ? 'Začátek rámce na drátě' : 'Obsah části: ' + cp.name;
+        $('enFields').innerHTML = cur[1] === 'phys'
+            ? '<tbody><tr><th>Prvních 48 bitů</th><td>cílová MAC adresa ' + MAC_GW + ' — podle ní síťové karty hned poznají, jestli je rámec pro ně</td></tr><tr><th>Jak vypadá bit</th><td>v kabelu úroveň napětí, ve vlákně záblesk světla, u Wi-Fi změna rádiové vlny</td></tr></tbody>'
+            : '<tbody>' + fields(sel).map(function (f) { return '<tr><th>' + f[0] + '</th><td>' + f[1] + '</td></tr>'; }).join('') + '</tbody>';
+    }
+
+    $('enPdu').addEventListener('click', function (e) {
+        var b = e.target.closest('.pdu-part');
+        if (b) { sel = b.dataset.id; render(); }
+    });
+    $('enNext').addEventListener('click', function () {
+        if (step < STEPS.length - 1) {
+            step++;
+            // po přidání hlavičky ji rovnou ukaž; po odebrání ukaž tu, která je teď navrchu
+            sel = { 1: 'tr', 2: 'net', 3: 'link', 5: 'link', 6: 'net', 7: 'tr', 8: 'data' }[step] || sel;
+            render();
+        }
+    });
+    $('enPrev').addEventListener('click', function () { if (step > 0) { step--; sel = null; render(); } });
+    $('enReset').addEventListener('click', function () { step = 0; sel = 'data'; render(); });
+    $('enData').addEventListener('input', render);
+    bindSeg($('enModel'), render);
+    bindSeg($('enApp'), function () { $('enData').value = app().data; step = 0; sel = 'data'; render(); });
+    $('enData').value = app().data;
+    render();
+})();
+
+/* ======================================================================
+   Pomocné funkce pro IPv4 (adresa = 32bitové číslo bez znaménka)
+   ====================================================================== */
+var IP = {
+    parse: function (s) {
+        var m = /^\s*(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\s*$/.exec(s);
+        if (!m) return null;
+        var o = [+m[1], +m[2], +m[3], +m[4]];
+        if (o.some(function (x) { return x > 255; })) return null;
+        return ((o[0] << 24) | (o[1] << 16) | (o[2] << 8) | o[3]) >>> 0;
+    },
+    str: function (n) { return [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.'); },
+    mask: function (p) { return p === 0 ? 0 : (0xFFFFFFFF << (32 - p)) >>> 0; },
+    net: function (ip, p) { return (ip & IP.mask(p)) >>> 0; },
+    bcast: function (ip, p) { return (ip | ~IP.mask(p)) >>> 0; },
+    size: function (p) { return Math.pow(2, 32 - p); },
+    hosts: function (p) { return p >= 31 ? (p === 31 ? 2 : 1) : Math.pow(2, 32 - p) - 2; },
+    /** Bity s tečkami po oktetech, část sítě a část zařízení obarvené. */
+    bitsHtml: function (n, p) {
+        var b = n.toString(2).padStart(32, '0'), out = '', open = '';
+        for (var i = 0; i < 32; i++) {
+            var cls = i < p ? 'net' : 'host';
+            if (cls !== open) { out += (open ? '</span>' : '') + '<span class="' + cls + '">'; open = cls; }
+            out += b[i];
+            if (i % 8 === 7 && i < 31) out += '.';
+        }
+        return out + '</span>';
+    }
+};
+
+/* ======================================================================
+   1. IP ADRESA
+   ====================================================================== */
+(function () {
+    var addr = IP.parse('192.168.1.10');
+    var wrap = $('ipOctets');
+
+    function kind(a) {
+        var o1 = a >>> 24, o2 = (a >>> 16) & 255;
+        var inR = function (net, p) { return IP.net(a, p) === IP.parse(net); };
+        if (a === 0xFFFFFFFF) return ['warn', 'Omezený broadcast', 'Zpráva pro všechna zařízení v místní síti. Router ji dál nepustí.'];
+        if (o1 === 0) return ['neutral', 'Adresa „tato síť“', 'Používá ji zařízení, které ještě svou adresu nezná (například při žádosti o adresu přes DHCP).'];
+        if (o1 === 127) return ['info', 'Loopback (localhost)', 'Data neopustí počítač — vrátí se zpět do něj. Programátoři tak testují servery na vlastním počítači.'];
+        if (o1 === 10 || inR('172.16.0.0', 12) || inR('192.168.0.0', 16)) return ['success', 'Privátní adresa', 'Smí ji použít kdokoli ve své vnitřní síti. Stejnou adresu mají tisíce domácností — na internet se dostane jen přes překlad adres (NAT).'];
+        if (inR('169.254.0.0', 16)) return ['warn', 'Automatická adresa (APIPA)', 'Počítač si ji přidělil sám, protože nedostal odpověď od DHCP serveru. Obvykle to znamená problém s připojením.'];
+        if (inR('100.64.0.0', 10)) return ['neutral', 'Sdílený rozsah poskytovatelů (CGNAT)', 'Poskytovatelé internetu jím šetří veřejné adresy — jednu veřejnou adresu sdílí více zákazníků.'];
+        if (inR('192.0.2.0', 24) || inR('198.51.100.0', 24) || inR('203.0.113.0', 24)) return ['neutral', 'Adresa pro dokumentaci', 'Rozsah vyhrazený pro příklady v učebnicích a návodech. Ve skutečné síti se nepoužívá.'];
+        if (o1 >= 224 && o1 <= 239) return ['neutral', 'Multicast', 'Adresa skupiny — data dostanou všichni, kdo se ke skupině přihlásili (např. internetová televize).'];
+        if (o1 >= 240) return ['neutral', 'Rezervováno', 'Rozsah vyhrazený pro budoucí použití.'];
+        return ['info', 'Veřejná adresa', 'Jedinečná na celém internetu. Přiděluje ji poskytovatel připojení.' + (a === IP.parse('8.8.8.8') ? ' Tahle patří veřejnému DNS serveru společnosti Google.' : '')];
+    }
+    function klass(o1) {
+        if (o1 < 128) return 'A (první bit 0)';
+        if (o1 < 192) return 'B (první bity 10)';
+        if (o1 < 224) return 'C (první bity 110)';
+        if (o1 < 240) return 'D (multicast)';
+        return 'E (rezervováno)';
+    }
+    function render() {
+        var h = '';
+        for (var g = 0; g < 4; g++) {
+            var val = (addr >>> (24 - g * 8)) & 255;
+            h += '<div class="octet"><div class="bits"><div class="bits__group">';
+            for (var k = 7; k >= 0; k--) {
+                var i = 24 - g * 8 + k, on = (addr >>> i) & 1;
+                h += '<button type="button" class="bit" data-i="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="oktet ' + (g + 1) + ', váha ' + (1 << k) + '">' + on +
+                    '<span class="bit__w">' + (1 << k) + '</span></button>';
+            }
+            h += '</div></div><div class="octet__val">' + val + '</div></div>';
+        }
+        wrap.innerHTML = h;
+        if (document.activeElement !== $('ipInput')) $('ipInput').value = IP.str(addr);
+        var k2 = kind(addr);
+        $('ipKind').innerHTML = '<div class="callout callout--' + k2[0] + '"><strong>' + k2[1] + '.</strong> ' + k2[2] + '</div>';
+        $('ipStats').innerHTML =
+            stat('Jako jedno číslo', fmt(addr)) +
+            stat('Šestnáctkově', addr.toString(16).toUpperCase().padStart(8, '0').replace(/(..)(?=.)/g, '$1 ')) +
+            stat('Historická třída', klass(addr >>> 24));
+    }
+    wrap.addEventListener('click', function (e) {
+        var b = e.target.closest('.bit');
+        if (!b) return;
+        addr = (addr ^ (1 << +b.dataset.i)) >>> 0;
+        render();
+    });
+    $('ipInput').addEventListener('input', function () {
+        var v = IP.parse(this.value);
+        if (v !== null) { addr = v; render(); }
+    });
+    $('ipInput').addEventListener('blur', render);
+    $('ipPresets').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (b) { addr = IP.parse(b.dataset.ip); render(); }
+    });
+    render();
+
+    /* --- IPv6 zkracování --- */
+    function expand6(s) {
+        s = s.trim().toLowerCase();
+        if (!/^[0-9a-f:]+$/.test(s) || s.indexOf(':::') !== -1) return null;
+        var parts = s.split('::');
+        if (parts.length > 2) return null;
+        var head = parts[0] ? parts[0].split(':') : [];
+        var tail = parts.length === 2 && parts[1] ? parts[1].split(':') : [];
+        var groups;
+        if (parts.length === 2) {
+            var miss = 8 - head.length - tail.length;
+            if (miss < 1) return null;
+            groups = head.concat(new Array(miss).fill('0'), tail);
+        } else groups = head;
+        if (groups.length !== 8 || groups.some(function (g) { return g === '' || g.length > 4; })) return null;
+        return groups.map(function (g) { return g.padStart(4, '0'); });
+    }
+    function compress6(groups) {
+        var g = groups.map(function (x) { return x.replace(/^0+(?=.)/, ''); });
+        var best = -1, bestLen = 0, i = 0;
+        while (i < 8) {
+            if (g[i] === '0') {
+                var j = i;
+                while (j < 8 && g[j] === '0') j++;
+                if (j - i > bestLen) { best = i; bestLen = j - i; }
+                i = j;
+            } else i++;
+        }
+        var step1 = g.join(':');
+        if (bestLen < 2) return [step1, step1];
+        var out = g.slice(0, best).join(':') + '::' + g.slice(best + bestLen).join(':');
+        return [step1, out];
+    }
+    function update6() {
+        var g = expand6($('v6Input').value), out = $('v6Out');
+        if (!g) { out.innerHTML = '<span class="bad">Tohle není platná adresa IPv6.</span> Má mít 8 skupin hex číslic, zkratka <code>::</code> smí být jen jednou.'; return; }
+        var c = compress6(g);
+        out.innerHTML = 'plný zápis: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + g.join(':') + '<br>' +
+            'bez úvodních nul: &nbsp;&nbsp;' + c[0] + '<br>' +
+            'nejkratší zápis: &nbsp;&nbsp;&nbsp;<b>' + c[1] + '</b>' +
+            (c[1] === '::1' ? '<br><span class="muted">::1 je loopback — obdoba adresy 127.0.0.1.</span>' : '');
+    }
+    $('v6Input').addEventListener('input', update6);
+    update6();
+})();
+
+/* ======================================================================
+   2. MASKA A SÍŤ
+   ====================================================================== */
+(function () {
+    function pad(s, n) { return (s + ' '.repeat(n)).slice(0, n); }
+
+    function update() {
+        var ip = IP.parse($('mIp').value), p = +$('mPrefix').value;
+        $('mPrefixV').textContent = '/' + p;
+        if (ip === null) { $('mCalc').innerHTML = '<span class="bad">Zadej adresu ve tvaru čtyř čísel 0–255 oddělených tečkami.</span>'; $('mStats').innerHTML = ''; return; }
+        var mask = IP.mask(p), net = IP.net(ip, p), bc = IP.bcast(ip, p);
+        var row = function (label, n, extra) { return pad(label, 11) + IP.bitsHtml(n, p) + '  ' + IP.str(n) + (extra || ''); };
+        $('mCalc').innerHTML =
+            row('IP adresa', ip) + '\n' +
+            row('maska', mask, '  = /' + p) + '\n' +
+            pad('', 11) + '─'.repeat(35) + '  AND\n' +
+            '<b>' + row('síť', net) + '</b>\n' +
+            row('broadcast', bc);
+        var hosts = IP.hosts(p);
+        var first = p >= 31 ? net : net + 1, last = p >= 31 ? bc : bc - 1;
+        $('mStats').innerHTML =
+            stat('Adresa sítě', IP.str(net) + '/' + p) +
+            stat('Maska', IP.str(mask)) +
+            stat('Broadcast', p >= 31 ? '—' : IP.str(bc)) +
+            stat('První zařízení', IP.str(first >>> 0)) +
+            stat('Poslední zařízení', IP.str(last >>> 0)) +
+            stat('Počet zařízení', fmt(hosts), p < 31 ? '2<sup>' + (32 - p) + '</sup> − 2' : '') +
+            (p >= 31 ? '<p class="muted text-sm" style="grid-column:1/-1">' + (p === 32 ? 'Prefix /32 označuje jediné zařízení.' : 'Prefix /31 se používá jen pro spojení dvou routerů — bez adresy sítě a broadcastu.') + '</p>' : '') +
+            (p < 31 && ip === net ? '<p class="warn text-sm" style="grid-column:1/-1">Zadaná adresa je přímo adresou sítě — zařízení ji mít nemůže.</p>' : '') +
+            (p < 31 && ip === bc ? '<p class="warn text-sm" style="grid-column:1/-1">Zadaná adresa je broadcast této sítě — zařízení ji mít nemůže.</p>' : '');
+    }
+    $('mIp').addEventListener('input', update);
+    $('mPrefix').addEventListener('input', update);
+    update();
+
+    /* --- Stejná síť? --- */
+    var sel = $('sP');
+    for (var p = 8; p <= 30; p++) sel.add(new Option('/' + p + ' (' + IP.str(IP.mask(p)) + ')', p));
+    sel.value = 24;
+    function same() {
+        var a = IP.parse($('sA').value), b = IP.parse($('sB').value), pr = +sel.value;
+        if (a === null || b === null) { $('sCalc').textContent = ''; $('sMsg').innerHTML = '<div class="callout callout--warn">Zadej obě adresy ve správném tvaru.</div>'; return; }
+        var na = IP.net(a, pr), nb = IP.net(b, pr);
+        $('sCalc').innerHTML =
+            pad('A', 8) + IP.bitsHtml(a, pr) + '  → síť ' + IP.str(na) + '\n' +
+            pad('B', 8) + IP.bitsHtml(b, pr) + '  → síť ' + IP.str(nb);
+        $('sMsg').innerHTML = na === nb
+            ? '<div class="callout callout--success"><strong>Stejná síť.</strong> Zelené části adres se shodují. Počítač A pošle data přímo počítači B — stačí switch, router není potřeba.</div>'
+            : '<div class="callout callout--warn"><strong>Různé sítě.</strong> Zelené části adres se liší. Počítač A pošle data své výchozí bráně (routeru) a ta je předá dál. Bez routeru by se tato dvě zařízení nedomluvila.</div>';
+    }
+    ['sA', 'sB'].forEach(function (id) { $(id).addEventListener('input', same); });
+    sel.addEventListener('change', same);
+    same();
+
+    /* --- Přehled masek --- */
+    var use = { 8: 'obrovské sítě (10.0.0.0/8)', 16: 'velká firma, kampus', 22: 'větší škola', 23: '', 24: 'domácnost, učebna, malá firma', 25: 'polovina sítě /24', 26: 'čtvrtina sítě /24', 27: 'oddělení do 30 zařízení', 28: 'malá skupina zařízení', 29: 'několik serverů', 30: 'spojení dvou routerů' };
+    $('maskTable').querySelector('tbody').innerHTML = [8, 16, 22, 23, 24, 25, 26, 27, 28, 29, 30].map(function (q) {
+        return '<tr><td class="mono">/' + q + '</td><td class="mono">' + IP.str(IP.mask(q)) + '</td><td class="mono">' + fmt(IP.size(q)) + '</td><td class="mono">' + fmt(IP.hosts(q)) + '</td><td>' + use[q] + '</td></tr>';
+    }).join('');
+})();
+
+/* ======================================================================
+   3. DĚLENÍ NA PODSÍTĚ
+   ====================================================================== */
+/** Rozdělí síť podle požadavků na počet zařízení (VLSM). */
+function vlsmPlan(base, prefix, needs) {
+    var sorted = needs.map(function (n, i) { return { need: n, idx: i }; }).sort(function (a, b) { return b.need - a.need; });
+    var ptr = base, end = base + IP.size(prefix), out = [], fail = null;
+    sorted.forEach(function (r) {
+        if (fail) return;
+        var bits = 2;
+        while (Math.pow(2, bits) - 2 < r.need) bits++;
+        var size = Math.pow(2, bits), p = 32 - bits;
+        if (p < prefix || ptr + size > end) { fail = r; return; }
+        out.push({ net: ptr >>> 0, prefix: p, need: r.need, idx: r.idx });
+        ptr += size;
+    });
+    return { subnets: out, fail: fail, used: ptr - base };
+}
+
+(function () {
+    var COLORS = ['blue', 'orange', 'green', 'purple', 'pink', 'yellow', 'red', 'brown'];
+    var sel = $('subPrefix');
+    for (var p = 16; p <= 28; p++) sel.add(new Option('/' + p + ' — ' + fmt(IP.size(p)) + ' adres', p));
+    sel.value = 24;
+
+    function colorStyle(i) {
+        var c = COLORS[i % COLORS.length];
+        return 'background:var(--c-' + c + '-bg);color:var(--c-' + c + ');border-color:var(--c-' + c + ')';
+    }
+    function rowHtml(s, i, extra) {
+        var bc = IP.bcast(s.net, s.prefix);
+        return '<tr><td><span class="sw" style="' + colorStyle(i) + '"></span>' + (extra || (i + 1) + '.') + '</td>' +
+            '<td class="mono">' + IP.str(s.net) + '/' + s.prefix + '</td>' +
+            '<td class="mono">' + IP.str(IP.mask(s.prefix)) + '</td>' +
+            '<td class="mono">' + IP.str(s.net + 1) + ' – ' + IP.str(bc - 1) + '</td>' +
+            '<td class="mono">' + IP.str(bc) + '</td>' +
+            '<td class="mono">' + fmt(IP.hosts(s.prefix)) + '</td></tr>';
+    }
+    var HEAD = '<thead><tr><th>Podsíť</th><th>Adresa sítě</th><th>Maska</th><th>Rozsah pro zařízení</th><th>Broadcast</th><th>Zařízení</th></tr></thead>';
+
+    function update() {
+        var raw = IP.parse($('subNet').value), prefix = +sel.value, mode = segValue($('subMode'));
+        $('subEqual').hidden = mode !== 'equal';
+        $('subVlsm').hidden = mode !== 'vlsm';
+        var msg = $('subMsg');
+        if (raw === null) { msg.innerHTML = '<div class="callout callout--warn">Zadej adresu sítě ve správném tvaru.</div>'; return; }
+        var base = IP.net(raw, prefix), total = IP.size(prefix);
+        var note = raw !== base ? 'Adresa ' + IP.str(raw) + ' není začátkem sítě /' + prefix + ' — počítám se sítí <strong>' + IP.str(base) + '/' + prefix + '</strong>. ' : '';
+        var subnets = [], bar = '', table = HEAD + '<tbody>';
+        $('subScale').innerHTML = '<span>' + IP.str(base) + '</span><span>' + IP.str(base + total - 1) + '</span>';
+
+        if (mode === 'equal') {
+            var maxB = Math.min(6, 30 - prefix), sl = $('subBorrow');
+            sl.max = maxB;
+            if (+sl.value > maxB) sl.value = maxB;
+            var b = +sl.value, cnt = Math.pow(2, b), np = prefix + b;
+            $('subBorrowV').textContent = b;
+            $('subCountV').textContent = cnt;
+            for (var i = 0; i < cnt; i++) subnets.push({ net: (base + i * IP.size(np)) >>> 0, prefix: np });
+            var bits = base.toString(2).padStart(32, '0');
+            var line = '';
+            for (var k = 0; k < 32; k++) {
+                var ch = k < prefix ? '<span class="net">' + bits[k] + '</span>' : k < np ? '<span class="warn">P</span>' : '<span class="host">z</span>';
+                line += ch + (k % 8 === 7 && k < 31 ? '.' : '');
+            }
+            $('subBits').innerHTML = line + '\n<span class="net">síť (' + prefix + ' b)</span>  <span class="warn">P = půjčené bity (' + b + ' b) → 2' + '<sup>' + b + '</sup> = ' + cnt + ' podsítí</span>  <span class="host">z = zařízení (' + (32 - np) + ' b) → 2<sup>' + (32 - np) + '</sup> − 2 = ' + fmt(IP.hosts(np)) + '</span>';
+            subnets.forEach(function (s, j) {
+                bar += '<div style="flex:1;' + colorStyle(j) + '" title="' + IP.str(s.net) + '/' + s.prefix + '">' + (cnt <= 4 ? IP.str(s.net) : cnt <= 16 ? (j + 1) + '.' : '') + '</div>';
+                if (j < 16 || j === cnt - 1) table += rowHtml(s, j);
+                else if (j === 16) table += '<tr><td colspan="6" class="muted">… dalších ' + (cnt - 17) + ' podsítí …</td></tr>';
+            });
+            msg.innerHTML = '<div class="callout callout--neutral">' + note + 'Nový prefix je <strong>/' + np + '</strong> (maska ' + IP.str(IP.mask(np)) + '). Vznikne <strong>' + cnt + '</strong> ' + (cnt === 1 ? 'síť' : cnt < 5 ? 'podsítě' : 'podsítí') +
+                ', každá pro <strong>' + fmt(IP.hosts(np)) + '</strong> zařízení. ' +
+                (b > 0 ? 'Dělením se ztratí ' + fmt(IP.hosts(prefix) - cnt * IP.hosts(np)) + ' adres — každá podsíť potřebuje vlastní adresu sítě a broadcast.' : 'Zatím nic neděláme — posuň jezdec.') + '</div>';
+        } else {
+            $('subBits').innerHTML = '';
+            var needs = $('subNeeds').value.split(/[,;\s]+/).filter(Boolean).map(Number);
+            if (!needs.length || needs.some(function (n) { return !(n >= 1) || n !== Math.floor(n); })) {
+                msg.innerHTML = '<div class="callout callout--warn">Zadej počty zařízení jako kladná celá čísla oddělená čárkou, např. <code>60, 25, 12, 2</code>.</div>';
+                $('subBar').innerHTML = '<div class="free" style="flex:1">volné</div>'; $('subTable').innerHTML = ''; return;
+            }
+            var plan = vlsmPlan(base, prefix, needs.slice(0, 16));
+            plan.subnets.forEach(function (s, j) {
+                var size = IP.size(s.prefix);
+                bar += '<div style="flex:' + size + ';' + colorStyle(j) + '" title="' + IP.str(s.net) + '/' + s.prefix + '">/' + s.prefix + '</div>';
+                table += rowHtml(s, j, s.need + ' zař.');
+            });
+            if (plan.used < total) bar += '<div class="free" style="flex:' + (total - plan.used) + '">volné</div>';
+            msg.innerHTML = plan.fail
+                ? '<div class="callout callout--danger">' + note + 'Podsíť pro <strong>' + plan.fail.need + '</strong> zařízení se už do sítě ' + IP.str(base) + '/' + prefix + ' nevejde. Zmenši požadavky, nebo zvol větší výchozí síť.</div>'
+                : '<div class="callout callout--success">' + note + 'Všechny podsítě se vešly. Využito ' + fmt(plan.used) + ' z ' + fmt(total) + ' adres, ' + fmt(total - plan.used) + ' zůstává volných pro budoucí rozšíření.</div>';
+        }
+        $('subBar').innerHTML = bar;
+        $('subTable').innerHTML = table + '</tbody>';
+    }
+    ['subNet', 'subBorrow', 'subNeeds'].forEach(function (id) { $(id).addEventListener('input', update); });
+    sel.addEventListener('change', update);
+    bindSeg($('subMode'), update);
+    update();
+})();
+
+/* ======================================================================
+   4. CESTA PAKETU
+   ====================================================================== */
+(function () {
+    var N = {
+        a: { x: 80, y: 80, w: 120, t: 'Počítač A', s: '192.168.1.10' },
+        b: { x: 80, y: 250, w: 120, t: 'Počítač B', s: '192.168.1.20' },
+        s1: { x: 240, y: 165, w: 86, t: 'Switch 1', s: '' },
+        r: { x: 400, y: 165, w: 96, t: 'Router', s: '' },
+        s2: { x: 545, y: 262, w: 86, t: 'Switch 2', s: '' },
+        c: { x: 680, y: 262, w: 120, t: 'Tiskárna C', s: '192.168.2.30' },
+        net: { x: 545, y: 80, w: 110, t: 'Internet', s: '', cloud: true },
+        w: { x: 680, y: 50, w: 120, t: 'Web server', s: '93.184.216.34' },
+        dns: { x: 680, y: 125, w: 120, t: 'Server DNS', s: '8.8.8.8' }
+    };
+    var LINKS = [['a', 's1'], ['b', 's1'], ['s1', 'r'], ['r', 's2'], ['s2', 'c'], ['r', 'net'], ['net', 'w'], ['net', 'dns']];
+    var A = '192.168.1.10', MA = 'MAC-A', GW = 'MAC-R1', WEB = '93.184.216.34', PUB = '203.0.113.5', BC = 'FF:FF:FF:FF:FF:FF';
+    var LAYER = {
+        a: 'počítač — všechny vrstvy (1–7)', b: 'počítač — všechny vrstvy (1–7)', c: 'tiskárna — všechny vrstvy (1–7)',
+        w: 'server — všechny vrstvy (1–7)', dns: 'server — všechny vrstvy (1–7)',
+        s1: 'switch — 2. vrstva, čte jen MAC adresy', s2: 'switch — 2. vrstva, čte jen MAC adresy',
+        r: 'router — 3. vrstva, čte IP adresy', net: 'routery — 3. vrstva, čtou IP adresy'
+    };
+
+    var SC = {
+        b: {
+            name: 'A → počítač B (stejná síť)',
+            steps: [
+                { at: 'a', act: ['a'], route: -1, h: [A, '192.168.1.20', '—', '—', 64, 'data (sdílený soubor)'],
+                    t: '<strong>1. Je cíl v mé síti?</strong> Počítač A porovná adresu sítě cíle se svou: <code>192.168.1.20 AND 255.255.255.0 = 192.168.1.0</code>. To je stejná síť jako jeho vlastní (192.168.1.0/24) → pošle data <strong>přímo</strong>.' },
+                { at: 'a', act: ['a', 's1', 'b'], links: ['a-s1', 'b-s1'], route: -1, h: [A, '192.168.1.20', MA, 'MAC-B', 64, 'data (sdílený soubor)'],
+                    t: '<strong>2. Jakou má cíl MAC adresu?</strong> V místní síti se doručuje podle MAC adres. A ji nezná, proto se protokolem <strong>ARP</strong> zeptá všech: „Kdo má 192.168.1.20?“ Počítač B odpoví svou MAC adresou. A ji doplní do hlavičky rámce.' },
+                { at: 's1', act: ['s1'], links: ['a-s1'], route: -1, h: [A, '192.168.1.20', MA, 'MAC-B', 64, 'data (sdílený soubor)'],
+                    t: '<strong>3. Switch.</strong> Přečte cílovou MAC adresu a ve své tabulce najde, na kterém portu je počítač B. Pošle rámec jen tam — ostatní zařízení nic nedostanou. Na IP adresy se switch vůbec nedívá.' },
+                { at: 'b', act: ['b'], links: ['b-s1'], route: -1, h: [A, '192.168.1.20', MA, 'MAC-B', 64, 'data (sdílený soubor)'],
+                    t: '<strong>4. Doručeno.</strong> Počítač B vidí svou MAC i IP adresu a data přijme. Router se vůbec nezapojil a TTL se nezměnilo.' }
+            ]
+        },
+        c: {
+            name: 'A → tiskárna C (jiná síť)',
+            steps: [
+                { at: 'a', act: ['a'], route: -1, h: [A, '192.168.2.30', '—', '—', 64, 'tisková úloha'],
+                    t: '<strong>1. Je cíl v mé síti?</strong> <code>192.168.2.30 AND 255.255.255.0 = 192.168.2.0</code>. To <strong>není</strong> moje síť (192.168.1.0) → data musí jít přes <strong>výchozí bránu</strong> 192.168.1.1, tedy router.' },
+                { at: 'a', act: ['a', 's1', 'r'], links: ['a-s1', 's1-r'], route: -1, h: [A, '192.168.2.30', MA, GW, 64, 'tisková úloha'],
+                    t: '<strong>2. MAC adresa brány.</strong> A zjistí přes ARP MAC adresu routeru. Pozor na rozdíl: cílová <strong>IP</strong> zůstává tiskárna C, ale cílová <strong>MAC</strong> je router — jen na první úsek cesty.' },
+                { at: 's1', act: ['s1'], links: ['a-s1'], route: -1, h: [A, '192.168.2.30', MA, GW, 64, 'tisková úloha'],
+                    t: '<strong>3. Switch 1</strong> pošle rámec podle cílové MAC adresy na port, kde je připojen router.' },
+                { at: 'r', act: ['r'], links: ['s1-r'], route: 1, h: [A, '192.168.2.30', 'MAC-R2', 'MAC-C', 63, 'tisková úloha'],
+                    t: '<strong>4. Router.</strong> Rozbalí rámec a podívá se na cílovou IP. Ve směrovací tabulce najde, že síť 192.168.2.0/24 je připojená na rozhraní LAN 2. Sníží <strong>TTL</strong> o 1 a zabalí paket do nového rámce: odesílatel je teď jeho MAC, cíl MAC tiskárny (zjistí ji přes ARP).' },
+                { at: 's2', act: ['s2'], links: ['r-s2'], route: -1, h: [A, '192.168.2.30', 'MAC-R2', 'MAC-C', 63, 'tisková úloha'],
+                    t: '<strong>5. Switch 2</strong> doručí rámec podle MAC adresy na port tiskárny.' },
+                { at: 'c', act: ['c'], links: ['s2-c'], route: -1, h: [A, '192.168.2.30', 'MAC-R2', 'MAC-C', 63, 'tisková úloha'],
+                    t: '<strong>6. Doručeno.</strong> Tiskárna přijme data. Všimni si: IP adresy se celou cestu nezměnily, MAC adresy se na routeru vyměnily obě.' }
+            ]
+        },
+        dhcp: {
+            name: 'nový počítač žádá o adresu (DHCP)',
+            steps: [
+                { at: 'a', act: ['a'], route: -1, h: ['0.0.0.0', '255.255.255.255', MA, BC, 64, 'DHCP Discover (UDP, port 67)'],
+                    t: '<strong>1. Hledám server (Discover).</strong> Představ si, že počítač A se právě připojil a žádnou IP adresu ještě nemá. Neví ani, kde je DHCP server. Pošle proto zprávu <strong>všem</strong>: zdrojová IP je 0.0.0.0, cílová IP i MAC jsou broadcast.' },
+                { at: 's1', act: ['s1', 'b', 'r'], links: ['a-s1', 'b-s1', 's1-r'], route: -1, h: ['0.0.0.0', '255.255.255.255', MA, BC, 64, 'DHCP Discover (UDP, port 67)'],
+                    t: '<strong>2. Switch rozešle broadcast.</strong> Rámec s cílovou MAC samé jedničky pošle switch na <em>všechny</em> porty. Počítač B ho zahodí (není DHCP server). Router broadcast do jiných sítí nepustí — LAN 2 ani internet o ničem nevědí.' },
+                { at: 'r', act: ['r'], links: ['s1-r'], route: -1, h: ['192.168.1.1', '255.255.255.255', GW, MA, 64, 'DHCP Offer: nabízím 192.168.1.10'],
+                    t: '<strong>3. Nabídka (Offer).</strong> V domácí síti běží DHCP server přímo v routeru. Vybere volnou adresu ze svého rozsahu a nabídne ji počítači A.' },
+                { at: 'a', act: ['a', 's1', 'r'], links: ['a-s1', 's1-r'], route: -1, h: ['0.0.0.0', '255.255.255.255', MA, BC, 64, 'DHCP Request: beru 192.168.1.10'],
+                    t: '<strong>4. Žádost (Request).</strong> A nabídku přijme a požádá o přidělení. Posílá opět všem — kdyby v síti bylo víc DHCP serverů, ostatní se tak dozvědí, že jejich nabídku nevyužil.' },
+                { at: 'a', act: ['a'], links: ['a-s1', 's1-r'], route: -1, h: ['192.168.1.1', A, GW, MA, 64, 'DHCP Ack: adresa, maska, brána, DNS'],
+                    t: '<strong>5. Potvrzení (Ack).</strong> Server adresu potvrdí a pošle kompletní nastavení: IP <code>192.168.1.10</code>, maska <code>255.255.255.0</code>, výchozí brána <code>192.168.1.1</code>, DNS server <code>8.8.8.8</code> a dobu zapůjčení. Teprve teď může A normálně komunikovat.' }
+            ]
+        },
+        dns: {
+            name: 'A → server DNS (dotaz na jméno)',
+            steps: [
+                { at: 'a', act: ['a'], route: -1, h: [A, '8.8.8.8', '—', '—', 64, 'DNS dotaz: www.skola.cz? (UDP, port 53)'],
+                    t: '<strong>1. Jméno není adresa.</strong> Uživatel napsal do prohlížeče <code>www.skola.cz</code>. Pakety ale potřebují IP adresu. Počítač se proto nejdřív zeptá serveru DNS (jeho adresu 8.8.8.8 dostal od DHCP). 8.8.8.8 není v místní síti → přes bránu.' },
+                { at: 's1', act: ['a', 's1'], links: ['a-s1'], route: -1, h: [A, '8.8.8.8', MA, GW, 64, 'DNS dotaz: www.skola.cz? (UDP, port 53)'],
+                    t: '<strong>2. Na switch.</strong> Cílová MAC je router, cílová IP je server DNS. Switch předá rámec routeru.' },
+                { at: 'r', act: ['r'], links: ['s1-r'], route: 2, h: [PUB, '8.8.8.8', 'MAC-R3', 'MAC-ISP', 63, 'DNS dotaz: www.skola.cz? (UDP, port 53)'],
+                    t: '<strong>3. Router.</strong> Použije výchozí cestu do internetu, přepíše zdrojovou adresu na svou veřejnou (NAT) a sníží TTL.' },
+                { at: 'net', act: ['net'], links: ['r-net'], route: -1, h: [PUB, '8.8.8.8', '(mění se)', '(mění se)', 55, 'DNS dotaz: www.skola.cz? (UDP, port 53)'],
+                    t: '<strong>4. Internet.</strong> Routery poskytovatelů předávají paket blíž k cíli.' },
+                { at: 'dns', act: ['dns'], links: ['net-dns'], route: -1, h: ['8.8.8.8', PUB, 'MAC-D', 'MAC-X', 64, 'DNS odpověď: www.skola.cz = 93.184.216.34'],
+                    t: '<strong>5. Odpověď.</strong> Server DNS najde záznam a pošle zpět odpověď — všimni si, že zdrojová a cílová adresa se prohodily. Odpověď se vrátí stejnou cestou a počítač A konečně ví, kam poslat požadavek na web.' }
+            ]
+        },
+        w: {
+            name: 'A → web na internetu (NAT)',
+            steps: [
+                { at: 'a', act: ['a'], route: -1, h: [A, WEB, '—', '—', 64, 'HTTP požadavek (TCP, port 80)'],
+                    t: '<strong>1. Je cíl v mé síti?</strong> <code>93.184.216.34 AND 255.255.255.0 = 93.184.216.0</code> — jiná síť → poslat výchozí bráně.' },
+                { at: 's1', act: ['a', 's1'], links: ['a-s1'], route: -1, h: [A, WEB, MA, GW, 64, 'HTTP požadavek (TCP, port 80)'],
+                    t: '<strong>2. Na switch.</strong> Stejně jako u tiskárny: cílová MAC je router, cílová IP je web server. Switch 1 předá rámec routeru.' },
+                { at: 'r', act: ['r'], links: ['s1-r'], route: 2, h: [PUB, WEB, 'MAC-R3', 'MAC-ISP', 63, 'HTTP požadavek (TCP, port 80)'],
+                    t: '<strong>3. Router a NAT.</strong> Pro adresu 93.184.216.34 nemá router žádný konkrétní řádek, použije tedy <strong>výchozí cestu</strong> ven do internetu. Privátní adresa 192.168.1.10 ale na internetu neplatí — router ji <strong>přepíše na svou veřejnou adresu</strong> 203.0.113.5 a zapamatuje si, komu odpověď patří. Tomu se říká překlad adres (NAT).' },
+                { at: 'net', act: ['net'], links: ['r-net'], route: -1, h: [PUB, WEB, '(mění se)', '(mění se)', 52, 'HTTP požadavek (TCP, port 80)'],
+                    t: '<strong>4. Internet.</strong> Paket projde přes řadu dalších routerů (zde 11). Každý se podívá do své směrovací tabulky, pošle paket o kus blíž k cíli a sníží TTL o 1. MAC adresy se mění na každém úseku.' },
+                { at: 'w', act: ['w'], links: ['net-w'], route: -1, h: [PUB, WEB, 'MAC-X', 'MAC-W', 51, 'HTTP požadavek (TCP, port 80)'],
+                    t: '<strong>5. Doručeno.</strong> Web server vidí jako odesílatele veřejnou adresu routeru, ne počítač A. Jak se odpověď dostane zpět, ukazuje další situace.' }
+            ]
+        },
+        wr: {
+            name: 'web → A (odpověď přes NAT)',
+            steps: [
+                { at: 'w', act: ['w'], route: -1, h: [WEB, PUB, 'MAC-W', 'MAC-X', 64, 'HTTP odpověď (TCP, port 49152)'],
+                    t: '<strong>1. Server odpovídá.</strong> Odpověď posílá tam, odkud požadavek přišel — na veřejnou adresu routeru 203.0.113.5. O počítači A za routerem server vůbec neví. Cílový port 49152 je číslo, které si při odeslání požadavku zvolil prohlížeč.' },
+                { at: 'net', act: ['net'], links: ['net-w'], route: -1, h: [WEB, PUB, '(mění se)', '(mění se)', 53, 'HTTP odpověď (TCP, port 49152)'],
+                    t: '<strong>2. Internet.</strong> Routery doručí paket podle cílové adresy k poskytovateli připojení a ten k našemu routeru.' },
+                { at: 'r', act: ['r'], links: ['r-net'], route: 0, h: [WEB, A, GW, MA, 52, 'HTTP odpověď (TCP, port 49152)'],
+                    t: '<strong>3. Router: NAT pozpátku.</strong> Router se podívá do tabulky překladů: „odpověď z 93.184.216.34 na port 49152 patří počítači 192.168.1.10“. Přepíše <strong>cílovou</strong> IP adresu na privátní, najde síť 192.168.1.0/24 na rozhraní LAN 1 a zabalí paket do rámce pro počítač A.' },
+                { at: 's1', act: ['s1'], links: ['s1-r'], route: -1, h: [WEB, A, GW, MA, 52, 'HTTP odpověď (TCP, port 49152)'],
+                    t: '<strong>4. Switch 1</strong> doručí rámec podle MAC adresy počítači A.' },
+                { at: 'a', act: ['a'], links: ['a-s1'], route: -1, h: [WEB, A, GW, MA, 52, 'HTTP odpověď (TCP, port 49152)'],
+                    t: '<strong>5. Doručeno.</strong> Počítač A rozbalí rámec, paket i segment. Podle portu 49152 pozná, kterému programu (a které záložce prohlížeče) data patří. Díky NAT může jednu veřejnou adresu sdílet celá domácnost.' }
+            ]
+        },
+        ttl: {
+            name: 'TTL vyprší (princip traceroute)',
+            steps: [
+                { at: 'a', act: ['a'], route: -1, h: [A, WEB, MA, GW, 1, 'ICMP Echo (ping)'],
+                    t: '<strong>1. Paket s TTL = 1.</strong> Program <code>traceroute</code> (ve Windows <code>tracert</code>) zjišťuje, přes které routery vede cesta. Dělá to trikem: schválně pošle paket s velmi malým TTL.' },
+                { at: 's1', act: ['s1'], links: ['a-s1'], route: -1, h: [A, WEB, MA, GW, 1, 'ICMP Echo (ping)'],
+                    t: '<strong>2. Switch</strong> předá rámec routeru. Switch pracuje na 2. vrstvě, do hlavičky IP se nedívá a TTL nemění.' },
+                { at: 'r', act: ['r'], links: ['s1-r'], route: -1, h: ['192.168.1.1', A, GW, MA, 64, 'ICMP: čas vypršel (Time Exceeded)'],
+                    t: '<strong>3. Router: TTL kleslo na 0.</strong> Router sníží TTL z 1 na 0. Takový paket <strong>nesmí poslat dál</strong> — zahodí ho a odesílateli pošle chybovou zprávu ICMP „čas vypršel“. V ní je jeho vlastní IP adresa.' },
+                { at: 's1', act: ['s1'], links: ['s1-r'], route: -1, h: ['192.168.1.1', A, GW, MA, 64, 'ICMP: čas vypršel (Time Exceeded)'],
+                    t: '<strong>4. Zpráva se vrací</strong> přes switch k počítači A.' },
+                { at: 'a', act: ['a'], links: ['a-s1'], route: -1, h: ['192.168.1.1', A, GW, MA, 64, 'ICMP: čas vypršel (Time Exceeded)'],
+                    t: '<strong>5. První router je známý.</strong> A se dozvěděl adresu prvního routeru na cestě: 192.168.1.1. Teď pošle paket s TTL = 2 (ozve se druhý router), pak 3… až odpoví cíl. Hlavní účel TTL je ale jiný: kdyby se paket kvůli chybě ve směrování točil v kruhu, po vyčerpání TTL zanikne a nezahltí síť.' }
+            ]
+        }
+    };
+    var ROUTES = [['192.168.1.0/24', 'LAN 1', 'přímo připojená'], ['192.168.2.0/24', 'LAN 2', 'přímo připojená'], ['0.0.0.0/0', 'WAN', 'výchozí cesta → poskytovatel']];
+
+    var svg = $('topo'), cur = 'b', step = 0, pkt = null, anim = null;
+
+    $('pkTarget').innerHTML = Object.keys(SC).map(function (k) {
+        return '<button type="button" data-v="' + k + '" aria-pressed="' + (k === cur) + '">' + SC[k].name + '</button>';
+    }).join('');
+
+    function ppos(k) { return { x: N[k].x, y: N[k].y - (N[k].cloud ? 34 : N[k].s ? 32 : 27) }; }
+    function buildTopo() {
+        var h = '<rect class="zone" x="12" y="30" width="290" height="285" rx="12"/><text class="zone-label" x="24" y="305">LAN 1 · 192.168.1.0/24</text>' +
+            '<rect class="zone" x="480" y="205" width="268" height="110" rx="12"/><text class="zone-label" x="492" y="305">LAN 2 · 192.168.2.0/24</text>';
+        LINKS.forEach(function (l) {
+            var a = N[l[0]], b = N[l[1]];
+            h += '<line class="link" data-l="' + l[0] + '-' + l[1] + '" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"/>';
+        });
+        h += '<text class="sub" x="345" y="158" font-size="9" text-anchor="end">.1.1</text><text class="sub" x="436" y="212" font-size="9">.2.1</text><text class="sub" x="462" y="148" font-size="9">203.0.113.5</text>';
+        Object.keys(N).forEach(function (k) {
+            var n = N[k], hh = n.s ? 46 : 36;
+            h += '<g class="node" data-n="' + k + '">' +
+                (n.cloud ? '<ellipse cx="' + n.x + '" cy="' + n.y + '" rx="' + n.w / 2 + '" ry="24"/>' : '<rect x="' + (n.x - n.w / 2) + '" y="' + (n.y - hh / 2) + '" width="' + n.w + '" height="' + hh + '" rx="8"/>') +
+                '<text x="' + n.x + '" y="' + (n.y + (n.s ? -3 : 4)) + '" text-anchor="middle" font-size="12" font-weight="600">' + n.t + '</text>' +
+                (n.s ? '<text class="sub" x="' + n.x + '" y="' + (n.y + 13) + '" text-anchor="middle" font-size="10">' + n.s + '</text>' : '') + '</g>';
+        });
+        pkt = ppos('a');
+        h += '<circle class="packet" id="pkDot" r="9" cx="' + pkt.x + '" cy="' + pkt.y + '"/>';
+        svg.innerHTML = h;
+    }
+    function movePacket(to, jump) {
+        var dot = $('pkDot'), t = ppos(to), tx = t.x, ty = t.y;
+        if (anim) cancelAnimationFrame(anim);
+        var sx = pkt.x, sy = pkt.y, t0 = null;
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (jump || reduce || (sx === tx && sy === ty)) { pkt = { x: tx, y: ty }; dot.setAttribute('cx', tx); dot.setAttribute('cy', ty); return; }
+        (function frame(ts) {
+            if (t0 === null) t0 = ts || performance.now();
+            var k = Math.min(1, ((ts || performance.now()) - t0) / 450), e = k * (2 - k);
+            pkt = { x: sx + (tx - sx) * e, y: sy + (ty - sy) * e };
+            dot.setAttribute('cx', pkt.x); dot.setAttribute('cy', pkt.y);
+            if (k < 1) anim = requestAnimationFrame(frame);
+        })();
+    }
+    function render(jump) {
+        var sc = SC[cur], s = sc.steps[step], prev = step > 0 ? sc.steps[step - 1] : null;
+        svg.querySelectorAll('.node').forEach(function (n) { n.classList.toggle('is-active', s.act.indexOf(n.dataset.n) !== -1); });
+        svg.querySelectorAll('.link').forEach(function (l) {
+            var id = l.dataset.l, rev = id.split('-').reverse().join('-');
+            l.classList.toggle('is-active', !!s.links && (s.links.indexOf(id) !== -1 || s.links.indexOf(rev) !== -1));
+        });
+        movePacket(s.at, jump);
+        $('pkText').innerHTML = s.t;
+        $('pkCount').textContent = 'krok ' + (step + 1) + ' z ' + sc.steps.length;
+        $('pkPrev').disabled = step === 0;
+        $('pkNext').disabled = step === sc.steps.length - 1;
+        var labels = ['IP odesílatele', 'IP příjemce', 'MAC odesílatele', 'MAC příjemce', 'TTL', 'Obsah'];
+        $('pkHdr').innerHTML = '<tbody>' + labels.map(function (l, i) {
+            var ch = prev && prev.h[i] !== s.h[i];
+            return '<tr><th>' + l + '</th><td class="' + (i < 5 ? 'mono' : '') + (ch ? ' changed' : '') + '">' + s.h[i] + '</td></tr>';
+        }).join('') + '<tr><th>Kde paket je</th><td>' + LAYER[s.at] + '</td></tr></tbody>';
+        $('pkRoute').innerHTML = '<thead><tr><th>Cílová síť</th><th>Rozhraní</th><th>Poznámka</th></tr></thead><tbody>' + ROUTES.map(function (r, i) {
+            return '<tr' + (i === s.route ? ' class="is-match"' : '') + '><td class="mono">' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>';
+        }).join('') + '</tbody>';
+    }
+    bindSeg($('pkTarget'), function (v) { cur = v; step = 0; render(true); });
+    $('pkNext').addEventListener('click', function () { if (step < SC[cur].steps.length - 1) { step++; render(); } });
+    $('pkPrev').addEventListener('click', function () { if (step > 0) { step--; render(); } });
+    $('pkReset').addEventListener('click', function () { step = 0; render(); });
+    buildTopo();
+    render(true);
+})();
+</script>
+</body>
+</html>

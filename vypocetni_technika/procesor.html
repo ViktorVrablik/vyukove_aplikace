@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jak pracuje procesor | Výukové aplikace</title>
+    <meta name="description" content="Von Neumannova architektura, části procesoru, instrukční cyklus načti–dekóduj–proveď a strojový kód. Simulátor jednoduchého procesoru s vlastním assemblerem, který lze krokovat po fázích.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Jak pracuje procesor">
+    <meta property="og:description" content="Von Neumannova architektura, části procesoru, instrukční cyklus načti–dekóduj–proveď a strojový kód. Simulátor jednoduchého procesoru s vlastním assemblerem, který lze krokovat po fázích.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ==================================================================
+           Specifika stránky Jak pracuje procesor
+           ================================================================== */
+
+        .lead { font-size: var(--fs-md); color: var(--text-muted); max-width: 70ch; }
+        .tab-content > p, .tab-content li { max-width: 78ch; }
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+        .center { text-align: center; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-0 { margin-bottom: 0 !important; }
+        .ok   { color: var(--c-green); font-weight: 600; }
+        .bad  { color: var(--c-red);   font-weight: 600; }
+        .warn { color: var(--c-orange); font-weight: 600; }
+
+        /* Výpis binárních / hexadecimálních dat */
+        .code-box {
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow-wrap: anywhere;
+        }
+        .code-box--pre { white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+
+        .field { margin-bottom: var(--space-5); }
+        .field--inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-5); }
+        .field--inline > div { min-width: 0; }
+        .field--inline input[type="number"] { width: 9rem; }
+        .field--inline input[type="text"] { min-width: 12rem; }
+        .grow { flex: 1 1 220px; }
+
+        /* Dvousloupcové rozložení, na mobilu pod sebou */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Segmentový přepínač (volba režimu) */
+        .seg {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 2px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .seg button {
+            min-height: 30px;
+            padding: var(--space-1) var(--space-3);
+            font: inherit;
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .seg button:hover { color: var(--text); background: var(--hover-bg); }
+        .seg button[aria-pressed="true"] {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Přehledové hodnoty */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .stat {
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            min-width: 0;
+        }
+        .stat__label { display: block; font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px; }
+        .stat__value { display: block; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+        .stat__value small { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); }
+
+        /* Vzorec / postup výpočtu */
+        .formula {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+        }
+        .formula b { color: var(--text); }
+
+        /* ---------- Bity ---------- */
+        .bits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2) var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+        .bits__group { display: flex; gap: 2px; }
+        .bit {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 36px;
+            padding: 0 2px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-base);
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--dur-fast) var(--ease);
+        }
+        .bit:hover { border-color: var(--accent); }
+        .bit[aria-pressed="true"] { color: var(--text); background: var(--c-blue-bg); border-color: var(--c-blue); }
+        .bit__w { font-size: 9px; font-weight: 500; color: var(--text-faint); line-height: 1; margin-top: 1px; }
+        .bit--s { box-shadow: inset 0 -3px 0 var(--c-red); }
+        .bit--e { box-shadow: inset 0 -3px 0 var(--c-green); }
+        .bit--m { box-shadow: inset 0 -3px 0 var(--c-blue); }
+        .bit--p { box-shadow: inset 0 -3px 0 var(--c-orange); }
+        .bit--err { background: var(--c-red-bg) !important; border-color: var(--c-red) !important; color: var(--c-red) !important; }
+        .bit--static { cursor: default; }
+        .bit--static:hover { border-color: var(--border-strong); }
+
+        .bit-sign { color: var(--c-red); font-weight: 700; }
+        .bit-exp  { color: var(--c-green); font-weight: 700; }
+        .bit-mant { color: var(--c-blue); font-weight: 700; }
+        .u8-prefix { color: var(--c-orange); font-weight: 700; }
+        .u8-payload { color: var(--text); }
+
+        /* ---------- Paměťový pás (datové typy) ---------- */
+        .mem-strip { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: var(--space-3); font-family: var(--font-mono); font-size: var(--fs-sm); }
+        .mem-byte {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .rg0 { background: var(--c-blue-bg);   border-color: var(--c-blue)   !important; }
+        .rg1 { background: var(--c-orange-bg); border-color: var(--c-orange) !important; }
+        .rg2 { background: var(--c-green-bg);  border-color: var(--c-green)  !important; }
+        .rg3 { background: var(--c-purple-bg); border-color: var(--c-purple) !important; }
+        .rg4 { background: var(--c-pink-bg);   border-color: var(--c-pink)   !important; }
+        .rg5 { background: var(--c-yellow-bg); border-color: var(--c-yellow) !important; }
+        .rg6 { background: var(--c-red-bg);    border-color: var(--c-red)    !important; }
+        .rg7 { background: var(--c-brown-bg);  border-color: var(--c-brown)  !important; }
+        .legend__swatch[class*="rg"] { border: 1px solid; }
+
+        .controls-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+            gap: var(--space-4);
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .controls-box .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); font-weight: 500; }
+        .controls-box .label output, .controls-box .label span { color: var(--text); font-weight: 600; }
+
+        /* ---------- Instrukční cyklus ---------- */
+        .cycle { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: var(--space-3); margin-bottom: var(--space-5); counter-reset: ph; }
+        .cycle > div { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+        .cycle h4 { margin: 0 0 var(--space-1); }
+        .cycle .ph-f { border-top: 3px solid var(--c-blue); }
+        .cycle .ph-d { border-top: 3px solid var(--c-purple); }
+        .cycle .ph-e { border-top: 3px solid var(--c-green); }
+        .cycle p { font-size: var(--fs-sm); color: var(--text-muted); margin: 0; }
+
+        /* ---------- Simulátor ---------- */
+        .sim { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--space-5); align-items: start; margin-bottom: var(--space-5); }
+        @media (max-width: 760px) { .sim { grid-template-columns: minmax(0, 1fr); } }
+        .sim textarea { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.6; min-height: 330px; resize: vertical; white-space: pre; tab-size: 8; }
+        .sim-btns { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+        .phase-pills { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+        .pill { padding: 2px var(--space-3); border-radius: var(--radius-full); font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); background: var(--surface-sunken); border: 1px solid var(--border); }
+        .pill.is-on.f { color: var(--c-blue); background: var(--c-blue-bg); border-color: var(--c-blue); }
+        .pill.is-on.d { color: var(--c-purple); background: var(--c-purple-bg); border-color: var(--c-purple); }
+        .pill.is-on.e { color: var(--c-green); background: var(--c-green-bg); border-color: var(--c-green); }
+        .pill.is-on.h { color: var(--c-red); background: var(--c-red-bg); border-color: var(--c-red); }
+        .cpu-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--space-3); }
+        .cpu-wrap svg { display: block; width: 100%; min-width: 460px; height: auto; }
+        .cpu text { font-family: var(--font-sans); fill: var(--text); }
+        .cpu .cap { fill: var(--text-muted); font-size: 9.5px; }
+        .cpu .val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
+        .cpu .small { font-family: var(--font-mono); font-size: 10px; fill: var(--text-muted); }
+        .cpu .box { fill: var(--surface-sunken); stroke: var(--border-strong); stroke-width: 1.5; }
+        .cpu .frame { fill: none; stroke: var(--border-strong); stroke-dasharray: 6 4; }
+        .cpu .bus { stroke: var(--border-strong); stroke-width: 6; stroke-linecap: round; }
+        .cpu .on.box { stroke: var(--accent); stroke-width: 2.5; fill: var(--c-blue-bg); }
+        .cpu .on.bus { stroke: var(--accent); }
+        .sim-explain { min-height: 5.2em; }
+
+        .mem-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-bottom: var(--space-3); }
+        @media (max-width: 760px) { .mem-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        .mcell { position: relative; padding: 14px 4px 4px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); min-width: 0; }
+        .mcell .a { position: absolute; top: 1px; left: 4px; font-size: 9px; color: var(--text-faint); font-family: var(--font-mono); }
+        .mcell .h { display: block; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; }
+        .mcell .t { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mcell.is-pc { border-color: var(--c-blue); box-shadow: inset 0 0 0 1px var(--c-blue); }
+        .mcell.is-pc .a::after { content: " ◀ PC"; color: var(--c-blue); font-weight: 700; }
+        .mcell.is-read { background: var(--c-green-bg); }
+        .mcell.is-write { background: var(--c-orange-bg); }
+        .mcell.is-data .h { color: var(--c-purple); }
+        .io { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); margin-bottom: var(--space-5); }
+        .io .code-box { min-height: 46px; margin-bottom: 0; font-size: var(--fs-md); }
+
+        .op-bits { color: var(--c-red); font-weight: 700; }
+        .arg-bits { color: var(--c-blue); font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="vypocet">Výpočetní technika</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">Jak pracuje procesor</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+            <h1>Jak pracuje procesor</h1>
+            <p class="subtitle">Registry, paměť a instrukce — krok za krokem na modelu jednoduchého počítače</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Kapitoly">
+        <button class="tab active" type="button" role="tab" id="t-teorie" aria-controls="teorie" aria-selected="true" tabindex="0">Jak pracuje procesor</button>
+        <button class="tab" type="button" role="tab" id="t-simulator" aria-controls="simulator" aria-selected="false" tabindex="-1">Simulátor</button>
+        <button class="tab" type="button" role="tab" id="t-instrukce" aria-controls="instrukce" aria-selected="false" tabindex="-1">Instrukce a strojový kód</button>
+    </div>
+
+    <!-- ================================================================
+         1. TEORIE
+         ================================================================ -->
+    <section id="teorie" class="tab-content active" role="tabpanel" aria-labelledby="t-teorie">
+        <h2>Jak pracuje procesor</h2>
+        <p class="lead">Procesor (CPU) je „mozek“ počítače — ale mozek velmi jednoduchý. Umí jen pár základních úkonů: načíst číslo z paměti, sečíst dvě čísla, uložit výsledek, porovnat a skočit jinam v programu. Jeho síla je v tom, že to dělá miliardkrát za sekundu.</p>
+
+        <h3>Von Neumannova architektura</h3>
+        <p>Téměř všechny dnešní počítače vycházejí ze schématu, které v roce 1945 popsal John von Neumann. Hlavní myšlenka: <strong>program i data leží ve stejné paměti</strong> jako čísla. Procesor si z paměti bere jednu instrukci za druhou a vykonává je.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Část</th><th>K čemu slouží</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Operační paměť</strong> (RAM)</td><td>řada očíslovaných buněk; číslo buňky je její <em>adresa</em>. Jsou v ní instrukce programu i data.</td></tr>
+                <tr><td><strong>Řadič</strong> (řídicí jednotka)</td><td>čte instrukce, rozpozná je a řídí ostatní části — „dirigent“ procesoru</td></tr>
+                <tr><td><strong>ALU</strong> (aritmeticko-logická jednotka)</td><td>počítá: sčítá, odčítá, porovnává, provádí logické operace. Je složená z <a href="logicka_hradla.html">logických hradel</a>.</td></tr>
+                <tr><td><strong>Registry</strong></td><td>několik malých, velmi rychlých pamětí přímo v procesoru</td></tr>
+                <tr><td><strong>Sběrnice</strong></td><td>vodiče, které části propojují: adresová (kam), datová (co), řídicí (číst / zapsat)</td></tr>
+                <tr><td><strong>Vstupy a výstupy</strong></td><td>klávesnice, displej, disk, síť…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Nejdůležitější registry</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Registr</th><th>Název</th><th>Co obsahuje</th></tr></thead>
+                <tbody>
+                <tr><td class="mono"><strong>PC</strong></td><td>čítač instrukcí (program counter)</td><td>adresu instrukce, která je na řadě</td></tr>
+                <tr><td class="mono"><strong>IR</strong></td><td>registr instrukcí</td><td>právě prováděnou instrukci</td></tr>
+                <tr><td class="mono"><strong>ACC</strong></td><td>střadač (akumulátor)</td><td>číslo, se kterým se počítá, a výsledek výpočtu</td></tr>
+                <tr><td class="mono"><strong>Z, N</strong></td><td>příznaky (flags)</td><td>jednobitové informace o posledním výsledku: Z = byl nulový, N = byl záporný</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Instrukční cyklus</h3>
+        <p>Procesor od zapnutí do vypnutí opakuje stále tytéž tři kroky:</p>
+        <div class="cycle">
+            <div class="ph-f"><h4>1. Načti (fetch)</h4><p>Z paměti se přečte instrukce na adrese, kterou ukazuje PC, a uloží se do IR. PC se zvětší o 1, aby ukazoval na další instrukci.</p></div>
+            <div class="ph-d"><h4>2. Dekóduj (decode)</h4><p>Řadič instrukci rozdělí na operační kód (co se má udělat) a operand (s čím) a připraví potřebné části procesoru.</p></div>
+            <div class="ph-e"><h4>3. Proveď (execute)</h4><p>Instrukce se vykoná: ALU spočítá výsledek, přečte se nebo zapíše paměť, případně se změní PC (skok).</p></div>
+        </div>
+        <p>Jak to vypadá v pohybu, si vyzkoušej v <a href="#simulator" data-tab>simulátoru</a>.</p>
+
+        <h3>Od programu k instrukcím</h3>
+        <p>Procesor nerozumí Pythonu ani jinému programovacímu jazyku. Každý příkaz se musí přeložit na řadu jednoduchých instrukcí — a ty se uloží jako čísla (<strong>strojový kód</strong>). Zápis instrukcí pomocí zkratek se nazývá <strong>assembler</strong>.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Vyšší jazyk</th><th>Assembler</th><th>Strojový kód (hex)</th><th>Co se stane</th></tr></thead>
+                <tbody>
+                <tr><td class="mono" rowspan="3">c = a + b</td><td class="mono">LOAD a</td><td class="mono">1 00A</td><td>do střadače se načte obsah buňky <span class="mono">a</span></td></tr>
+                <tr><td class="mono">ADD b</td><td class="mono">3 00B</td><td>ke střadači se přičte obsah buňky <span class="mono">b</span></td></tr>
+                <tr><td class="mono">STORE c</td><td class="mono">2 00C</td><td>výsledek se uloží do buňky <span class="mono">c</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Takt procesoru</h3>
+        <p>Tempo udává hodinový signál. Frekvence 3 GHz znamená tři miliardy tiků za sekundu. Kolik času je to na jeden tik?</p>
+        <div class="controls-box" style="grid-template-columns:1fr">
+            <div>
+                <label class="label" for="clk">Frekvence: <output id="clkV">3,0</output> GHz</label>
+                <input type="range" id="clk" min="0.5" max="6" step="0.1" value="3">
+            </div>
+        </div>
+        <div class="stat-grid" id="clkStats"></div>
+
+        <h3>Co mají skutečné procesory navíc</h3>
+        <ul>
+            <li><strong>Více registrů a stovky instrukcí</strong> — náš model má jediný střadač a 13 instrukcí.</li>
+            <li><strong>Více jader</strong> — několik procesorů v jednom čipu, které pracují souběžně.</li>
+            <li><strong>Zřetězení (pipeline)</strong> — zatímco se jedna instrukce provádí, další se už dekóduje a třetí načítá, jako na výrobní lince.</li>
+            <li><strong>Mezipaměť (cache)</strong> — malá, velmi rychlá paměť v procesoru pro data, která se používají nejčastěji; operační paměť je oproti procesoru pomalá.</li>
+        </ul>
+    </section>
+
+    <!-- ================================================================
+         2. SIMULÁTOR
+         ================================================================ -->
+    <section id="simulator" class="tab-content" role="tabpanel" aria-labelledby="t-simulator" hidden>
+        <h2>Simulátor procesoru</h2>
+        <p class="lead">Jednoduchý počítač s 32 buňkami paměti a jedním střadačem. Vyber ukázkový program (nebo napiš vlastní), nahraj ho do paměti a krokuj po jednotlivých fázích instrukčního cyklu.</p>
+
+        <div class="sim">
+            <div>
+                <label class="label" for="simSample">Ukázkový program</label>
+                <select id="simSample" style="margin-bottom:var(--space-3)"></select>
+                <label class="label" for="simCode">Program v assembleru</label>
+                <textarea id="simCode" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+                <div class="sim-btns mt-4">
+                    <button class="btn btn--primary" type="button" id="simLoad">Přeložit a nahrát do paměti</button>
+                </div>
+                <div id="simErr" aria-live="polite"></div>
+            </div>
+            <div>
+                <div class="phase-pills" aria-hidden="true">
+                    <span class="pill f" id="pillF">1. načti</span>
+                    <span class="pill d" id="pillD">2. dekóduj</span>
+                    <span class="pill e" id="pillE">3. proveď</span>
+                    <span class="pill h" id="pillH">zastaveno</span>
+                </div>
+                <div class="cpu-wrap"><svg class="cpu" id="cpuSvg" viewBox="0 0 540 264" role="img" aria-label="Schéma procesoru: registry PC, IR, ACC, příznaky, řadič, ALU a paměť propojené sběrnicemi"></svg></div>
+                <div class="callout callout--neutral sim-explain" id="simText" aria-live="polite"></div>
+                <div class="sim-btns">
+                    <button class="btn btn--primary" type="button" id="simStep">Krok (jedna fáze)</button>
+                    <button class="btn" type="button" id="simInstr">Celá instrukce</button>
+                    <button class="btn" type="button" id="simRun">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span id="simRunL">Spustit</span>
+                    </button>
+                    <button class="btn" type="button" id="simReset">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                        Reset
+                    </button>
+                </div>
+                <label class="label" for="simSpeed" style="text-transform:none;letter-spacing:0">Rychlost běhu</label>
+                <input type="range" id="simSpeed" min="1" max="10" value="5">
+            </div>
+        </div>
+
+        <div class="io">
+            <div>
+                <label class="label" for="simIn">Vstup — čísla pro instrukci IN (odděl čárkou)</label>
+                <input type="text" id="simIn" class="mono" value="" autocomplete="off">
+            </div>
+            <div>
+                <span class="label">Výstup — co vypsala instrukce OUT</span>
+                <div class="code-box" id="simOut" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <span class="label">Paměť (32 buněk)</span>
+        <div class="legend">
+            <span class="legend__item"><span class="legend__swatch" style="border:2px solid var(--c-blue)"></span>buňka, na kterou ukazuje PC</span>
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-green-bg);border:1px solid var(--c-green)"></span>právě čtená</span>
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-orange-bg);border:1px solid var(--c-orange)"></span>právě zapsaná</span>
+            <span class="legend__item"><span class="mono" style="color:var(--c-purple);font-weight:600">0007</span> data</span>
+        </div>
+        <div class="mem-grid" id="memGrid"></div>
+        <p class="muted text-sm">Každá buňka ukazuje adresu, obsah šestnáctkově a pod ním výklad — instrukci, nebo desítkovou hodnotu. Všimni si, že instrukce i data jsou v paměti jen čísla; co z nich bude, záleží na tom, jestli na ně ukáže PC.</p>
+
+        <h3>Jak psát program</h3>
+        <ul>
+            <li>Na každém řádku je jedna instrukce, případně <strong>návěští</strong> zakončené dvojtečkou (<code>cyklus:</code>), na které se dá skákat nebo které pojmenuje buňku s daty.</li>
+            <li><code>DAT 5</code> není instrukce — vyhradí buňku paměti s hodnotou 5 (proměnná).</li>
+            <li>Za středníkem <code>;</code> je komentář.</li>
+            <li>Přehled všech instrukcí je v záložce <a href="#instrukce" data-tab>Instrukce a strojový kód</a>.</li>
+        </ul>
+    </section>
+
+    <!-- ================================================================
+         3. INSTRUKCE
+         ================================================================ -->
+    <section id="instrukce" class="tab-content" role="tabpanel" aria-labelledby="t-instrukce" hidden>
+        <h2>Instrukce a strojový kód</h2>
+        <p class="lead">Instrukční sada je seznam všeho, co procesor umí. Náš modelový procesor má 13 instrukcí; skutečné procesory jich mají stovky, ale princip je stejný.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table" id="insTable">
+                <thead><tr><th>Kód</th><th>Instrukce</th><th>Co udělá</th><th>Zápis</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <p class="muted text-sm"><span class="mono">M[a]</span> znamená „obsah paměťové buňky s adresou a“. Šipka ← znamená „ulož do“. Instrukce, které mění ACC, nastaví také příznaky Z a N.</p>
+
+        <h3>Jak je instrukce uložena v paměti</h3>
+        <p>Každá buňka paměti má 16 bitů. Horní 4 bity jsou <span class="op-bits">operační kód</span> (která instrukce), zbylých 12 bitů je <span class="arg-bits">operand</span> (adresa nebo číslo). Přepínej bity a sleduj, jakou instrukci dávají — nebo vyber instrukci a podívej se na její bity.</p>
+        <div class="field--inline">
+            <div>
+                <label class="label" for="encOp">Instrukce</label>
+                <select id="encOp"></select>
+            </div>
+            <div>
+                <label class="label" for="encArg">Operand (0–4095)</label>
+                <input type="number" id="encArg" min="0" max="4095" value="10">
+            </div>
+        </div>
+        <div class="bits" id="encBits"></div>
+        <div class="stat-grid" id="encStats"></div>
+        <div class="callout callout--info">
+            <strong>Program jsou jen čísla.</strong> Stejných 16 bitů může být instrukce <code>LOAD 10</code> i číslo 4106. O tom, co to je, rozhoduje jen to, jestli se k buňce procesor dostane přes čítač instrukcí. Na tomhle principu stojí překladače — i řada bezpečnostních chyb, kdy útočník přiměje procesor vykonat data jako program.
+        </div>
+
+        <h3>Podmínky a cykly</h3>
+        <p>Procesor nezná <code>if</code> ani <code>while</code>. Má jen <strong>skoky</strong>: změní čítač instrukcí, takže se pokračuje na jiném místě programu. Podmíněný skok se provede jen tehdy, když je nastaven příslušný příznak.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Ve vyšším jazyce</th><th>V assembleru</th></tr></thead>
+                <tbody>
+                <tr><td class="mono" style="white-space:pre">if a == b:
+    …</td><td class="mono" style="white-space:pre">LOAD a
+SUB b        ; rozdíl je 0, když se rovnají
+JZ rovno     ; skoč, pokud je výsledek nula</td></tr>
+                <tr><td class="mono" style="white-space:pre">while n != 0:
+    n = n - 1</td><td class="mono" style="white-space:pre">cyklus: LOAD n
+        JZ konec     ; n je nula → ven z cyklu
+        SUBI 1
+        STORE n
+        JMP cyklus   ; zpět na začátek
+konec:  HALT</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
+<script>
+/* ======================================================================
+   Jak pracuje procesor — společné pomocné funkce a záložky
+   ====================================================================== */
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/** Hodnota CSS proměnné (barvy pro canvas a SVG). */
+function tok(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** Escapování textu pro innerHTML. */
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Číslo s českým oddělovačem tisíců a desetinnou čárkou. */
+function fmt(n, maxFrac) {
+    if (typeof n === 'bigint') return n.toString().replace(/^-/, '−').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return Number(n).toLocaleString('cs-CZ', { maximumFractionDigits: maxFrac == null ? 2 : maxFrac }).replace(/^-/, '−');
+}
+
+function hex2(b) { return b.toString(16).toUpperCase().padStart(2, '0'); }
+function bin8(b) { return b.toString(2).padStart(8, '0'); }
+
+/** Lidsky čitelná velikost v bajtech (desítkové předpony, jak je uvádějí výrobci). */
+function humanBytes(bytes) {
+    var units = ['B', 'kB', 'MB', 'GB', 'TB'];
+    var i = 0, v = bytes;
+    while (v >= 1000 && i < units.length - 1) { v /= 1000; i++; }
+    return fmt(v, i === 0 ? 0 : 2) + ' ' + units[i];
+}
+
+/** Statistická dlaždice. */
+function stat(label, value, small) {
+    return '<div class="stat"><span class="stat__label">' + label + '</span><span class="stat__value">' +
+        value + (small ? ' <small>' + small + '</small>' : '') + '</span></div>';
+}
+
+/** Segmentový přepínač: vrátí aktuální hodnotu a volá cb při změně. */
+function bindSeg(el, cb) {
+    el.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !el.contains(b)) return;
+        el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.dataset.v, b);
+    });
+}
+function segValue(el) {
+    var b = el.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.v : null;
+}
+
+/* ----------------------------------------------------------------------
+   Záložky: přepínání, ARIA stavy, šipky, odkaz přes #kotvu
+   ---------------------------------------------------------------------- */
+function showTab(id, focus) {
+    var panel = $(id);
+    if (!panel || !panel.classList.contains('tab-content')) return;
+    document.querySelectorAll('main > .tab-content').forEach(function (p) {
+        p.classList.toggle('active', p === panel);
+        p.hidden = (p !== panel);
+    });
+    document.querySelectorAll('.tabs .tab').forEach(function (b) {
+        var on = b.getAttribute('aria-controls') === id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        if (on) {
+            if (focus) b.focus();
+            if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// v některých prohlížečích */ }
+    window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: id } }));
+}
+
+(function initTabs() {
+    var bar = document.querySelector('.tabs[role="tablist"]');
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (b) showTab(b.getAttribute('aria-controls'));
+    });
+    bar.addEventListener('keydown', function (e) {
+        if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        var next = e.key === 'Home' ? 0
+            : e.key === 'End' ? tabs.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        showTab(tabs[next].getAttribute('aria-controls'), true);
+    });
+    // Odkazy uvnitř stránky na jinou záložku (<a href="#zvuk" data-tab>)
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-tab]');
+        if (!a) return;
+        e.preventDefault();
+        showTab(a.getAttribute('href').slice(1));
+        window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+    });
+    var h = (location.hash || '').slice(1);
+    if (h && $(h) && $(h).classList.contains('tab-content')) showTab(h);
+})();
+
+/* ======================================================================
+   Model procesoru: 16bitové slovo = 4 bity operační kód + 12 bitů operand
+   ====================================================================== */
+var MEM_SIZE = 32;
+var OPS = [
+    { m: 'HALT',  arg: null,   d: 'zastaví program' },
+    { m: 'LOAD',  arg: 'addr', d: 'ACC ← M[a] — načte číslo z paměti do střadače' },
+    { m: 'STORE', arg: 'addr', d: 'M[a] ← ACC — uloží střadač do paměti' },
+    { m: 'ADD',   arg: 'addr', d: 'ACC ← ACC + M[a] — přičte číslo z paměti' },
+    { m: 'SUB',   arg: 'addr', d: 'ACC ← ACC − M[a] — odečte číslo z paměti' },
+    { m: 'LOADI', arg: 'num',  d: 'ACC ← n — vloží do střadače přímo číslo n' },
+    { m: 'ADDI',  arg: 'num',  d: 'ACC ← ACC + n — přičte přímo číslo n' },
+    { m: 'SUBI',  arg: 'num',  d: 'ACC ← ACC − n — odečte přímo číslo n' },
+    { m: 'JMP',   arg: 'addr', d: 'PC ← a — skočí na adresu a (vždy)' },
+    { m: 'JZ',    arg: 'addr', d: 'skočí na adresu a, jen když je příznak Z = 1 (výsledek byl nula)' },
+    { m: 'JN',    arg: 'addr', d: 'skočí na adresu a, jen když je příznak N = 1 (výsledek byl záporný)' },
+    { m: 'IN',    arg: null,   d: 'ACC ← vstup — načte číslo ze vstupu' },
+    { m: 'OUT',   arg: null,   d: 'vypíše obsah střadače na výstup' }
+];
+var OPCODE = {};
+OPS.forEach(function (o, i) { OPCODE[o.m] = i; });
+
+function hex4(w) { return (w & 0xFFFF).toString(16).toUpperCase().padStart(4, '0'); }
+function s16(w) { w &= 0xFFFF; return w >= 0x8000 ? w - 0x10000 : w; }
+function disasm(w) {
+    var op = (w >>> 12) & 15, arg = w & 0xFFF, o = OPS[op];
+    if (!o) return '???';
+    return o.m + (o.arg ? ' ' + arg : '');
+}
+
+/** Přeloží program. Vrací { mem, isCode, labels } nebo { errors }. */
+function assemble(src) {
+    var lines = src.split('\n'), items = [], labels = {}, errors = [];
+    lines.forEach(function (raw, ln) {
+        var line = raw.replace(/;.*$/, '').trim();
+        if (!line) return;
+        var m = /^([A-Za-z_À-ɏ][\wÀ-ɏ]*)\s*:\s*(.*)$/.exec(line);
+        if (m) {
+            var name = m[1].toLowerCase();
+            if (OPCODE[name.toUpperCase()] !== undefined || name === 'dat') errors.push('Řádek ' + (ln + 1) + ': návěští se nesmí jmenovat jako instrukce (' + m[1] + ').');
+            else if (labels[name] !== undefined) errors.push('Řádek ' + (ln + 1) + ': návěští „' + m[1] + '“ už existuje.');
+            else labels[name] = items.length;
+            line = m[2].trim();
+            if (!line) return;
+        }
+        var parts = line.split(/\s+/);
+        items.push({ ln: ln + 1, op: parts[0].toUpperCase(), arg: parts[1], extra: parts.length > 2 });
+    });
+    if (items.length > MEM_SIZE) errors.push('Program má ' + items.length + ' buněk, paměť jen ' + MEM_SIZE + '.');
+    var mem = new Array(MEM_SIZE).fill(0), isCode = new Array(MEM_SIZE).fill(false);
+    items.slice(0, MEM_SIZE).forEach(function (it, addr) {
+        var pre = 'Řádek ' + it.ln + ': ';
+        if (it.extra) { errors.push(pre + 'příliš mnoho údajů na řádku.'); return; }
+        var val = null;
+        if (it.arg !== undefined) {
+            if (/^-?\d+$/.test(it.arg)) val = parseInt(it.arg, 10);
+            else if (labels[it.arg.toLowerCase()] !== undefined) val = labels[it.arg.toLowerCase()];
+            else { errors.push(pre + 'neznámé návěští „' + it.arg + '“.'); return; }
+        }
+        if (it.op === 'DAT') {
+            if (val === null) val = 0;
+            if (val < -32768 || val > 65535) { errors.push(pre + 'hodnota se nevejde do 16 bitů.'); return; }
+            mem[addr] = val & 0xFFFF;
+            return;
+        }
+        var code = OPCODE[it.op];
+        if (code === undefined) { errors.push(pre + 'neznámá instrukce „' + it.op + '“.'); return; }
+        var o = OPS[code];
+        if (o.arg && val === null) { errors.push(pre + 'instrukce ' + o.m + ' potřebuje operand.'); return; }
+        if (!o.arg && val !== null) { errors.push(pre + 'instrukce ' + o.m + ' operand nemá.'); return; }
+        if (o.arg === 'addr' && (val < 0 || val >= MEM_SIZE)) { errors.push(pre + 'adresa ' + val + ' je mimo paměť (0–' + (MEM_SIZE - 1) + ').'); return; }
+        if (o.arg === 'num' && (val < 0 || val > 4095)) { errors.push(pre + 'přímé číslo musí být 0–4095.'); return; }
+        mem[addr] = (code << 12) | (val || 0);
+        isCode[addr] = true;
+    });
+    return errors.length ? { errors: errors } : { mem: mem, isCode: isCode, labels: labels };
+}
+
+/* ======================================================================
+   1. TEORIE — takt
+   ====================================================================== */
+(function () {
+    function update() {
+        var g = +$('clk').value, hz = g * 1e9, ns = 1 / g;
+        $('clkV').textContent = fmt(g, 1);
+        $('clkStats').innerHTML =
+            stat('Tiků za sekundu', fmt(hz)) +
+            stat('Délka jednoho tiku', fmt(ns, 2) + ' ns', 'miliardtin sekundy') +
+            stat('Světlo za tu dobu urazí', fmt(29.98 * ns, 1) + ' cm') +
+            stat('Za jedno mrknutí oka (0,1 s)', fmt(hz / 10 / 1e6, 0) + ' mil. tiků');
+    }
+    $('clk').addEventListener('input', update);
+    update();
+})();
+
+/* ======================================================================
+   2. SIMULÁTOR
+   ====================================================================== */
+var Sim = (function () {
+    var SAMPLES = [
+        { name: 'Součet dvou čísel', input: '7, 5', code:
+            '; načte dvě čísla a vypíše součet\n        IN\n        STORE a\n        IN\n        ADD a\n        OUT\n        HALT\na:      DAT 0' },
+        { name: 'Odpočítávání (cyklus)', input: '', code:
+            '; vypíše 5 4 3 2 1 0\n        LOADI 5\ncyklus: OUT\n        JZ konec     ; nula → konec\n        SUBI 1\n        JMP cyklus\nkonec:  HALT' },
+        { name: 'Větší ze dvou čísel (podmínka)', input: '12, 30', code:
+            '; vypíše větší ze dvou čísel\n        IN\n        STORE a\n        IN\n        STORE b\n        SUB a        ; b - a\n        JN vetsiA    ; záporné → a je větší\n        LOAD b\n        OUT\n        HALT\nvetsiA: LOAD a\n        OUT\n        HALT\na:      DAT 0\nb:      DAT 0' },
+        { name: 'Násobení opakovaným sčítáním', input: '6, 4', code:
+            '; procesor neumí násobit: a * b spočítá\n; jako a + a + ... (b-krát)\n        IN\n        STORE a\n        IN\n        STORE b\ncyklus: LOAD b\n        JZ hotovo\n        SUBI 1\n        STORE b\n        LOAD soucet\n        ADD a\n        STORE soucet\n        JMP cyklus\nhotovo: LOAD soucet\n        OUT\n        HALT\na:      DAT 0\nb:      DAT 0\nsoucet: DAT 0' },
+        { name: 'Součet čísel 1 až N', input: '10', code:
+            '; sečte N + (N-1) + ... + 1\n        IN\n        STORE n\ncyklus: LOAD n\n        JZ hotovo\n        ADD soucet\n        STORE soucet\n        LOAD n\n        SUBI 1\n        STORE n\n        JMP cyklus\nhotovo: LOAD soucet\n        OUT\n        HALT\nn:      DAT 0\nsoucet: DAT 0' }
+    ];
+
+    var prog = null;             // poslední úspěšný překlad
+    var mem, isCode, cpu, out, hl, timer = null, count = 0;
+
+    function reset() {
+        stop();
+        mem = prog ? prog.mem.slice() : new Array(MEM_SIZE).fill(0);
+        isCode = prog ? prog.isCode.slice() : new Array(MEM_SIZE).fill(false);
+        cpu = { pc: 0, ir: 0, acc: 0, z: 0, n: 0, phase: 'fetch', halted: false, consumed: 0, alu: '', abus: '', dbus: '' };
+        out = []; count = 0;
+        hl = { parts: [], read: -1, write: -1 };
+        setText('Program je nahrán v paměti od adresy 0. Čítač instrukcí PC ukazuje na první instrukci. Klepni na <strong>Krok</strong>.');
+        render();
+    }
+    function setText(t) { $('simText').innerHTML = t; }
+    function setAcc(v) { cpu.acc = v & 0xFFFF; cpu.z = cpu.acc === 0 ? 1 : 0; cpu.n = cpu.acc & 0x8000 ? 1 : 0; }
+    function flagsTxt() { return ' Příznaky: Z = ' + cpu.z + ', N = ' + cpu.n + '.'; }
+    function halt(msg) { cpu.halted = true; stop(); setText(msg); }
+
+    /** Další číslo ze vstupního pole (pole se čte pokaždé znovu, takže ho jde za běhu doplnit). */
+    function nextInput() {
+        var q = $('simIn').value.split(/[,;\s]+/).filter(function (x) { return /^-?\d+$/.test(x); }).map(Number);
+        if (cpu.consumed >= q.length) return null;
+        return q[cpu.consumed++];
+    }
+
+    /** Provede jednu fázi instrukčního cyklu. Vrací false, když se čeká na vstup nebo je konec. */
+    function step() {
+        if (cpu.halted) return false;
+        hl = { parts: [], read: -1, write: -1 };
+        cpu.alu = ''; cpu.abus = ''; cpu.dbus = '';
+        if (cpu.phase === 'fetch') {
+            if (cpu.pc >= MEM_SIZE) { halt('<strong>Chyba:</strong> čítač instrukcí vyběhl z paměti. Programu chybí instrukce HALT.'); render(); return false; }
+            var at = cpu.pc;
+            cpu.ir = mem[at];
+            cpu.abus = 'adresa ' + at; cpu.dbus = hex4(cpu.ir);
+            hl = { parts: ['pc', 'abus', 'mem', 'dbus', 'ir'], read: at, write: -1 };
+            cpu.pc = at + 1;
+            cpu.phase = 'decode';
+            setText('<strong>1. Načti.</strong> PC ukazoval na adresu ' + at + '. Její obsah <code>' + hex4(cpu.ir) + '</code> se po datové sběrnici přenesl do registru instrukcí IR. PC se zvětšil na ' + cpu.pc + ' a ukazuje už na další instrukci.');
+        } else if (cpu.phase === 'decode') {
+            var op = cpu.ir >>> 12, arg = cpu.ir & 0xFFF, o = OPS[op];
+            hl.parts = ['ir', 'cu'];
+            cpu.phase = 'execute';
+            if (!o) { halt('<strong>Chyba:</strong> obsah <code>' + hex4(cpu.ir) + '</code> není platná instrukce (operační kód ' + op.toString(16).toUpperCase() + ' neexistuje). Procesor se zřejmě dostal do dat — nechybí před nimi HALT?'); render(); return false; }
+            setText('<strong>2. Dekóduj.</strong> Řadič rozdělí <code>' + hex4(cpu.ir) + '</code> na operační kód <strong>' + op.toString(16).toUpperCase() + '</strong> = ' + o.m +
+                (o.arg ? ' a operand <strong>' + arg + '</strong>' + (o.arg === 'addr' ? ' (adresa)' : ' (přímé číslo)') : ' (bez operandu)') + '. Instrukce: <code>' + disasm(cpu.ir) + '</code>.');
+        } else {
+            var op2 = cpu.ir >>> 12, a = cpu.ir & 0xFFF, name = OPS[op2].m, old = s16(cpu.acc), t;
+            if (OPS[op2].arg === 'addr' && a >= MEM_SIZE) { halt('<strong>Chyba:</strong> adresa ' + a + ' je mimo paměť.'); render(); return false; }
+            switch (name) {
+                case 'HALT':
+                    hl.parts = ['cu'];
+                    halt('<strong>3. Proveď: HALT.</strong> Program skončil po ' + (count + 1) + ' instrukcích.');
+                    count++; render(); return false;
+                case 'LOAD':
+                    setAcc(mem[a]); hl = { parts: ['ir', 'abus', 'mem', 'dbus', 'acc', 'flags'], read: a, write: -1 };
+                    cpu.abus = 'adresa ' + a; cpu.dbus = hex4(mem[a]);
+                    t = 'Z paměti na adrese ' + a + ' se načetla hodnota ' + s16(cpu.acc) + ' do střadače.' + flagsTxt(); break;
+                case 'STORE':
+                    mem[a] = cpu.acc; isCode[a] = false; hl = { parts: ['ir', 'abus', 'mem', 'dbus', 'acc'], read: -1, write: a };
+                    cpu.abus = 'adresa ' + a; cpu.dbus = hex4(cpu.acc);
+                    t = 'Hodnota střadače ' + old + ' se zapsala do paměti na adresu ' + a + '.'; break;
+                case 'ADD': case 'SUB':
+                    var mv = s16(mem[a]);
+                    setAcc(name === 'ADD' ? old + mv : old - mv);
+                    cpu.alu = old + (name === 'ADD' ? ' + ' : ' − ') + (mv < 0 ? '(' + mv + ')' : mv);
+                    cpu.abus = 'adresa ' + a; cpu.dbus = hex4(mem[a]);
+                    hl = { parts: ['ir', 'abus', 'mem', 'dbus', 'alu', 'acc', 'flags'], read: a, write: -1 };
+                    t = 'ALU spočítala ' + cpu.alu + ' = <strong>' + s16(cpu.acc) + '</strong> (druhé číslo přišlo z paměti, adresa ' + a + '). Výsledek je ve střadači.' + flagsTxt(); break;
+                case 'LOADI':
+                    setAcc(a); hl.parts = ['ir', 'acc', 'flags'];
+                    t = 'Číslo ' + a + ' přímo z instrukce se vložilo do střadače — paměť nebyla potřeba.' + flagsTxt(); break;
+                case 'ADDI': case 'SUBI':
+                    setAcc(name === 'ADDI' ? old + a : old - a);
+                    cpu.alu = old + (name === 'ADDI' ? ' + ' : ' − ') + a;
+                    hl.parts = ['ir', 'alu', 'acc', 'flags'];
+                    t = 'ALU spočítala ' + cpu.alu + ' = <strong>' + s16(cpu.acc) + '</strong>.' + flagsTxt(); break;
+                case 'JMP':
+                    cpu.pc = a; hl.parts = ['ir', 'pc'];
+                    t = 'Skok: do PC se zapsala adresa ' + a + '. Příští instrukce se načte odtud.'; break;
+                case 'JZ': case 'JN':
+                    var flag = name === 'JZ' ? cpu.z : cpu.n, fn = name === 'JZ' ? 'Z' : 'N';
+                    hl.parts = flag ? ['ir', 'flags', 'pc'] : ['ir', 'flags'];
+                    if (flag) cpu.pc = a;
+                    t = 'Podmíněný skok: příznak ' + fn + ' = ' + flag + '. ' + (flag ? 'Podmínka platí → do PC se zapsala adresa ' + a + '.' : 'Podmínka neplatí → nic se neděje, pokračuje se další instrukcí (PC = ' + cpu.pc + ').'); break;
+                case 'IN':
+                    var v = nextInput();
+                    if (v === null) {
+                        stop(); hl.parts = ['cu'];
+                        setText('<strong>3. Proveď: IN.</strong> Program čeká na vstup, ale ve vstupním poli už žádné číslo není. Doplň ho do pole <em>Vstup</em> a pokračuj.');
+                        render(); return false;
+                    }
+                    setAcc(v); hl.parts = ['acc', 'flags'];
+                    t = 'Ze vstupu se načetlo číslo ' + v + ' do střadače.' + flagsTxt(); break;
+                case 'OUT':
+                    out.push(s16(cpu.acc)); hl.parts = ['acc'];
+                    t = 'Obsah střadače ' + s16(cpu.acc) + ' se vypsal na výstup.'; break;
+            }
+            setText('<strong>3. Proveď: ' + disasm(cpu.ir) + '.</strong> ' + t);
+            cpu.phase = 'fetch';
+            count++;
+            if (count >= 5000) { halt('Zastaveno po 5000 instrukcích — program se nejspíš zacyklil.'); render(); return false; }
+        }
+        render();
+        return true;
+    }
+    function stepInstr() {
+        var guard = 0;
+        do { if (!step()) return false; } while (cpu.phase !== 'fetch' && guard++ < 5);
+        return true;
+    }
+    function stop() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if ($('simRunL')) $('simRunL').textContent = 'Spustit';
+    }
+    function run() {
+        if (timer) { stop(); return; }
+        if (cpu.halted) reset();
+        $('simRunL').textContent = 'Pozastavit';
+        (function tick() {
+            var ok = step();
+            if (!ok || cpu.halted) { stop(); return; }
+            var sp = +$('simSpeed').value;
+            timer = setTimeout(tick, Math.round(1100 / (sp * sp * 0.25 + 0.75)));
+        })();
+    }
+
+    function render() {
+        // schéma
+        var on = function (id) { return hl.parts.indexOf(id) !== -1 ? ' on' : ''; };
+        var box = function (id, x, y, w, h, cap, val, small) {
+            return '<rect class="box' + on(id) + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="7"/>' +
+                '<text class="cap" x="' + (x + 8) + '" y="' + (y + 13) + '">' + cap + '</text>' +
+                '<text class="val" x="' + (x + 8) + '" y="' + (y + 32) + '">' + val + '</text>' +
+                (small ? '<text class="small" x="' + (x + w - 8) + '" y="' + (y + 32) + '" text-anchor="end">' + small + '</text>' : '');
+        };
+        var ph = cpu.halted ? 'zastaveno' : { fetch: 'načti', decode: 'dekóduj', execute: 'proveď' }[cpu.phase];
+        var svg =
+            '<rect class="frame" x="8" y="8" width="356" height="248" rx="12"/><text class="cap" x="18" y="24">PROCESOR</text>' +
+            box('pc', 22, 36, 150, 44, 'PC — čítač instrukcí', cpu.pc, '') +
+            box('ir', 192, 36, 158, 44, 'IR — registr instrukcí', hex4(cpu.ir), disasm(cpu.ir)) +
+            box('alu', 22, 104, 150, 44, 'ALU — počítá', cpu.alu || '—', '') +
+            box('cu', 192, 104, 158, 44, 'Řadič — řídí', 'další: ' + ph, '') +
+            box('acc', 22, 172, 150, 44, 'ACC — střadač', s16(cpu.acc), hex4(cpu.acc)) +
+            box('flags', 192, 172, 158, 44, 'Příznaky', 'Z=' + cpu.z + '  N=' + cpu.n, '') +
+            '<text class="cap" x="22" y="240">Vykonáno instrukcí: ' + count + '</text>' +
+            '<line class="bus' + on('abus') + '" x1="364" y1="58" x2="420" y2="58"/><text class="cap" x="392" y="46" text-anchor="middle">adresa</text>' +
+            '<line class="bus' + on('dbus') + '" x1="364" y1="194" x2="420" y2="194"/><text class="cap" x="392" y="182" text-anchor="middle">data</text>' +
+            '<rect class="box' + on('mem') + '" x="420" y="36" width="110" height="180" rx="7"/>' +
+            '<text class="cap" x="428" y="50">PAMĚŤ</text>' +
+            '<text class="small" x="428" y="76">' + (cpu.abus || '') + '</text>' +
+            '<text class="small" x="428" y="198">' + (cpu.dbus ? 'data ' + cpu.dbus : '') + '</text>' +
+            '<text class="cap" x="475" y="130" text-anchor="middle">32 buněk</text><text class="cap" x="475" y="143" text-anchor="middle">po 16 bitech</text>';
+        $('cpuSvg').innerHTML = svg;
+
+        $('pillF').classList.toggle('is-on', !cpu.halted && cpu.phase === 'fetch');
+        $('pillD').classList.toggle('is-on', !cpu.halted && cpu.phase === 'decode');
+        $('pillE').classList.toggle('is-on', !cpu.halted && cpu.phase === 'execute');
+        $('pillH').classList.toggle('is-on', cpu.halted);
+        $('simStep').disabled = $('simInstr').disabled = cpu.halted;
+
+        // paměť
+        var h = '';
+        for (var i = 0; i < MEM_SIZE; i++) {
+            var cls = 'mcell' + (i === cpu.pc && !cpu.halted ? ' is-pc' : '') + (i === hl.read ? ' is-read' : '') + (i === hl.write ? ' is-write' : '') + (isCode[i] ? '' : ' is-data');
+            h += '<div class="' + cls + '"><span class="a">' + i + '</span><span class="h">' + hex4(mem[i]) + '</span><span class="t">' + (isCode[i] ? disasm(mem[i]) : s16(mem[i])) + '</span></div>';
+        }
+        $('memGrid').innerHTML = h;
+        $('simOut').textContent = out.join('  ');
+    }
+
+    function load() {
+        var r = assemble($('simCode').value);
+        if (r.errors) {
+            $('simErr').innerHTML = '<div class="callout callout--danger"><strong>Program se nepodařilo přeložit:</strong><br>' + r.errors.map(esc).join('<br>') + '</div>';
+            return false;
+        }
+        $('simErr').innerHTML = '';
+        prog = r;
+        reset();
+        return true;
+    }
+
+    SAMPLES.forEach(function (s, i) { $('simSample').add(new Option(s.name, i)); });
+    function pick() {
+        var s = SAMPLES[+$('simSample').value];
+        $('simCode').value = s.code;
+        $('simIn').value = s.input;
+        load();
+    }
+    $('simSample').addEventListener('change', pick);
+    $('simLoad').addEventListener('click', load);
+    $('simStep').addEventListener('click', function () { stop(); step(); });
+    $('simInstr').addEventListener('click', function () { stop(); stepInstr(); });
+    $('simRun').addEventListener('click', run);
+    $('simReset').addEventListener('click', reset);
+    $('simCode').addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+        // Tab v editoru vkládá mezery; ven z pole se dá dostat přes Shift+Tab
+        e.preventDefault();
+        var s = this.selectionStart;
+        this.setRangeText('        '.slice(0, 8 - ((s - this.value.lastIndexOf('\n', s - 1) - 1) % 8)), s, this.selectionEnd, 'end');
+    });
+    pick();
+
+    return {
+        samples: SAMPLES,
+        /** Pro testy: přeloží a spustí program, vrátí výstup. */
+        runAll: function (code, input) {
+            $('simCode').value = code; $('simIn').value = input;
+            if (!load()) return 'ERR';
+            var g = 0;
+            while (!cpu.halted && g++ < 20000) { if (!step() && !cpu.halted) return 'WAIT ' + out.join(','); }
+            return out.join(',');
+        }
+    };
+})();
+
+/* ======================================================================
+   3. INSTRUKCE A STROJOVÝ KÓD
+   ====================================================================== */
+(function () {
+    $('insTable').querySelector('tbody').innerHTML = OPS.map(function (o, i) {
+        return '<tr><td class="mono">' + i.toString(16).toUpperCase() + ' <span class="muted">(' + i.toString(2).padStart(4, '0') + ')</span></td><td class="mono"><strong>' + o.m + '</strong></td><td>' + o.d + '</td><td class="mono">' +
+            o.m + (o.arg === 'addr' ? ' a' : o.arg === 'num' ? ' n' : '') + '</td></tr>';
+    }).join('');
+
+    var word = (1 << 12) | 10;
+    OPS.forEach(function (o, i) { $('encOp').add(new Option(i.toString(16).toUpperCase() + ' — ' + o.m, i)); });
+
+    function render() {
+        var h = '<div class="bits__group">';
+        for (var i = 15; i >= 0; i--) {
+            var on = (word >>> i) & 1;
+            h += '<button type="button" class="bit ' + (i >= 12 ? 'bit--s' : 'bit--m') + '" data-i="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="bit ' + i + '">' + on + '</button>';
+            if (i === 12 || i === 8 || i === 4) h += '</div><div class="bits__group">';
+        }
+        $('encBits').innerHTML = h + '</div>';
+        var op = word >>> 12, arg = word & 0xFFF, o = OPS[op];
+        if (o) $('encOp').value = op;
+        if (document.activeElement !== $('encArg')) $('encArg').value = arg;
+        $('encStats').innerHTML =
+            stat('Instrukce', o ? disasm(word) : '<span class="bad">neplatná</span>', o ? '' : 'kód ' + op.toString(16).toUpperCase() + ' neexistuje') +
+            stat('Šestnáctkově', '<span class="op-bits">' + hex4(word)[0] + '</span> <span class="arg-bits">' + hex4(word).slice(1) + '</span>') +
+            stat('Operační kód', op + ' = ' + op.toString(2).padStart(4, '0') + '₂') +
+            stat('Operand', arg, o && !o.arg ? 'tato instrukce ho nevyužije' : '') +
+            stat('Jako obyčejné číslo', fmt(word));
+    }
+    $('encBits').addEventListener('click', function (e) {
+        var b = e.target.closest('.bit');
+        if (!b) return;
+        word ^= (1 << +b.dataset.i);
+        render();
+    });
+    $('encOp').addEventListener('change', function () { word = (+this.value << 12) | (word & 0xFFF); render(); });
+    $('encArg').addEventListener('input', function () {
+        var v = Math.max(0, Math.min(4095, Math.floor(+this.value || 0)));
+        word = (word & 0xF000) | v;
+        render();
+    });
+    render();
+})();
+</script>
+</body>
+</html>
