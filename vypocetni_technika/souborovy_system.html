@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Souborový systém | Výukové aplikace</title>
+    <meta name="description" content="Princip souborového systému, adresářová struktura, absolutní a relativní cesty, ukládání souborů do clusterů a fragmentace, adresování CHS a LBA na pevném disku a stránky a bloky na SSD. S interaktivními ukázkami.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Souborový systém">
+    <meta property="og:description" content="Princip souborového systému, adresářová struktura, absolutní a relativní cesty, ukládání souborů do clusterů a fragmentace, adresování CHS a LBA na pevném disku a stránky a bloky na SSD. S interaktivními ukázkami.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ==================================================================
+           Specifika stránky Souborový systém
+           ================================================================== */
+
+        .lead { font-size: var(--fs-md); color: var(--text-muted); max-width: 70ch; }
+        .tab-content > p, .tab-content li { max-width: 78ch; }
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+        .center { text-align: center; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-0 { margin-bottom: 0 !important; }
+        .ok   { color: var(--c-green); font-weight: 600; }
+        .bad  { color: var(--c-red);   font-weight: 600; }
+        .warn { color: var(--c-orange); font-weight: 600; }
+
+        /* Výpis binárních / hexadecimálních dat */
+        .code-box {
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow-wrap: anywhere;
+        }
+        .code-box--pre { white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+
+        .field { margin-bottom: var(--space-5); }
+        .field--inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-5); }
+        .field--inline > div { min-width: 0; }
+        .field--inline input[type="number"] { width: 9rem; }
+        .field--inline input[type="text"] { min-width: 12rem; }
+        .grow { flex: 1 1 220px; }
+
+        /* Dvousloupcové rozložení, na mobilu pod sebou */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+
+        /* Segmentový přepínač (volba režimu) */
+        .seg {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 2px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .seg button {
+            min-height: 30px;
+            padding: var(--space-1) var(--space-3);
+            font: inherit;
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .seg button:hover { color: var(--text); background: var(--hover-bg); }
+        .seg button[aria-pressed="true"] {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Přehledové hodnoty */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .stat {
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            min-width: 0;
+        }
+        .stat__label { display: block; font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px; }
+        .stat__value { display: block; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+        .stat__value small { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); }
+
+        /* Vzorec / postup výpočtu */
+        .formula {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-5);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+        }
+        .formula b { color: var(--text); }
+
+        /* ---------- Bity ---------- */
+        .bits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2) var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+        .bits__group { display: flex; gap: 2px; }
+        .bit {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 36px;
+            padding: 0 2px;
+            font-family: var(--font-mono);
+            font-size: var(--fs-base);
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            user-select: none;
+            transition: background var(--dur-fast) var(--ease);
+        }
+        .bit:hover { border-color: var(--accent); }
+        .bit[aria-pressed="true"] { color: var(--text); background: var(--c-blue-bg); border-color: var(--c-blue); }
+        .bit__w { font-size: 9px; font-weight: 500; color: var(--text-faint); line-height: 1; margin-top: 1px; }
+        .bit--s { box-shadow: inset 0 -3px 0 var(--c-red); }
+        .bit--e { box-shadow: inset 0 -3px 0 var(--c-green); }
+        .bit--m { box-shadow: inset 0 -3px 0 var(--c-blue); }
+        .bit--p { box-shadow: inset 0 -3px 0 var(--c-orange); }
+        .bit--err { background: var(--c-red-bg) !important; border-color: var(--c-red) !important; color: var(--c-red) !important; }
+        .bit--static { cursor: default; }
+        .bit--static:hover { border-color: var(--border-strong); }
+
+        .bit-sign { color: var(--c-red); font-weight: 700; }
+        .bit-exp  { color: var(--c-green); font-weight: 700; }
+        .bit-mant { color: var(--c-blue); font-weight: 700; }
+        .u8-prefix { color: var(--c-orange); font-weight: 700; }
+        .u8-payload { color: var(--text); }
+
+        /* ---------- Paměťový pás (datové typy) ---------- */
+        .mem-strip { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: var(--space-3); font-family: var(--font-mono); font-size: var(--fs-sm); }
+        .mem-byte {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .rg0 { background: var(--c-blue-bg);   border-color: var(--c-blue)   !important; }
+        .rg1 { background: var(--c-orange-bg); border-color: var(--c-orange) !important; }
+        .rg2 { background: var(--c-green-bg);  border-color: var(--c-green)  !important; }
+        .rg3 { background: var(--c-purple-bg); border-color: var(--c-purple) !important; }
+        .rg4 { background: var(--c-pink-bg);   border-color: var(--c-pink)   !important; }
+        .rg5 { background: var(--c-yellow-bg); border-color: var(--c-yellow) !important; }
+        .rg6 { background: var(--c-red-bg);    border-color: var(--c-red)    !important; }
+        .rg7 { background: var(--c-brown-bg);  border-color: var(--c-brown)  !important; }
+        .legend__swatch[class*="rg"] { border: 1px solid; }
+
+        .controls-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+            gap: var(--space-4);
+            padding: var(--space-4);
+            margin-bottom: var(--space-5);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .controls-box .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); font-weight: 500; }
+        .controls-box .label output, .controls-box .label span { color: var(--text); font-weight: 600; }
+
+        /* ---------- Strom adresářů ---------- */
+        .tree-box { padding: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow-x: auto; }
+        .tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+        .tree ul { margin-left: 11px; padding-left: 13px; border-left: 1px solid var(--border-strong); }
+        .tree li { margin: 0; max-width: none; }
+        .tnode {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            padding: 3px var(--space-2); margin: 1px 0;
+            font: inherit; font-family: var(--font-mono); font-size: var(--fs-sm);
+            color: var(--text); background: transparent;
+            border: 1px solid transparent; border-radius: var(--radius-sm);
+            cursor: pointer; white-space: nowrap;
+        }
+        .tnode:hover { background: var(--hover-bg); }
+        .tnode .icon { width: 15px; height: 15px; flex-shrink: 0; }
+        .tnode.is-dir { font-weight: 600; }
+        .tnode.is-dir .icon { color: var(--c-yellow); }
+        .tnode.is-file .icon { color: var(--text-faint); }
+        .tnode.is-sel, .tnode.is-target { background: var(--c-green-bg); border-color: var(--c-green); }
+        .tnode.is-cwd { background: var(--c-blue-bg); border-color: var(--c-blue); }
+        .tnode.is-path { background: var(--c-yellow-bg); }
+        .tnode.is-top { border-color: var(--c-orange); border-style: dashed; }
+        .tnode .badge { font-family: var(--font-sans); font-size: 10px; font-weight: 600; padding: 0 5px; border-radius: var(--radius-full); }
+        .tnode.is-cwd .badge { background: var(--c-blue); color: var(--surface); }
+        .tnode.is-target .badge, .tnode.is-sel .badge { background: var(--c-green); color: var(--surface); }
+        .tree-layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: var(--space-5); align-items: start; margin-bottom: var(--space-5); }
+        @media (max-width: 760px) { .tree-layout { grid-template-columns: minmax(0, 1fr); } }
+        .path-out { font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+        .path-out .sep { color: var(--c-orange); }
+        .path-out .up { color: var(--c-red); }
+        ol.steps { margin-bottom: var(--space-4); }
+        ol.steps li { margin-bottom: var(--space-2); }
+
+        /* ---------- Terminál ---------- */
+        .term { background: #1e1e1e; color: #e4e4e2; border-radius: var(--radius-md); border: 1px solid var(--border-strong); font-family: var(--font-mono); font-size: var(--fs-sm); margin-bottom: var(--space-3); }
+        .term__out { padding: var(--space-3) var(--space-4) 0; max-height: 260px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+        .term__out .p { color: #6fa8dc; }
+        .term__out .e { color: #ec7a72; }
+        .term__out .d { color: #d4b04f; font-weight: 600; }
+        .term__line { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4) var(--space-3); }
+        .term__line label { color: #6fa8dc; white-space: nowrap; }
+        .term__line input { flex: 1; min-width: 0; min-height: 0; padding: 2px 4px; background: transparent; color: #e4e4e2; border: 0; box-shadow: none; font-family: var(--font-mono); font-size: var(--fs-sm); border-radius: 2px; }
+        .term__line input:focus { box-shadow: none; outline: 1px solid #5a9fe0; }
+
+        /* ---------- Clustery ---------- */
+        .cl-grid { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; margin-bottom: var(--space-3); }
+        @media (max-width: 640px) { .cl-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+        .cl { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); background: var(--surface-sunken); border: 1px solid var(--border); border-radius: 3px; min-width: 0; }
+        .cl.used { color: var(--fc); background: var(--fb); border-color: var(--fc); font-weight: 700; }
+        .cl.hl { outline: 2px solid var(--text); outline-offset: 1px; }
+        .cl.ghost { background: repeating-linear-gradient(45deg, var(--surface-sunken), var(--surface-sunken) 4px, var(--c-gray-bg) 4px, var(--c-gray-bg) 8px); }
+        .f0 { --fc: var(--c-blue);   --fb: var(--c-blue-bg); }
+        .f1 { --fc: var(--c-orange); --fb: var(--c-orange-bg); }
+        .f2 { --fc: var(--c-green);  --fb: var(--c-green-bg); }
+        .f3 { --fc: var(--c-purple); --fb: var(--c-purple-bg); }
+        .f4 { --fc: var(--c-pink);   --fb: var(--c-pink-bg); }
+        .f5 { --fc: var(--c-yellow); --fb: var(--c-yellow-bg); }
+        .f6 { --fc: var(--c-brown);  --fb: var(--c-brown-bg); }
+        .f7 { --fc: var(--c-red);    --fb: var(--c-red-bg); }
+        .fsw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; border: 1px solid var(--fc); background: var(--fb); margin-right: var(--space-2); vertical-align: -1px; }
+        #clFiles tr { cursor: pointer; }
+        #clFiles tr.is-sel td { background: var(--hover-bg); }
+        .chain { font-family: var(--font-mono); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+
+        /* ---------- HDD ---------- */
+        .hdd-layout { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: var(--space-5); align-items: start; margin-bottom: var(--space-5); }
+        @media (max-width: 760px) { .hdd-layout { grid-template-columns: minmax(0, 1fr); } }
+        .hdd-layout svg { width: 100%; height: auto; display: block; }
+        .hdd text { font-family: var(--font-mono); fill: var(--text-muted); }
+        .hdd .sec { fill: var(--surface-sunken); stroke: var(--border-strong); stroke-width: 0.6; }
+        .hdd .sec.cyl { fill: var(--c-blue-bg); }
+        .hdd .sec.on { fill: var(--c-orange); stroke: var(--c-orange); }
+        .hdd .hub { fill: var(--surface); stroke: var(--border-strong); }
+        .hdd .arm { stroke: var(--text-muted); stroke-width: 5; stroke-linecap: round; }
+        .hdd .head { fill: var(--c-red); }
+        .hdd .plat { fill: var(--surface-sunken); stroke: var(--border-strong); }
+        .hdd .hd { fill: var(--border-strong); }
+        .hdd .hd.on { fill: var(--c-red); }
+        .hdd .lbl { font-size: 9px; }
+        .hdd .lbl.on { fill: var(--c-red); font-weight: 700; }
+        .c-c, .controls-box .label span.c-c { color: var(--c-blue); font-weight: 700; }
+        .c-h, .controls-box .label span.c-h { color: var(--c-red); font-weight: 700; }
+        .c-s, .controls-box .label span.c-s { color: var(--c-orange); font-weight: 700; }
+        .controls-box .label span.muted { color: var(--text-muted); font-weight: 400; }
+
+        /* ---------- SSD ---------- */
+        .ssd-blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+        @media (max-width: 640px) { .ssd-blocks { grid-template-columns: minmax(0, 1fr); } }
+        .ssd-block { padding: var(--space-2) var(--space-3) var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface); }
+        .ssd-block.is-active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+        .ssd-block.is-flash { animation: flash 0.6s var(--ease); }
+        @keyframes flash { from { background: var(--c-red-bg); } to { background: var(--surface); } }
+        .ssd-block__h { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--space-2); }
+        .ssd-block__h strong { color: var(--text); }
+        .ssd-pages { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
+        .pg { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; border-radius: 3px; border: 1px dashed var(--border-strong); color: var(--text-faint); min-width: 0; }
+        .pg.valid { border: 1px solid var(--c-green); background: var(--c-green-bg); color: var(--c-green); font-weight: 700; }
+        .pg.invalid { border: 1px solid var(--border-strong); background: var(--c-gray-bg); color: var(--text-faint); text-decoration: line-through; }
+        .pg.new { outline: 2px solid var(--c-orange); outline-offset: 1px; }
+        .map-table td, .map-table th { text-align: center !important; font-family: var(--font-mono); font-size: var(--fs-xs); padding: 3px 6px !important; }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="vypocet">Výpočetní technika</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">Souborový systém</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg>
+            <h1>Souborový systém</h1>
+            <p class="subtitle">Soubory, adresáře a cesty — a jak se data ukládají na pevný disk a SSD</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Kapitoly">
+        <button class="tab active" type="button" role="tab" id="t-zaklady" aria-controls="zaklady" aria-selected="true" tabindex="0">Souborový systém</button>
+        <button class="tab" type="button" role="tab" id="t-adresare" aria-controls="adresare" aria-selected="false" tabindex="-1">Adresářová struktura</button>
+        <button class="tab" type="button" role="tab" id="t-cesty" aria-controls="cesty" aria-selected="false" tabindex="-1">Absolutní a relativní cesty</button>
+        <button class="tab" type="button" role="tab" id="t-clustery" aria-controls="clustery" aria-selected="false" tabindex="-1">Uložení na disku</button>
+        <button class="tab" type="button" role="tab" id="t-hdd" aria-controls="hdd" aria-selected="false" tabindex="-1">Pevný disk (HDD)</button>
+        <button class="tab" type="button" role="tab" id="t-ssd" aria-controls="ssd" aria-selected="false" tabindex="-1">SSD</button>
+    </div>
+
+    <!-- ================================================================
+         1. SOUBOROVÝ SYSTÉM
+         ================================================================ -->
+    <section id="zaklady" class="tab-content active" role="tabpanel" aria-labelledby="t-zaklady">
+        <h2>K čemu je souborový systém</h2>
+        <p class="lead">Disk je z pohledu počítače jen dlouhá řada očíslovaných bloků, do kterých lze zapsat nuly a jedničky. Nic jako „soubor“ nebo „složka“ na něm fyzicky není. <strong>Souborový systém</strong> je způsob, jak si na disku udělat pořádek — aby šlo data pojmenovat, najít, zvětšovat a mazat.</p>
+
+        <p>Představ si knihovnu. Knihy (data) stojí v regálech na očíslovaných místech (bloky disku). Bez <strong>katalogu</strong> bys musel procházet regál po regálu. Souborový systém je ten katalog: ví, jak se která kniha jmenuje, kde přesně stojí a které místo je volné.</p>
+
+        <h3>Soubor a jeho metadata</h3>
+        <p><strong>Soubor</strong> je pojmenovaná posloupnost bajtů. Kromě samotného obsahu si o něm souborový systém pamatuje i <strong>metadata</strong> — údaje <em>o</em> souboru:</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Údaj</th><th>Příklad</th><th>K čemu slouží</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Název a přípona</strong></td><td class="mono">referat.docx</td><td>přípona napovídá, jakým programem soubor otevřít</td></tr>
+                <tr><td><strong>Velikost</strong></td><td class="mono">24 318 B</td><td>kolik bajtů má obsah</td></tr>
+                <tr><td><strong>Časy</strong></td><td class="mono">12. 11. 2026 8:15</td><td>vytvoření, poslední změna, poslední otevření</td></tr>
+                <tr><td><strong>Vlastník a práva</strong></td><td class="mono">petr, čtení + zápis</td><td>kdo smí soubor číst, měnit, spouštět</td></tr>
+                <tr><td><strong>Umístění dat</strong></td><td class="mono">clustery 120–125</td><td>ve kterých blocích disku obsah leží — uživatel to nevidí</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p><strong>Adresář</strong> (složka) je zvláštní soubor, který neobsahuje data, ale seznam jmen dalších souborů a adresářů s odkazy na jejich metadata.</p>
+
+        <h3>Od názvu k datům</h3>
+        <p>Když poklepeš na soubor, proběhne řada překladů. Každý krok najdeš v jedné záložce:</p>
+        <ol class="steps">
+            <li><strong>Cesta</strong> — <code>/skola/informatika/ukoly/ukol1.py</code> říká, kterými adresáři se k souboru jde. → <a href="#adresare" data-tab>Adresářová struktura</a>, <a href="#cesty" data-tab>Absolutní a relativní cesty</a></li>
+            <li><strong>Adresářový záznam</strong> — v posledním adresáři se najde jméno souboru a u něj velikost a číslo prvního clusteru.</li>
+            <li><strong>Clustery</strong> — souborový systém zjistí, ve kterých blocích disku data leží a v jakém pořadí. → <a href="#clustery" data-tab>Uložení na disku</a></li>
+            <li><strong>Adresa na disku</strong> — čísla bloků se předají disku. Pevný disk je převede na polohu hlavy nad plotnou, SSD na konkrétní paměťovou stránku. → <a href="#hdd" data-tab>Pevný disk</a>, <a href="#ssd" data-tab>SSD</a></li>
+        </ol>
+
+        <h3>Nejznámější souborové systémy</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Systém</th><th>Kde se používá</th><th>Největší soubor</th><th>Poznámka</th></tr></thead>
+                <tbody>
+                <tr><td><strong>FAT32</strong></td><td>starší flash disky, paměťové karty</td><td class="mono">4 GB</td><td>přečte ho téměř každé zařízení; film ve vysoké kvalitě se na něj nevejde</td></tr>
+                <tr><td><strong>exFAT</strong></td><td>flash disky, karty SDXC</td><td>prakticky neomezený</td><td>nástupce FAT32 pro přenosná média</td></tr>
+                <tr><td><strong>NTFS</strong></td><td>Windows</td><td>prakticky neomezený</td><td>práva, žurnál, komprese, šifrování</td></tr>
+                <tr><td><strong>ext4</strong></td><td>Linux, Android</td><td class="mono">16 TB</td><td>žurnál, práva; rozlišuje velká a malá písmena</td></tr>
+                <tr><td><strong>APFS</strong></td><td>macOS, iOS</td><td>prakticky neomezený</td><td>navržen pro SSD, snímky, šifrování</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--info">
+            <strong>Žurnál</strong> je deník, do kterého si souborový systém předem zapíše, co se chystá udělat. Když uprostřed zápisu vypadne proud, po startu podle deníku práci dokončí nebo vrátí zpět — a disk nezůstane v rozbitém stavu.
+        </div>
+
+        <h3>Formátování a oddíly</h3>
+        <ul>
+            <li><strong>Oddíl</strong> (partition) je část disku, která se tváří jako samostatný disk. Jeden fyzický disk může mít oddílů víc — třeba <code>C:</code> a <code>D:</code>.</li>
+            <li><strong>Formátování</strong> na oddílu vytvoří prázdný souborový systém: „katalog“ bez záznamů. Rychlé formátování samotná data nepřepisuje, jen na ně zapomene.</li>
+        </ul>
+    </section>
+
+    <!-- ================================================================
+         2. ADRESÁŘOVÁ STRUKTURA
+         ================================================================ -->
+    <section id="adresare" class="tab-content" role="tabpanel" aria-labelledby="t-adresare" hidden>
+        <h2>Adresářová struktura</h2>
+        <p class="lead">Adresáře mohou obsahovat další adresáře. Vzniká tak <strong>strom</strong>: nahoře je jediný <strong>kořen</strong>, z něj se větví adresáře a na koncích větví jsou soubory.</p>
+
+        <div class="field--inline">
+            <div>
+                <span class="label">Zápis cest</span>
+                <div class="seg" id="osStyle" role="group" aria-label="Operační systém">
+                    <button type="button" data-v="linux" aria-pressed="true">Linux / macOS</button>
+                    <button type="button" data-v="win" aria-pressed="false">Windows</button>
+                </div>
+            </div>
+        </div>
+        <div class="tree-layout">
+            <div class="tree-box" id="treeA" role="group" aria-label="Strom adresářů, klepnutím vybereš položku"></div>
+            <div>
+                <span class="label">Vybraná položka</span>
+                <div class="code-box path-out" id="selPath" aria-live="polite"></div>
+                <div class="stat-grid" id="selStats"></div>
+                <div id="selChildren"></div>
+            </div>
+        </div>
+
+        <h3>Pojmy</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Pojem</th><th>Význam</th><th>Linux / macOS</th><th>Windows</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Kořenový adresář</strong></td><td>vrchol stromu, nemá nadřazený adresář</td><td class="mono">/</td><td class="mono">C:\</td></tr>
+                <tr><td><strong>Oddělovač</strong></td><td>znak mezi jmény v cestě</td><td class="mono">/ (lomítko)</td><td class="mono">\ (zpětné lomítko)</td></tr>
+                <tr><td><strong>Rodičovský adresář</strong></td><td>adresář o úroveň výš</td><td class="mono">..</td><td class="mono">..</td></tr>
+                <tr><td><strong>Aktuální adresář</strong></td><td>adresář, ve kterém program právě „stojí“</td><td class="mono">.</td><td class="mono">.</td></tr>
+                <tr><td><strong>Domovský adresář</strong></td><td>osobní složka uživatele</td><td class="mono">/home/petr &nbsp;(zkratka ~)</td><td class="mono">C:\Users\petr</td></tr>
+                <tr><td><strong>Více disků</strong></td><td>kde je vidět flash disk</td><td>připojí se do stromu, např. <span class="mono">/media/flash</span></td><td>dostane vlastní písmeno a vlastní strom, např. <span class="mono">E:\</span></td></tr>
+                <tr><td><strong>Velikost písmen</strong></td><td>je <span class="mono">Ukol.txt</span> totéž co <span class="mono">ukol.txt</span>?</td><td>ne — dva různé soubory</td><td>ano — tentýž soubor</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--warn">
+            <strong>Jména souborů v praxi:</strong> vyhni se mezerám, diakritice a znakům <code>\ / : * ? " &lt; &gt; |</code>. Ve Windows jsou zakázané úplně, jinde dělají potíže v příkazové řádce a na webu. Bezpečná volba: <code>seminarni_prace_2026.docx</code>.
+        </div>
+    </section>
+
+    <!-- ================================================================
+         3. CESTY
+         ================================================================ -->
+    <section id="cesty" class="tab-content" role="tabpanel" aria-labelledby="t-cesty" hidden>
+        <h2>Absolutní a relativní cesty</h2>
+        <p class="lead">Cesta je popis, jak se ve stromu dostat k souboru. Dá se zapsat dvěma způsoby — podobně jako adresa: buď celá (<em>Praha, Dlouhá 12</em>), nebo vzhledem k místu, kde právě stojíš (<em>druhá ulice vlevo</em>).</p>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>Absolutní cesta</th><th>Relativní cesta</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Začíná</strong></td><td>v kořeni: <span class="mono">/</span> nebo <span class="mono">C:\</span></td><td>v aktuálním adresáři</td></tr>
+                <tr><td><strong>Platí</strong></td><td>odkudkoli, vždy vede na stejné místo</td><td>jen z daného výchozího místa</td></tr>
+                <tr><td><strong>Výhoda</strong></td><td>jednoznačná</td><td>krátká; funguje i po přesunutí celé složky jinam</td></tr>
+                <tr><td><strong>Příklad</strong></td><td class="mono">/skola/informatika/web/styl.css</td><td class="mono">../web/styl.css</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>V relativní cestě se používají dvě zvláštní jména: <code>..</code> znamená „o úroveň výš“ a <code>.</code> znamená „tady“.</p>
+
+        <h3>Odkud kam</h3>
+        <p>Vyber ve stromu <strong>aktuální adresář</strong> (kde stojíš) a <strong>cíl</strong> (kam se chceš dostat). Uvidíš obě cesty a postup.</p>
+        <div class="field--inline">
+            <div>
+                <span class="label">Klepnutím ve stromu nastavuji</span>
+                <div class="seg" id="pickMode" role="group" aria-label="Co nastavuji">
+                    <button type="button" data-v="cwd" aria-pressed="false">aktuální adresář</button>
+                    <button type="button" data-v="target" aria-pressed="true">cíl</button>
+                </div>
+            </div>
+        </div>
+        <div class="tree-layout">
+            <div>
+                <div class="tree-box" id="treeB" role="group" aria-label="Strom adresářů"></div>
+                <div class="legend mt-4">
+                    <span class="legend__item"><span class="legend__swatch" style="background:var(--c-blue-bg);border:1px solid var(--c-blue)"></span>aktuální adresář</span>
+                    <span class="legend__item"><span class="legend__swatch" style="background:var(--c-green-bg);border:1px solid var(--c-green)"></span>cíl</span>
+                    <span class="legend__item"><span class="legend__swatch" style="background:var(--c-yellow-bg);border:1px dashed var(--c-orange)"></span>cesta mezi nimi (čárkovaně nejvyšší bod)</span>
+                </div>
+            </div>
+            <div>
+                <span class="label">Absolutní cesta k cíli</span>
+                <div class="code-box path-out" id="absOut"></div>
+                <span class="label">Relativní cesta z aktuálního adresáře</span>
+                <div class="code-box path-out" id="relOut"></div>
+                <span class="label">Postup</span>
+                <ol class="steps" id="relSteps"></ol>
+            </div>
+        </div>
+
+        <h3>Kam vede tahle cesta?</h3>
+        <p>Opačná úloha: napiš cestu a sleduj, jak ji počítač krok za krokem vyhodnotí. Výchozím místem je aktuální adresář zvolený výše.</p>
+        <div class="field--inline">
+            <div class="grow">
+                <label class="label" for="resIn">Cesta</label>
+                <input type="text" id="resIn" class="mono" value="../../../hudba/pisen.mp3" spellcheck="false" autocomplete="off" autocapitalize="off">
+            </div>
+            <div class="seg" id="resPresets" role="group" aria-label="Ukázky">
+                <button type="button" data-p="../web/obrazky/logo.png">../web/obrazky/logo.png</button>
+                <button type="button" data-p="../obrazky/logo.png">../obrazky/logo.png</button>
+                <button type="button" data-p="./ukol1.py">./ukol1.py</button>
+                <button type="button" data-p="/fotky/dovolena">/fotky/dovolena</button>
+                <button type="button" data-p="../../../../..">../../../../..</button>
+            </div>
+        </div>
+        <ol class="steps" id="resSteps"></ol>
+        <div id="resMsg" aria-live="polite"></div>
+
+        <h3>Relativní cesty na webu</h3>
+        <p>Stejná pravidla platí v odkazech na webových stránkách. Stránka <code>/skola/informatika/web/index.html</code> může obrázek vložit takto:</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Zápis v HTML</th><th>Typ</th><th>Co se stane po přesunutí webu na jiný server nebo do jiné složky</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">&lt;img src="obrazky/logo.png"&gt;</td><td>relativní</td><td><span class="ok">funguje dál</span> — složka <span class="mono">obrazky</span> se přesunula spolu se stránkou</td></tr>
+                <tr><td class="mono">&lt;img src="/skola/informatika/web/obrazky/logo.png"&gt;</td><td>absolutní</td><td><span class="bad">přestane fungovat</span>, pokud se změní umístění složky</td></tr>
+                <tr><td class="mono">&lt;img src="C:\Users\petr\web\obrazky\logo.png"&gt;</td><td>absolutní na tvém disku</td><td><span class="bad">nefunguje nikomu jinému</span> — častá chyba začátečníků</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Vyzkoušej si příkazovou řádku</h3>
+        <p>V terminálu se po stromu pohybuješ příkazy. Pracuje se stejným stromem jako ukázky výše — co tu vytvoříš, objeví se i tam.</p>
+        <div class="term">
+            <div class="term__out" id="termOut" aria-live="polite"></div>
+            <div class="term__line"><label for="termIn" id="termPrompt">/ $</label><input type="text" id="termIn" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Příkaz"></div>
+        </div>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Příkaz</th><th>Co dělá</th><th>Ve Windows</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">pwd</td><td>vypíše absolutní cestu aktuálního adresáře</td><td class="mono">cd</td></tr>
+                <tr><td class="mono">ls [cesta]</td><td>vypíše obsah adresáře</td><td class="mono">dir</td></tr>
+                <tr><td class="mono">cd cesta</td><td>přejde do jiného adresáře (absolutně i relativně)</td><td class="mono">cd</td></tr>
+                <tr><td class="mono">mkdir jméno</td><td>vytvoří adresář</td><td class="mono">mkdir</td></tr>
+                <tr><td class="mono">touch jméno</td><td>vytvoří prázdný soubor</td><td class="mono">type nul &gt; jméno</td></tr>
+                <tr><td class="mono">rm cesta</td><td>smaže soubor nebo prázdný adresář</td><td class="mono">del, rmdir</td></tr>
+                <tr><td class="mono">tree</td><td>vykreslí strom od aktuálního adresáře</td><td class="mono">tree</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         4. ULOŽENÍ NA DISKU
+         ================================================================ -->
+    <section id="clustery" class="tab-content" role="tabpanel" aria-labelledby="t-clustery" hidden>
+        <h2>Jak se soubor uloží na disk</h2>
+        <p class="lead">Disk je rozdělen na stejně velké očíslované bloky — <strong>sektory</strong> (512 B nebo 4 kB). Souborový systém je sdružuje do větších jednotek, <strong>clusterů</strong> (typicky 4 kB). Soubor vždy zabere celé clustery a souborový systém si pamatuje, které to jsou a v jakém pořadí.</p>
+
+        <div class="controls-box">
+            <div><label class="label" for="clSize">Velikost nového souboru [kB]</label><input type="number" id="clSize" value="18" min="1" max="200"></div>
+            <div><label class="label" for="clCluster">Velikost clusteru</label>
+                <select id="clCluster"><option value="1">1 kB</option><option value="4" selected>4 kB</option><option value="8">8 kB</option><option value="16">16 kB</option></select></div>
+        </div>
+        <div class="row" style="margin-bottom:var(--space-4)">
+            <button class="btn btn--primary" type="button" id="clAdd">Uložit soubor</button>
+            <button class="btn" type="button" id="clDemo">Ukázka fragmentace</button>
+            <button class="btn" type="button" id="clDefrag">Defragmentovat</button>
+            <button class="btn btn--ghost" type="button" id="clClear">Vyprázdnit disk</button>
+        </div>
+        <span class="label">Disk — 96 clusterů (číslo = pořadí části souboru)</span>
+        <div class="cl-grid" id="clGrid"></div>
+        <div id="clMsg" aria-live="polite"></div>
+        <div class="stat-grid" id="clStats"></div>
+
+        <span class="label">Adresář — klepnutím na soubor zvýrazníš jeho clustery</span>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Soubor</th><th>Velikost</th><th>Na disku</th><th>První cluster</th><th>Částí</th><th></th></tr></thead>
+                <tbody id="clFiles"></tbody>
+            </table>
+        </div>
+        <span class="label">Řetěz clusterů vybraného souboru</span>
+        <div class="code-box chain" id="clChain">Vyber soubor v tabulce.</div>
+
+        <h3>Co je na ukázce vidět</h3>
+        <ul>
+            <li><strong>Nevyužité místo.</strong> Soubor o velikosti 1 kB zabere při 4kB clusterech celé 4 kB. Zbytek posledního clusteru zůstane prázdný a nikdo jiný ho použít nemůže. Proto Windows u souboru ukazují dvě čísla: <em>Velikost</em> a <em>Velikost na disku</em>.</li>
+            <li><strong>Fragmentace.</strong> Když se po smazání souborů uvolní díry, nový větší soubor se do nich uloží po kouscích. Čtení je pak pomalejší — na pevném disku musí hlava přejíždět z místa na místo.</li>
+            <li><strong>Defragmentace</strong> přeskládá clustery tak, aby každý soubor ležel pohromadě. Má smysl jen u pevných disků; SSD přejíždět nemusí a zbytečné přepisování mu zkracuje život.</li>
+            <li><strong>Smazání je jen zapomenutí.</strong> Smazáním se clustery označí jako volné (v mřížce šrafovaně), ale data v nich zůstávají, dokud je nepřepíše jiný soubor. Proto jdou smazané soubory někdy obnovit — a proto se disk před prodejem má přepsat celý.</li>
+        </ul>
+
+        <h3>Jak si souborový systém pamatuje, kde co je</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Způsob</th><th>Princip</th><th>Používá</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Tabulka FAT</strong></td><td>V adresáři je jen číslo prvního clusteru. Velká tabulka má pro každý cluster jedno políčko: číslo <em>následujícího</em> clusteru souboru, nebo značku „konec“. Je to spojový seznam — jako v ukázce výše.</td><td>FAT32, exFAT</td></tr>
+                <tr><td><strong>Indexový uzel</strong> (inode)</td><td>Každý soubor má vlastní malou tabulku se seznamem všech svých bloků a s metadaty. Adresář obsahuje jen dvojice jméno → číslo uzlu.</td><td>ext4 a další unixové systémy</td></tr>
+                <tr><td><strong>Rozsahy</strong> (extents)</td><td>Místo jednotlivých bloků se ukládají úseky „od bloku 120, délka 6“. U nefragmentovaných souborů je záznam velmi krátký.</td><td>NTFS, ext4, APFS</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         5. HDD
+         ================================================================ -->
+    <section id="hdd" class="tab-content" role="tabpanel" aria-labelledby="t-hdd" hidden>
+        <h2>Adresování na pevném disku (HDD)</h2>
+        <p class="lead">Pevný disk ukládá data magneticky na rotující kotouče — <strong>plotny</strong>. Nad každým povrchem se na společném rameni pohybuje čtecí a zápisová <strong>hlava</strong>. Aby šlo říct, kde přesně data leží, je povrch rozdělen na stopy a sektory.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Pojem</th><th>Co to je</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Stopa</strong> (track)</td><td>soustředná kružnice na povrchu plotny</td></tr>
+                <tr><td><strong>Sektor</strong></td><td>úsek stopy — nejmenší adresovatelná jednotka, 512 B nebo 4 kB</td></tr>
+                <tr><td><strong class="c-c">Cylindr</strong> (C)</td><td>všechny stopy se stejným poloměrem na všech površích; hlavy na ně dosáhnou bez pohybu ramene</td></tr>
+                <tr><td><strong class="c-h">Hlava</strong> (H)</td><td>určuje povrch: každá plotna má dva povrchy a každý svou hlavu</td></tr>
+                <tr><td><strong class="c-s">Sektor</strong> (S)</td><td>pořadí sektoru na stopě; čísluje se od 1</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>CHS a LBA</h3>
+        <p>Starší způsob adresování <strong>CHS</strong> popisuje sektor trojicí cylindr–hlava–sektor, tedy přímo fyzickou polohou. Dnes se používá <strong>LBA</strong> (logická adresa bloku): sektory jsou prostě očíslované od nuly a geometrii si řeší disk sám. Model níže má 8 cylindrů, 4 hlavy a 16 sektorů na stopu.</p>
+
+        <div class="hdd-layout">
+            <div>
+                <svg class="hdd" id="hddTop" viewBox="0 0 340 340" role="img" aria-label="Pohled shora na plotnu se stopami a sektory"></svg>
+                <svg class="hdd" id="hddSide" viewBox="0 0 340 120" role="img" aria-label="Pohled z boku na dvě plotny a čtyři hlavy"></svg>
+            </div>
+            <div>
+                <div class="controls-box" style="grid-template-columns:1fr">
+                    <div><label class="label" for="hC"><span class="c-c">Cylindr C</span>: <output id="hCv">2</output> <span class="muted">(0 = vnější okraj)</span></label><input type="range" id="hC" min="0" max="7" value="2"></div>
+                    <div><label class="label" for="hH"><span class="c-h">Hlava H</span>: <output id="hHv">1</output></label><input type="range" id="hH" min="0" max="3" value="1"></div>
+                    <div><label class="label" for="hS"><span class="c-s">Sektor S</span>: <output id="hSv">5</output></label><input type="range" id="hS" min="1" max="16" value="5"></div>
+                </div>
+                <span class="label">Převod CHS → LBA</span>
+                <div class="formula" id="hCalc" aria-live="polite"></div>
+                <div class="field--inline">
+                    <div>
+                        <label class="label" for="hLba">Nebo zadej LBA (0–511)</label>
+                        <input type="number" id="hLba" min="0" max="511" value="0">
+                    </div>
+                    <button class="btn" type="button" id="hPrev">LBA − 1</button>
+                    <button class="btn btn--primary" type="button" id="hNext">LBA + 1</button>
+                </div>
+                <span class="label">Převod LBA → CHS</span>
+                <div class="formula" id="hBack"></div>
+                <p class="muted text-sm">Klikej na <strong>LBA + 1</strong>: nejdřív se mění sektor, potom hlava a až nakonec cylindr. Po sobě jdoucí bloky tak leží na jednom cylindru a rameno se nemusí hýbat — pohyb ramene je totiž to nejpomalejší.</p>
+            </div>
+        </div>
+
+        <h3>Proč je pevný disk pomalý</h3>
+        <p>Než disk přečte sektor, musí hlavu <strong>přesunout</strong> na správnou stopu a pak <strong>počkat</strong>, až se sektor pod hlavu dotočí.</p>
+        <div class="controls-box">
+            <div><label class="label" for="hRpm">Otáčky</label>
+                <select id="hRpm"><option value="5400">5 400 ot./min (notebook)</option><option value="7200" selected>7 200 ot./min (stolní PC)</option><option value="10000">10 000 ot./min</option><option value="15000">15 000 ot./min (server)</option></select></div>
+            <div><label class="label" for="hSeek">Průměrná doba vystavení hlavy [ms]</label><input type="number" id="hSeek" value="9" min="0" step="0.5"></div>
+        </div>
+        <div class="stat-grid" id="hTime"></div>
+
+        <h3>Kapacita disku</h3>
+        <div class="formula">kapacita = cylindry × hlavy × sektory na stopu × velikost sektoru<br>náš model: 8 × 4 × 16 × 512 B = 262 144 B = 256 KiB</div>
+        <p class="muted text-sm">Skutečné disky mají statisíce stop na povrch a na vnějších, delších stopách více sektorů než na vnitřních. Počítač proto s diskem mluví jen pomocí LBA a přepočet na fyzickou polohu dělá elektronika disku.</p>
+    </section>
+
+    <!-- ================================================================
+         6. SSD
+         ================================================================ -->
+    <section id="ssd" class="tab-content" role="tabpanel" aria-labelledby="t-ssd" hidden>
+        <h2>Adresování na SSD</h2>
+        <p class="lead">SSD nemá žádné pohyblivé části. Data ukládá do paměťových buněk typu <strong>flash</strong> jako elektrický náboj. Počítači se tváří stejně jako pevný disk — jako řada bloků s adresami LBA — ale uvnitř funguje úplně jinak.</p>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Jednotka</th><th>Typická velikost</th><th>Co s ní jde dělat</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Stránka</strong> (page)</td><td>4–16 kB</td><td>číst a <strong>jednou zapsat</strong> — přepsat ji nelze</td></tr>
+                <tr><td><strong>Blok</strong></td><td>stovky stránek, jednotky MB</td><td><strong>smazat</strong> — vždy jen celý blok najednou</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>Z toho plyne zásadní rozdíl oproti pevnému disku: <strong>data nejde přepsat na místě</strong>. Nová verze se zapíše do jiné, volné stránky a stará se jen označí jako neplatná. Řadič SSD si proto vede <strong>překladovou tabulku</strong> (FTL), která říká, na které fyzické stránce právě leží která logická adresa.</p>
+
+        <h3>Vyzkoušej si to</h3>
+        <p>Model má 4 bloky po 8 stránkách (32 fyzických stránek), ale počítači nabízí jen 16 logických adres. Rezerva je nutná, aby bylo kam zapisovat nové verze.</p>
+        <div class="field--inline">
+            <div>
+                <label class="label" for="sLba">Logická adresa (LBA)</label>
+                <select id="sLba"></select>
+            </div>
+            <button class="btn btn--primary" type="button" id="sWrite">Zapsat / přepsat</button>
+            <button class="btn" type="button" id="sTrim">Smazat (TRIM)</button>
+        </div>
+        <div class="row" style="margin-bottom:var(--space-4)">
+            <button class="btn" type="button" id="sRand">Zapsat 6× náhodně</button>
+            <button class="btn" type="button" id="sGc">Úklid (garbage collection)</button>
+            <button class="btn btn--ghost" type="button" id="sReset">Nový disk</button>
+        </div>
+        <div class="legend">
+            <span class="legend__item"><span class="legend__swatch" style="border:1px dashed var(--border-strong)"></span>volná stránka</span>
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-green-bg);border:1px solid var(--c-green)"></span>platná data (číslo = LBA)</span>
+            <span class="legend__item"><span class="legend__swatch" style="background:var(--c-gray-bg);border:1px solid var(--border-strong)"></span>neplatná — stará verze</span>
+            <span class="legend__item"><span class="legend__swatch" style="border:2px solid var(--accent)"></span>blok, do kterého se právě zapisuje</span>
+        </div>
+        <div class="ssd-blocks" id="sBlocks"></div>
+        <div class="callout callout--neutral" id="sLog" aria-live="polite" style="min-height:4.2em"></div>
+        <div class="stat-grid" id="sStats"></div>
+        <span class="label">Překladová tabulka: logická adresa → blok.stránka</span>
+        <div class="table-wrap"><table class="notion-table map-table" id="sMap"></table></div>
+
+        <h3>Co řadič SSD řeší</h3>
+        <ul>
+            <li><strong>Úklid</strong> (garbage collection). Když docházejí volné stránky, řadič vybere blok s nejvíce neplatnými stránkami, platné zkopíruje jinam a celý blok smaže. Děje se to na pozadí.</li>
+            <li><strong>Rovnoměrné opotřebení</strong> (wear leveling). Každý blok vydrží jen omezený počet smazání — tisíce až desetitisíce. Řadič proto zápisy střídá, aby se bloky opotřebovávaly stejně.</li>
+            <li><strong>TRIM.</strong> Když v počítači smažeš soubor, souborový systém si jen poznamená volné clustery. Příkazem TRIM dá vědět i disku, že data na těch adresách už nejsou potřeba — řadič je pak při úklidu nemusí zbytečně kopírovat.</li>
+            <li><strong>Zesílení zápisu.</strong> Kvůli kopírování při úklidu se do paměti fyzicky zapíše víc, než kolik poslal počítač. Sleduj poměr ve statistice.</li>
+        </ul>
+
+        <h3>HDD a SSD vedle sebe</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>Pevný disk (HDD)</th><th>SSD</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Princip</strong></td><td>magnetický záznam na rotující plotny</td><td>elektrický náboj v buňkách flash paměti</td></tr>
+                <tr><td><strong>Fyzická adresa</strong></td><td>cylindr, hlava, sektor</td><td>blok a stránka</td></tr>
+                <tr><td><strong>Převod z LBA</strong></td><td>pevný výpočet</td><td>překladová tabulka, která se neustále mění</td></tr>
+                <tr><td><strong>Přístupová doba</strong></td><td>kolem 10 ms (pohyb hlavy + otočení)</td><td>kolem 0,1 ms — stejná pro každé místo</td></tr>
+                <tr><td><strong>Přepis dat</strong></td><td>přímo na místě</td><td>zápis jinam, staré místo se smaže později</td></tr>
+                <tr><td><strong>Vadí fragmentace?</strong></td><td>ano — hlava musí přejíždět</td><td>ne — defragmentace je zbytečná a škodí</td></tr>
+                <tr><td><strong>Opotřebení</strong></td><td>mechanické; vadí nárazy</td><td>omezený počet přepisů buněk; nárazy nevadí</td></tr>
+                <tr><td><strong>Cena za GB</strong></td><td>nižší — vhodný pro velké archivy</td><td>vyšší — vhodný pro systém a programy</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
+<script>
+/* ======================================================================
+   Souborový systém — společné pomocné funkce a záložky
+   ====================================================================== */
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/** Hodnota CSS proměnné (barvy pro canvas a SVG). */
+function tok(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** Escapování textu pro innerHTML. */
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Číslo s českým oddělovačem tisíců a desetinnou čárkou. */
+function fmt(n, maxFrac) {
+    if (typeof n === 'bigint') return n.toString().replace(/^-/, '−').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return Number(n).toLocaleString('cs-CZ', { maximumFractionDigits: maxFrac == null ? 2 : maxFrac }).replace(/^-/, '−');
+}
+
+function hex2(b) { return b.toString(16).toUpperCase().padStart(2, '0'); }
+function bin8(b) { return b.toString(2).padStart(8, '0'); }
+
+/** Lidsky čitelná velikost v bajtech (desítkové předpony, jak je uvádějí výrobci). */
+function humanBytes(bytes) {
+    var units = ['B', 'kB', 'MB', 'GB', 'TB'];
+    var i = 0, v = bytes;
+    while (v >= 1000 && i < units.length - 1) { v /= 1000; i++; }
+    return fmt(v, i === 0 ? 0 : 2) + ' ' + units[i];
+}
+
+/** Statistická dlaždice. */
+function stat(label, value, small) {
+    return '<div class="stat"><span class="stat__label">' + label + '</span><span class="stat__value">' +
+        value + (small ? ' <small>' + small + '</small>' : '') + '</span></div>';
+}
+
+/** Segmentový přepínač: vrátí aktuální hodnotu a volá cb při změně. */
+function bindSeg(el, cb) {
+    el.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !el.contains(b)) return;
+        el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.dataset.v, b);
+    });
+}
+function segValue(el) {
+    var b = el.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.v : null;
+}
+
+/* ----------------------------------------------------------------------
+   Záložky: přepínání, ARIA stavy, šipky, odkaz přes #kotvu
+   ---------------------------------------------------------------------- */
+function showTab(id, focus) {
+    var panel = $(id);
+    if (!panel || !panel.classList.contains('tab-content')) return;
+    document.querySelectorAll('main > .tab-content').forEach(function (p) {
+        p.classList.toggle('active', p === panel);
+        p.hidden = (p !== panel);
+    });
+    document.querySelectorAll('.tabs .tab').forEach(function (b) {
+        var on = b.getAttribute('aria-controls') === id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        if (on) {
+            if (focus) b.focus();
+            if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// v některých prohlížečích */ }
+    window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: id } }));
+}
+
+(function initTabs() {
+    var bar = document.querySelector('.tabs[role="tablist"]');
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (b) showTab(b.getAttribute('aria-controls'));
+    });
+    bar.addEventListener('keydown', function (e) {
+        if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        var next = e.key === 'Home' ? 0
+            : e.key === 'End' ? tabs.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        showTab(tabs[next].getAttribute('aria-controls'), true);
+    });
+    // Odkazy uvnitř stránky na jinou záložku (<a href="#zvuk" data-tab>)
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-tab]');
+        if (!a) return;
+        e.preventDefault();
+        showTab(a.getAttribute('href').slice(1));
+        window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+    });
+    var h = (location.hash || '').slice(1);
+    if (h && $(h) && $(h).classList.contains('tab-content')) showTab(h);
+})();
+
+/* ======================================================================
+   Model stromu adresářů (společný pro záložky Adresářová struktura a Cesty)
+   ====================================================================== */
+var FS = (function () {
+    function mk(name, type, kids, size) {
+        var n = { name: name, type: type, children: [], parent: null, size: size || 0 };
+        (kids || []).forEach(function (k) { k.parent = n; n.children.push(k); });
+        return n;
+    }
+    var d = function (name, kids) { return mk(name, 'dir', kids); };
+    var f = function (name, size) { return mk(name, 'file', null, size); };
+
+    var root = d('', [
+        d('skola', [
+            d('informatika', [
+                d('ukoly', [f('ukol1.py', 840), f('ukol2.py', 1260)]),
+                d('web', [
+                    d('obrazky', [f('logo.png', 18400), f('foto.jpg', 245000)]),
+                    f('index.html', 3200), f('styl.css', 1900)
+                ]),
+                f('prezentace.pptx', 2400000)
+            ]),
+            d('matematika', [f('pisemka.docx', 41000), f('vzorce.pdf', 380000)])
+        ]),
+        d('fotky', [d('dovolena', [f('hory.jpg', 3100000), f('more.jpg', 2800000)])]),
+        d('hudba', [f('pisen.mp3', 4200000)]),
+        f('poznamky.txt', 512)
+    ]);
+
+    var style = 'linux';
+    function names(n) { var a = []; while (n.parent) { a.unshift(n.name); n = n.parent; } return a; }
+    function fmtNames(a, st) {
+        st = st || style;
+        return st === 'win' ? 'C:\\' + a.join('\\') : '/' + a.join('/');
+    }
+    function path(n, st) { return fmtNames(names(n), st); }
+    function sep() { return style === 'win' ? '\\' : '/'; }
+    function child(n, name) {
+        for (var i = 0; i < n.children.length; i++) {
+            var c = n.children[i];
+            if (c.name === name || (style === 'win' && c.name.toLowerCase() === name.toLowerCase())) return c;
+        }
+        return null;
+    }
+    function sortKids(n) {
+        n.children.sort(function (a, b) { return (a.type === b.type ? 0 : a.type === 'dir' ? -1 : 1) || a.name.localeCompare(b.name, 'cs'); });
+    }
+    function add(parent, name, type) {
+        var n = mk(name, type);
+        n.parent = parent; parent.children.push(n); sortKids(parent);
+        return n;
+    }
+    function remove(n) { n.parent.children.splice(n.parent.children.indexOf(n), 1); }
+    function isAbs(s) { return /^[\/\\]/.test(s) || /^[A-Za-z]:([\/\\]|$)/.test(s); }
+    function tokens(s) { return s.replace(/^[A-Za-z]:/, '').split(/[\/\\]+/).filter(function (t) { return t !== ''; }); }
+
+    /** Vyhodnotí cestu krok za krokem. Vrací { node, steps, error }. */
+    function resolve(cwd, str) {
+        var cur = isAbs(str) ? root : cwd, steps = [], error = null;
+        steps.push({ t: isAbs(str) ? 'Cesta začíná v kořeni → je <strong>absolutní</strong>. Začínám v <code>' + esc(path(root)) + '</code>.' : 'Cesta nezačíná v kořeni → je <strong>relativní</strong>. Začínám v aktuálním adresáři <code>' + esc(path(cwd)) + '</code>.', node: cur });
+        tokens(str).some(function (tk) {
+            if (cur.type !== 'dir') { error = '<code>' + esc(cur.name) + '</code> je soubor, ne adresář — nejde do něj vstoupit.'; return true; }
+            if (tk === '.') { steps.push({ t: '<code>.</code> — zůstávám, kde jsem.', node: cur }); return false; }
+            if (tk === '..') {
+                if (cur.parent) { cur = cur.parent; steps.push({ t: '<code>..</code> — o úroveň výš, do <code>' + esc(path(cur)) + '</code>.', node: cur }); }
+                else steps.push({ t: '<code>..</code> — jsem v kořeni, výš už to nejde. Zůstávám v <code>' + esc(path(cur)) + '</code>.', node: cur });
+                return false;
+            }
+            var c = child(cur, tk);
+            if (!c) { error = 'V adresáři <code>' + esc(path(cur)) + '</code> není nic se jménem <code>' + esc(tk) + '</code>.'; return true; }
+            cur = c;
+            steps.push({ t: '<code>' + esc(tk) + '</code> — ' + (c.type === 'dir' ? 'vstupuji do adresáře' : 'našel jsem soubor') + ' <code>' + esc(path(c)) + '</code>.', node: c });
+            return false;
+        });
+        return { node: error ? null : cur, steps: steps, error: error };
+    }
+    /** Relativní cesta z adresáře `from` k uzlu `to`. */
+    function relative(from, to) {
+        var a = names(from), b = names(to), k = 0;
+        while (k < a.length && k < b.length && a[k] === b[k]) k++;
+        var top = from;
+        for (var i = 0; i < a.length - k; i++) top = top.parent;
+        return { ups: a.length - k, down: b.slice(k), top: top };
+    }
+
+    return {
+        root: root, names: names, path: path, fmtNames: fmtNames, sep: sep, child: child, add: add, remove: remove,
+        resolve: resolve, relative: relative, isAbs: isAbs,
+        setStyle: function (s) { style = s; }, getStyle: function () { return style; }
+    };
+})();
+
+var ICON_DIR = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
+var ICON_FILE = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>';
+
+/** Vykreslí strom; deco(node) vrací { cls, badge }. Uzly se hledají přes pole `index`. */
+function renderTree(el, index, deco) {
+    index.length = 0;
+    function li(n) {
+        var id = index.push(n) - 1, d = deco(n) || {};
+        var label = n.parent ? esc(n.name) : esc(FS.path(n)) + ' <span class="muted" style="font-family:var(--font-sans);font-weight:400">kořen</span>';
+        var h = '<li><button type="button" class="tnode is-' + n.type + ' ' + (d.cls || '') + '" data-id="' + id + '">' + (n.type === 'dir' ? ICON_DIR : ICON_FILE) + '<span>' + label + '</span>' +
+            (d.badge ? '<span class="badge">' + d.badge + '</span>' : '') + '</button>';
+        if (n.children.length) h += '<ul>' + n.children.map(li).join('') + '</ul>';
+        return h + '</li>';
+    }
+    el.innerHTML = '<ul class="tree">' + li(FS.root) + '</ul>';
+}
+
+/* ======================================================================
+   2. ADRESÁŘOVÁ STRUKTURA + 3. CESTY
+   ====================================================================== */
+var Paths = (function () {
+    var KINDS = { py: 'program v Pythonu', html: 'webová stránka', css: 'styl webové stránky', png: 'obrázek', jpg: 'fotografie', pptx: 'prezentace', docx: 'textový dokument', pdf: 'dokument PDF', mp3: 'hudba', txt: 'prostý text' };
+    var find = function (p) { return FS.resolve(FS.root, p).node; };
+    var sel = find('/skola/informatika/web/index.html');
+    var cwd = find('/skola/informatika/ukoly'), target = find('/skola/informatika/web/obrazky/logo.png');
+    var idxA = [], idxB = [];
+
+    function colored(p) {
+        return esc(p).replace(/(\.\.)|([\/\\])/g, function (m, up) { return '<span class="' + (up ? 'up' : 'sep') + '">' + m + '</span>'; });
+    }
+    function alive(n) { while (n.parent) n = n.parent; return n === FS.root; }
+
+    function renderA() {
+        if (!alive(sel)) sel = FS.root;
+        renderTree($('treeA'), idxA, function (n) { return n === sel ? { cls: 'is-sel' } : null; });
+        $('selPath').innerHTML = colored(FS.path(sel));
+        var depth = FS.names(sel).length, ext = sel.type === 'file' && sel.name.indexOf('.') > 0 ? sel.name.split('.').pop() : '';
+        var dirs = sel.children.filter(function (c) { return c.type === 'dir'; }).length;
+        $('selStats').innerHTML =
+            stat('Typ', sel.type === 'dir' ? (sel.parent ? 'adresář' : 'kořenový adresář') : 'soubor') +
+            stat('Úroveň ve stromu', depth, depth === 0 ? 'kořen' : 'pod kořenem') +
+            stat('Rodič', sel.parent ? esc(FS.path(sel.parent)) : '— žádný') +
+            (sel.type === 'dir' ? stat('Obsahuje', dirs + ' adr., ' + (sel.children.length - dirs) + ' soub.') :
+                stat('Přípona', ext ? '.' + esc(ext) : '—', KINDS[ext] || '') + stat('Velikost', humanBytes(sel.size)));
+        $('selChildren').innerHTML = '<p class="muted text-sm">Stejné místo v druhém zápisu: <span class="mono">' + esc(FS.path(sel, FS.getStyle() === 'win' ? 'linux' : 'win')) + '</span></p>';
+    }
+
+    function renderB() {
+        if (!alive(cwd)) cwd = FS.root;
+        if (!alive(target)) target = cwd;
+        var rel = FS.relative(cwd, target);
+        // uzly na cestě: od cwd nahoru k nejvyššímu bodu, pak dolů k cíli
+        var onPath = new Set(), n = cwd;
+        while (n !== rel.top) { onPath.add(n); n = n.parent; }
+        onPath.add(rel.top);
+        n = target;
+        while (n !== rel.top) { onPath.add(n); n = n.parent; }
+        renderTree($('treeB'), idxB, function (x) {
+            var cls = [], badge = '';
+            if (onPath.has(x)) cls.push('is-path');
+            if (x === rel.top && x !== cwd && x !== target) cls.push('is-top');
+            if (x === target) { cls.push('is-target'); badge = 'cíl'; }
+            if (x === cwd) { cls.push('is-cwd'); badge = x === target ? 'tady + cíl' : 'tady'; }
+            return { cls: cls.join(' '), badge: badge };
+        });
+        var s = FS.sep();
+        var relStr = (new Array(rel.ups).fill('..').concat(rel.down)).join(s) || '.';
+        $('absOut').innerHTML = colored(FS.path(target));
+        $('relOut').innerHTML = colored(relStr);
+        var steps = ['Stojím v <code>' + esc(FS.path(cwd)) + '</code>.'];
+        if (rel.ups) steps.push('Cíl není pod mým adresářem. Musím <strong>' + rel.ups + '× nahoru</strong> do společného adresáře <code>' + esc(FS.path(rel.top)) + '</code> → <code>' + esc(new Array(rel.ups).fill('..').join(s)) + '</code>');
+        if (rel.down.length) steps.push('Odtud <strong>dolů</strong> přes ' + rel.down.map(function (x) { return '<code>' + esc(x) + '</code>'; }).join(' → ') + '.');
+        if (!rel.ups && !rel.down.length) steps.push('Cíl je přímo aktuální adresář — relativní cesta je jen tečka.');
+        steps.push('Relativní cesta má ' + relStr.length + ' znaků, absolutní ' + FS.path(target).length + '.');
+        $('relSteps').innerHTML = steps.map(function (x) { return '<li>' + x + '</li>'; }).join('');
+        renderRes();
+    }
+
+    function renderRes() {
+        var str = $('resIn').value.trim();
+        if (!str) { $('resSteps').innerHTML = ''; $('resMsg').innerHTML = ''; return; }
+        var r = FS.resolve(cwd, str);
+        $('resSteps').innerHTML = r.steps.map(function (x) { return '<li>' + x.t + '</li>'; }).join('');
+        $('resMsg').innerHTML = r.error
+            ? '<div class="callout callout--danger"><strong>Cesta neexistuje.</strong> ' + r.error + '</div>'
+            : '<div class="callout callout--success">Cesta vede na ' + (r.node.type === 'dir' ? 'adresář' : 'soubor') + ' <strong class="mono">' + esc(FS.path(r.node)) + '</strong>.</div>';
+    }
+
+    function renderAll() { renderA(); renderB(); if (window.Term) Term.prompt(); }
+
+    $('treeA').addEventListener('click', function (e) {
+        var b = e.target.closest('.tnode');
+        if (b) { sel = idxA[+b.dataset.id]; renderA(); }
+    });
+    $('treeB').addEventListener('click', function (e) {
+        var b = e.target.closest('.tnode');
+        if (!b) return;
+        var n = idxB[+b.dataset.id];
+        if (segValue($('pickMode')) === 'cwd') cwd = n.type === 'dir' ? n : n.parent;
+        else target = n;
+        renderB();
+    });
+    bindSeg($('pickMode'), function () {});
+    bindSeg($('osStyle'), function (v) { FS.setStyle(v); renderAll(); });
+    $('resIn').addEventListener('input', renderRes);
+    $('resPresets').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (b) { $('resIn').value = b.dataset.p; renderRes(); }
+    });
+    renderA(); renderB();
+    return { renderAll: renderAll, getCwd: function () { return cwd; } };
+})();
+
+/* ======================================================================
+   Terminál
+   ====================================================================== */
+var Term = (function () {
+    var cwd = FS.root, out = $('termOut'), hist = [], hi = 0;
+
+    function print(html) { out.insertAdjacentHTML('beforeend', html + '\n'); out.scrollTop = out.scrollHeight; }
+    function err(t) { print('<span class="e">' + t + '</span>'); }
+    function prompt() {
+        var n = cwd; while (n.parent) n = n.parent;
+        if (n !== FS.root) cwd = FS.root;
+        $('termPrompt').textContent = FS.path(cwd) + (FS.getStyle() === 'win' ? '>' : ' $');
+    }
+    function lsLine(n) { return n.type === 'dir' ? '<span class="d">' + esc(n.name) + '/</span>' : esc(n.name); }
+    function validName(s) { return /^[^\/\\:*?"<>|\s]+$/.test(s) && s !== '.' && s !== '..'; }
+    /** Rozdělí cestu na rodičovský adresář a poslední jméno. */
+    function splitLast(p) {
+        var m = /^(.*[\/\\])?([^\/\\]+)[\/\\]?$/.exec(p);
+        if (!m) return null;
+        var dir = m[1] ? FS.resolve(cwd, m[1]) : { node: cwd };
+        return { dir: dir.node, name: m[2], error: dir.error };
+    }
+    function tree(n, pre) {
+        n.children.forEach(function (c, i) {
+            var last = i === n.children.length - 1;
+            print(pre + (last ? '└── ' : '├── ') + lsLine(c));
+            if (c.type === 'dir') tree(c, pre + (last ? '    ' : '│   '));
+        });
+    }
+
+    function run(line) {
+        print('<span class="p">' + esc($('termPrompt').textContent) + '</span> ' + esc(line));
+        var a = line.trim().split(/\s+/), cmd = a[0], arg = a[1], r, s;
+        switch (cmd) {
+            case '': break;
+            case 'help': print('pwd · ls [cesta] · cd cesta · mkdir jméno · touch jméno · rm cesta · tree · clear'); break;
+            case 'pwd': print(esc(FS.path(cwd))); break;
+            case 'ls': case 'dir':
+                r = arg ? FS.resolve(cwd, arg) : { node: cwd };
+                if (r.error) err('ls: ' + r.error);
+                else if (r.node.type === 'file') print(esc(r.node.name));
+                else print(r.node.children.map(lsLine).join('  ') || '<span class="p">(prázdný adresář)</span>');
+                break;
+            case 'cd':
+                if (!arg) { cwd = FS.root; break; }
+                r = FS.resolve(cwd, arg);
+                if (r.error) err('cd: ' + r.error);
+                else if (r.node.type !== 'dir') err('cd: ' + esc(arg) + ' je soubor, ne adresář');
+                else cwd = r.node;
+                break;
+            case 'mkdir': case 'touch':
+                if (!arg) { err(cmd + ': chybí jméno'); break; }
+                s = splitLast(arg);
+                if (!s || s.error || !s.dir) { err(cmd + ': ' + (s && s.error || 'neplatná cesta')); break; }
+                if (s.dir.type !== 'dir') { err(cmd + ': cílem není adresář'); break; }
+                if (!validName(s.name)) { err(cmd + ': jméno obsahuje nepovolené znaky'); break; }
+                if (FS.child(s.dir, s.name)) { if (cmd === 'mkdir') err('mkdir: „' + esc(s.name) + '“ už existuje'); break; }
+                FS.add(s.dir, s.name, cmd === 'mkdir' ? 'dir' : 'file');
+                Paths.renderAll();
+                break;
+            case 'rm': case 'rmdir': case 'del':
+                if (!arg) { err(cmd + ': chybí cesta'); break; }
+                r = FS.resolve(cwd, arg);
+                if (r.error) { err(cmd + ': ' + r.error); break; }
+                if (!r.node.parent) { err(cmd + ': kořenový adresář smazat nejde'); break; }
+                if (r.node.children.length) { err(cmd + ': adresář není prázdný'); break; }
+                for (var n = cwd; n; n = n.parent) if (n === r.node) { err(cmd + ': nejde smazat adresář, ve kterém stojíš'); return; }
+                FS.remove(r.node);
+                Paths.renderAll();
+                break;
+            case 'tree': print(esc(FS.path(cwd))); tree(cwd, ''); break;
+            case 'clear': case 'cls': out.innerHTML = ''; break;
+            default: err(esc(cmd) + ': neznámý příkaz. Zkus „help“.');
+        }
+        prompt();
+    }
+    $('termIn').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            var v = this.value;
+            if (v.trim()) { hist.push(v); hi = hist.length; }
+            this.value = '';
+            run(v);
+        } else if (e.key === 'ArrowUp' && hi > 0) { e.preventDefault(); this.value = hist[--hi]; }
+        else if (e.key === 'ArrowDown' && hi < hist.length) { e.preventDefault(); this.value = hist[++hi] || ''; }
+    });
+    print('<span class="p">Napiš příkaz a stiskni Enter. Zkus třeba: ls · cd skola/informatika · pwd · cd ../.. · tree · help</span>');
+    prompt();
+    return { run: run, prompt: prompt };
+})();
+
+/* ======================================================================
+   4. ULOŽENÍ NA DISKU — clustery
+   ====================================================================== */
+var Clusters = (function () {
+    var N = 96, disk, ghost, files, nextId, selId = null;
+
+    function cs() { return +$('clCluster').value; }
+    function reset() { disk = new Array(N).fill(null); ghost = new Array(N).fill(false); files = []; nextId = 0; selId = null; }
+    function freeCount() { return disk.filter(function (x) { return x === null; }).length; }
+    function fragments(f) { var k = 1; for (var i = 1; i < f.clusters.length; i++) if (f.clusters[i] !== f.clusters[i - 1] + 1) k++; return k; }
+
+    function addFile(sizeKB, quiet) {
+        var need = Math.ceil(sizeKB / cs());
+        if (need > freeCount()) { if (!quiet) msg('danger', 'Soubor potřebuje ' + need + ' clusterů, ale volných je jen ' + freeCount() + '. Disk je plný.'); return null; }
+        var f = { id: nextId, name: 'soubor_' + String.fromCharCode(65 + nextId % 26) + (nextId >= 26 ? Math.floor(nextId / 26) : ''), size: sizeKB, clusters: [] };
+        nextId++;
+        for (var i = 0; i < N && f.clusters.length < need; i++) if (disk[i] === null) { disk[i] = f.id; ghost[i] = false; f.clusters.push(i); }
+        files.push(f);
+        selId = f.id;
+        if (!quiet) {
+            var fr = fragments(f), slack = need * cs() - sizeKB;
+            msg(fr > 1 ? 'warn' : 'success', '<strong>' + f.name + '</strong> (' + sizeKB + ' kB) zabral ' + need + ' ' + (need === 1 ? 'cluster' : need < 5 ? 'clustery' : 'clusterů') + ' = ' + need * cs() + ' kB' +
+                (slack ? ', z toho ' + fmt(slack) + ' kB zůstalo nevyužito' : '') + '. ' +
+                (fr > 1 ? 'Souvislé volné místo nestačilo, soubor je rozdělen na <strong>' + fr + ' části</strong> — je fragmentovaný.' : 'Leží v jednom souvislém kusu.'));
+        }
+        return f;
+    }
+    function del(id) {
+        var f = files.filter(function (x) { return x.id === id; })[0];
+        f.clusters.forEach(function (c) { disk[c] = null; ghost[c] = true; });
+        files = files.filter(function (x) { return x.id !== id; });
+        if (selId === id) selId = null;
+        msg('neutral', '<strong>' + f.name + '</strong> smazán: záznam v adresáři zmizel a clustery jsou označené jako volné. Data v nich ale fyzicky zůstala (šrafovaně), dokud je něco nepřepíše.');
+    }
+    function defrag() {
+        var before = files.reduce(function (s, f) { return s + fragments(f) - 1; }, 0), moved = 0, p = 0;
+        disk.fill(null); ghost.fill(false);
+        files.forEach(function (f) {
+            f.clusters = f.clusters.map(function (old) { if (old !== p) moved++; disk[p] = f.id; return p++; });
+        });
+        msg('success', 'Defragmentace hotová: přesunuto ' + moved + ' clusterů' + (before ? ', soubory teď leží souvisle a volné místo je v jednom kusu.' : '. Žádný soubor nebyl fragmentovaný.'));
+    }
+    function msg(kind, html) { $('clMsg').innerHTML = '<div class="callout callout--' + kind + '">' + html + '</div>'; }
+
+    function render() {
+        var part = {};
+        files.forEach(function (f) { f.clusters.forEach(function (c, i) { part[c] = i + 1; }); });
+        var h = '';
+        for (var i = 0; i < N; i++) {
+            var id = disk[i];
+            h += '<div class="cl' + (id !== null ? ' used f' + id % 8 + (id === selId ? ' hl' : '') : ghost[i] ? ' ghost' : '') + '" title="cluster ' + i + '">' + (id !== null ? part[i] : '') + '</div>';
+        }
+        $('clGrid').innerHTML = h;
+        var used = N - freeCount(), fragFiles = files.filter(function (f) { return fragments(f) > 1; }).length;
+        var data = files.reduce(function (s, f) { return s + f.size; }, 0);
+        $('clStats').innerHTML =
+            stat('Kapacita', N * cs() + ' kB', N + ' × ' + cs() + ' kB') +
+            stat('Obsazeno', used + ' clusterů', '= ' + used * cs() + ' kB') +
+            stat('Nevyužito v clusterech', fmt(used * cs() - data) + ' kB') +
+            stat('Fragmentovaných souborů', fragFiles + ' z ' + files.length);
+        $('clFiles').innerHTML = files.map(function (f) {
+            var fr = fragments(f);
+            return '<tr data-id="' + f.id + '"' + (f.id === selId ? ' class="is-sel"' : '') + '><td><span class="fsw f' + f.id % 8 + '"></span><span class="mono">' + f.name + '</span></td><td class="mono">' + f.size + ' kB</td><td class="mono">' + f.clusters.length * cs() + ' kB</td><td class="mono">' + f.clusters[0] +
+                '</td><td class="' + (fr > 1 ? 'warn' : '') + '">' + fr + '</td><td><button class="btn btn--sm btn--danger" type="button" data-del="' + f.id + '">Smazat</button></td></tr>';
+        }).join('') || '<tr><td colspan="6" class="muted">Disk je prázdný. Ulož soubor nebo spusť ukázku.</td></tr>';
+        var s = files.filter(function (f) { return f.id === selId; })[0];
+        $('clChain').innerHTML = s ? 'adresář: <b>' + s.name + '</b> → první cluster ' + s.clusters[0] + '<br>' + s.clusters.map(function (c, i) {
+            var jump = i > 0 && c !== s.clusters[i - 1] + 1;
+            return (jump ? '<span class="warn">⤳ ' : i ? '→ ' : '') + c + (jump ? '</span>' : '');
+        }).join(' ') + ' → konec' : 'Vyber soubor v tabulce.';
+    }
+    function demo() {
+        reset();
+        var k = cs();
+        [6, 4, 8, 3, 5].forEach(function (n) { addFile(n * k, true); });
+        del(1); del(3);
+        var f = addFile(10 * k, true);
+        msg('warn', 'Na disk se uložilo pět souborů, dva se smazaly (po nich zůstaly díry) a pak přišel větší <strong>' + f.name + '</strong>. Nevešel se do žádné díry celý, takže je rozdělen na ' + fragments(f) + ' části. Zkus <strong>Defragmentovat</strong>.');
+        render();
+    }
+
+    $('clAdd').addEventListener('click', function () {
+        var v = Math.floor(+$('clSize').value);
+        if (!(v >= 1)) { msg('warn', 'Zadej velikost alespoň 1 kB.'); return; }
+        addFile(v); render();
+    });
+    $('clDemo').addEventListener('click', demo);
+    $('clDefrag').addEventListener('click', function () { defrag(); render(); });
+    $('clClear').addEventListener('click', function () { reset(); $('clMsg').innerHTML = ''; render(); });
+    $('clCluster').addEventListener('change', function () { reset(); msg('neutral', 'Velikost clusteru se změnila — disk byl znovu naformátován a je prázdný. Zkus uložit malý soubor (1 kB) při různých velikostech clusteru.'); render(); });
+    $('clFiles').addEventListener('click', function (e) {
+        var d = e.target.closest('[data-del]');
+        if (d) { del(+d.dataset.del); render(); return; }
+        var tr = e.target.closest('tr[data-id]');
+        if (tr) { selId = +tr.dataset.id; render(); }
+    });
+    demo();
+    return { state: function () { return { files: files, free: freeCount() }; }, fragments: fragments };
+})();
+
+/* ======================================================================
+   5. HDD — CHS a LBA
+   ====================================================================== */
+var HDD = (function () {
+    var NC = 8, NH = 4, NS = 16, CX = 170, CY = 170, R0 = 150, TW = 12, HEAD_ANG = 45;
+    function toLba(c, h, s) { return (c * NH + h) * NS + (s - 1); }
+    function toChs(lba) { return { c: Math.floor(lba / (NH * NS)), h: Math.floor(lba / NS) % NH, s: lba % NS + 1 }; }
+    function pt(r, deg) { var a = deg * Math.PI / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
+
+    // pohled shora — postaví se jednou, pak se jen mění třídy a natočení
+    (function build() {
+        var h = '<g id="hddRot" style="transform-origin:' + CX + 'px ' + CY + 'px;transition:transform 0.5s cubic-bezier(0.2,0,0,1)">';
+        for (var c = 0; c < NC; c++) for (var s = 1; s <= NS; s++) {
+            var r2 = R0 - c * TW, r1 = r2 - TW, a1 = -90 + (s - 1) * 360 / NS, a2 = a1 + 360 / NS;
+            var p1 = pt(r2, a1), p2 = pt(r2, a2), p3 = pt(r1, a2), p4 = pt(r1, a1);
+            h += '<path class="sec" data-c="' + c + '" data-s="' + s + '" d="M' + p1 + ' A' + r2 + ' ' + r2 + ' 0 0 1 ' + p2 + ' L' + p3 + ' A' + r1 + ' ' + r1 + ' 0 0 0 ' + p4 + ' Z"/>';
+        }
+        for (s = 1; s <= NS; s++) { var q = pt(R0 + 10, -90 + (s - 0.5) * 360 / NS); h += '<text x="' + q[0] + '" y="' + (q[1] + 3) + '" text-anchor="middle" font-size="8">' + s + '</text>'; }
+        h += '</g><circle class="hub" cx="' + CX + '" cy="' + CY + '" r="' + (R0 - NC * TW - 2) + '"/><circle class="hub" cx="' + CX + '" cy="' + CY + '" r="10"/>' +
+            '<line class="arm" id="hddArm" x1="322" y1="322" x2="0" y2="0"/><circle class="hub" cx="322" cy="322" r="9"/><circle class="head" id="hddHead" r="5.5"/>';
+        $('hddTop').innerHTML = h;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) $('hddRot').style.transition = 'none';
+    })();
+
+    function render(c, h, s) {
+        $('hC').value = c; $('hH').value = h; $('hS').value = s;
+        $('hCv').textContent = c; $('hHv').textContent = h; $('hSv').textContent = s;
+        var lba = toLba(c, h, s);
+        if (document.activeElement !== $('hLba')) $('hLba').value = lba;
+        $('hddTop').querySelectorAll('.sec').forEach(function (p) {
+            var pc = +p.dataset.c, ps = +p.dataset.s;
+            p.setAttribute('class', 'sec' + (pc === c ? (ps === s ? ' on' : ' cyl') : ''));
+        });
+        // plotna se natočí tak, aby vybraný sektor byl pod hlavou
+        $('hddRot').style.transform = 'rotate(' + (HEAD_ANG - (-90 + (s - 0.5) * 360 / NS)) + 'deg)';
+        var hp = pt(R0 - c * TW - TW / 2, HEAD_ANG);
+        $('hddArm').setAttribute('x2', hp[0]); $('hddArm').setAttribute('y2', hp[1]);
+        $('hddHead').setAttribute('cx', hp[0]); $('hddHead').setAttribute('cy', hp[1]);
+
+        // pohled z boku
+        var hx = 250 - c * 13, side = '<rect class="hub" x="46" y="12" width="12" height="96"/>';
+        [38, 82].forEach(function (y) { side += '<rect class="plat" x="20" y="' + (y - 3) + '" width="250" height="6" rx="2"/>'; });
+        [[0, 38, -1], [1, 38, 1], [2, 82, -1], [3, 82, 1]].forEach(function (d) {
+            var on = d[0] === h, y = d[1] + d[2] * 9;
+            side += '<line x1="' + hx + '" y1="' + y + '" x2="318" y2="' + y + '" style="stroke:' + (on ? 'var(--c-red)' : 'var(--border-strong)') + ';stroke-width:2"/>' +
+                '<rect class="hd' + (on ? ' on' : '') + '" x="' + (hx - 5) + '" y="' + (y - 3) + '" width="10" height="6" rx="1"/>' +
+                '<text class="lbl' + (on ? ' on' : '') + '" x="324" y="' + (y + 3) + '">H' + d[0] + '</text>';
+        });
+        side += '<rect class="hub" x="312" y="20" width="6" height="80"/><text class="lbl" x="20" y="116">2 plotny, 4 povrchy — hlavy se pohybují společně</text>';
+        $('hddSide').innerHTML = side;
+
+        $('hCalc').innerHTML = 'LBA = (<span class="c-c">C</span> × počet hlav + <span class="c-h">H</span>) × sektorů na stopu + (<span class="c-s">S</span> − 1)<br>' +
+            'LBA = (<span class="c-c">' + c + '</span> × ' + NH + ' + <span class="c-h">' + h + '</span>) × ' + NS + ' + (<span class="c-s">' + s + '</span> − 1) = ' + (c * NH + h) + ' × ' + NS + ' + ' + (s - 1) + ' = <b>' + lba + '</b>';
+        $('hBack').innerHTML = '<span class="c-c">C</span> = ' + lba + ' div (' + NH + ' × ' + NS + ') = <span class="c-c">' + c + '</span><br>' +
+            '<span class="c-h">H</span> = (' + lba + ' div ' + NS + ') mod ' + NH + ' = ' + Math.floor(lba / NS) + ' mod ' + NH + ' = <span class="c-h">' + h + '</span><br>' +
+            '<span class="c-s">S</span> = (' + lba + ' mod ' + NS + ') + 1 = <span class="c-s">' + s + '</span><br><span class="muted">div = celočíselné dělení, mod = zbytek po dělení</span>';
+    }
+    function fromSliders() { render(+$('hC').value, +$('hH').value, +$('hS').value); }
+    function fromLba(l) { l = Math.max(0, Math.min(NC * NH * NS - 1, Math.floor(l) || 0)); var x = toChs(l); render(x.c, x.h, x.s); }
+    ['hC', 'hH', 'hS'].forEach(function (id) { $(id).addEventListener('input', fromSliders); });
+    $('hLba').addEventListener('input', function () { fromLba(+this.value); });
+    $('hNext').addEventListener('click', function () { fromLba(toLba(+$('hC').value, +$('hH').value, +$('hS').value) + 1); });
+    $('hPrev').addEventListener('click', function () { fromLba(toLba(+$('hC').value, +$('hH').value, +$('hS').value) - 1); });
+    fromSliders();
+
+    function times() {
+        var rpm = +$('hRpm').value, seek = Math.max(0, +$('hSeek').value || 0);
+        var rot = 60000 / rpm, lat = rot / 2, acc = seek + lat;
+        $('hTime').innerHTML =
+            stat('Jedna otáčka', fmt(rot, 2) + ' ms', '60 000 ÷ ' + fmt(rpm)) +
+            stat('Průměrné čekání na sektor', fmt(lat, 2) + ' ms', 'půl otáčky') +
+            stat('Průměrná přístupová doba', fmt(acc, 1) + ' ms', 'vystavení + čekání') +
+            stat('Náhodných čtení za sekundu', '≈ ' + fmt(1000 / acc, 0)) +
+            stat('SSD pro srovnání', '0,1 ms', '≈ ' + fmt(acc / 0.1, 0) + '× rychlejší');
+    }
+    $('hRpm').addEventListener('change', times);
+    $('hSeek').addEventListener('input', times);
+    times();
+    return { toLba: toLba, toChs: toChs };
+})();
+
+/* ======================================================================
+   6. SSD — stránky, bloky, překladová tabulka
+   ====================================================================== */
+var SSD = (function () {
+    var NB = 4, NP = 8, NL = 16, blocks, map, active, host, phys, fresh, flash;
+
+    function reset() {
+        blocks = [];
+        for (var b = 0; b < NB; b++) { var pages = []; for (var p = 0; p < NP; p++) pages.push({ st: 'free', lba: -1 }); blocks.push({ pages: pages, erases: 0 }); }
+        map = new Array(NL).fill(null); active = 0; host = 0; phys = 0; fresh = []; flash = -1;
+    }
+    function count(b, st) { return blocks[b].pages.filter(function (p) { return p.st === st; }).length; }
+    function isErased(b) { return count(b, 'free') === NP; }
+    /** Najde volnou stránku; když je aktivní blok plný, přejde na smazaný blok s nejmenším opotřebením. */
+    function alloc(exclude) {
+        var p = blocks[active].pages.findIndex(function (x) { return x.st === 'free'; });
+        if (p !== -1 && active !== exclude) return { b: active, p: p };
+        var best = -1;
+        for (var b = 0; b < NB; b++) if (b !== exclude && isErased(b) && (best === -1 || blocks[b].erases < blocks[best].erases)) best = b;
+        if (best === -1) return null;
+        active = best;
+        return { b: best, p: 0 };
+    }
+    function put(lba, exclude) {
+        var a = alloc(exclude);
+        if (!a) return false;
+        blocks[a.b].pages[a.p] = { st: 'valid', lba: lba };
+        map[lba] = a; phys++; fresh.push(a.b + '.' + a.p);
+        return true;
+    }
+    function gc() {
+        var victim = -1;
+        for (var b = 0; b < NB; b++) {
+            if (b === active && count(b, 'free') > 0) continue;
+            if (count(b, 'invalid') > 0 && (victim === -1 || count(b, 'invalid') > count(victim, 'invalid'))) victim = b;
+        }
+        if (victim === -1) return null;
+        var moved = 0, ok = true;
+        blocks[victim].pages.forEach(function (pg) {
+            if (pg.st !== 'valid' || !ok) return;
+            if (put(pg.lba, victim)) moved++; else ok = false;
+        });
+        if (!ok) return null;
+        blocks[victim].pages = blocks[victim].pages.map(function () { return { st: 'free', lba: -1 }; });
+        blocks[victim].erases++;
+        flash = victim;
+        return { victim: victim, moved: moved };
+    }
+    function spare() { var n = 0; for (var b = 0; b < NB; b++) if (b !== active && isErased(b)) n++; return n; }
+
+    function write(lba) {
+        var old = map[lba], log;
+        if (!alloc(-1)) { var g0 = gc(); if (!g0 || !alloc(-1)) return 'Disk je plný — není kam zapsat.'; }
+        if (old) blocks[old.b].pages[old.p].st = 'invalid';
+        put(lba, -1); host++;
+        var a = map[lba];
+        log = old ? '<strong>Přepis LBA ' + lba + '.</strong> Nová data se zapsala do volné stránky ' + a.b + '.' + a.p + '. Původní stránka ' + old.b + '.' + old.p + ' se jen označila jako neplatná — přepsat ji nelze. Překladová tabulka teď ukazuje na nové místo.'
+            : '<strong>Zápis LBA ' + lba + '</strong> do volné stránky ' + a.b + '.' + a.p + '. Překladová tabulka si zapamatovala, kde data leží.';
+        if (spare() === 0) {
+            var g = gc();
+            if (g) log += '<br><strong>Automatický úklid:</strong> docházely smazané bloky. Z bloku ' + g.victim + ' se ' + (g.moved ? g.moved + ' platných stránek zkopírovalo jinam a ' : '') + 'celý blok se smazal.';
+        }
+        return log;
+    }
+    function trim(lba) {
+        var old = map[lba];
+        if (!old) return 'Na adrese LBA ' + lba + ' žádná data nejsou.';
+        blocks[old.b].pages[old.p].st = 'invalid'; map[lba] = null;
+        return '<strong>TRIM LBA ' + lba + '.</strong> Počítač oznámil, že data už nepotřebuje. Stránka ' + old.b + '.' + old.p + ' je neplatná — při úklidu se nebude kopírovat. Fyzicky se smaže až s celým blokem.';
+    }
+
+    function render(log) {
+        $('sBlocks').innerHTML = blocks.map(function (bl, b) {
+            return '<div class="ssd-block' + (b === active ? ' is-active' : '') + (b === flash ? ' is-flash' : '') + '"><div class="ssd-block__h"><span><strong>Blok ' + b + '</strong>' + (b === active ? ' · zapisuje se sem' : '') + '</span><span>smazán ' + bl.erases + '×</span></div><div class="ssd-pages">' +
+                bl.pages.map(function (pg, p) {
+                    return '<div class="pg ' + pg.st + (fresh.indexOf(b + '.' + p) !== -1 ? ' new' : '') + '" title="stránka ' + b + '.' + p + '">' + (pg.st === 'free' ? '' : pg.lba) + '</div>';
+                }).join('') + '</div></div>';
+        }).join('');
+        if (log) $('sLog').innerHTML = log;
+        var free = 0, valid = 0, inv = 0;
+        for (var b = 0; b < NB; b++) { free += count(b, 'free'); valid += count(b, 'valid'); inv += count(b, 'invalid'); }
+        var er = blocks.map(function (x) { return x.erases; });
+        $('sStats').innerHTML =
+            stat('Stránky', valid + ' / ' + inv + ' / ' + free, 'platné / neplatné / volné') +
+            stat('Zápisy od počítače', host) +
+            stat('Fyzické zápisy', phys, 'včetně kopií při úklidu') +
+            stat('Zesílení zápisu', host ? fmt(phys / host, 2) + '×' : '—') +
+            stat('Smazání bloků', er.join(' · '), 'rozdíl ' + (Math.max.apply(null, er) - Math.min.apply(null, er)));
+        var head = '<tr><th>LBA</th>', row = '<tr><th>stránka</th>';
+        for (var l = 0; l < NL; l++) { head += '<th>' + l + '</th>'; row += '<td>' + (map[l] ? map[l].b + '.' + map[l].p : '—') + '</td>'; }
+        $('sMap').innerHTML = head + '</tr>' + row + '</tr>';
+        fresh = []; flash = -1;
+    }
+
+    for (var l = 0; l < NL; l++) $('sLba').add(new Option('LBA ' + l, l));
+    $('sLba').value = 3;
+    $('sWrite').addEventListener('click', function () { render(write(+$('sLba').value)); });
+    $('sTrim').addEventListener('click', function () { render(trim(+$('sLba').value)); });
+    $('sRand').addEventListener('click', function () {
+        var last = '', seq = [];
+        for (var i = 0; i < 6; i++) { var l = Math.floor(Math.random() * NL); seq.push(l); last = write(l); }
+        render('Zapsáno 6 náhodných adres: LBA ' + seq.join(', ') + '.' + (last.indexOf('Automatický úklid') !== -1 || blocks.some(function (b) { return b.erases > 0; }) ? ' Sleduj počty smazání bloků a zesílení zápisu.' : ''));
+    });
+    $('sGc').addEventListener('click', function () {
+        var g = gc();
+        render(g ? '<strong>Úklid.</strong> Vybrán blok ' + g.victim + ' (měl nejvíc neplatných stránek). ' + (g.moved ? g.moved + ' platných stránek se zkopírovalo do jiného bloku, pak' : 'Žádná platná data v něm nebyla, takže') + ' se celý blok smazal a je znovu volný.'
+            : 'Není co uklízet — žádný zaplněný blok neobsahuje neplatné stránky.');
+    });
+    function init() {
+        reset();
+        for (var i = 0; i < 10; i++) write(i);
+        host = 10; phys = 10; fresh = [];
+        render('Nový disk s uloženými daty na adresách LBA 0–9. Zkus některou adresu <strong>přepsat</strong> a sleduj, kam se nová verze uloží.');
+    }
+    $('sReset').addEventListener('click', init);
+    init();
+
+    return {
+        /** Pro testy: provede sérii zápisů a ověří konzistenci překladové tabulky. */
+        selfTest: function (n) {
+            reset();
+            for (var i = 0; i < n; i++) {
+                var r = write(Math.floor(Math.random() * NL));
+                if (r.indexOf('plný') !== -1) return 'FULL at ' + i;
+                if (i % 7 === 0) trim(Math.floor(Math.random() * NL));
+            }
+            for (var l = 0; l < NL; l++) if (map[l]) { var pg = blocks[map[l].b].pages[map[l].p]; if (pg.st !== 'valid' || pg.lba !== l) return 'BAD map ' + l; }
+            var valid = 0; for (var b = 0; b < NB; b++) valid += count(b, 'valid');
+            var mapped = map.filter(Boolean).length;
+            init();
+            return valid === mapped ? 'ok' : 'COUNT ' + valid + ' vs ' + mapped;
+        }
+    };
+})();
+</script>
+</body>
+</html>
