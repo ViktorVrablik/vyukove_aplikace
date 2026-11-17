@@ -312,6 +312,37 @@
         .pg.invalid { border: 1px solid var(--border-strong); background: var(--c-gray-bg); color: var(--text-faint); text-decoration: line-through; }
         .pg.new { outline: 2px solid var(--c-orange); outline-offset: 1px; }
         .map-table td, .map-table th { text-align: center !important; font-family: var(--font-mono); font-size: var(--fs-xs); padding: 3px 6px !important; }
+
+        /* ---------- Sbalování adresářů a přilepený strom ---------- */
+        .tree li { white-space: nowrap; }
+        .ttog, .ttog-sp { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 22px; vertical-align: middle; flex-shrink: 0; }
+        .ttog { padding: 0; color: var(--text-muted); background: transparent; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+        .ttog:hover { background: var(--hover-bg); color: var(--text); }
+        .ttog svg { width: 14px; height: 14px; transition: transform var(--dur-fast) var(--ease); }
+        .ttog[aria-expanded="true"] svg { transform: rotate(90deg); }
+        .tree ul { margin-left: 9px; padding-left: 9px; }
+        .tnode { vertical-align: middle; }
+        .tnode .cnt { font-family: var(--font-sans); font-weight: 400; font-size: var(--fs-xs); color: var(--text-faint); }
+        .tnode.is-res { outline: 2px solid var(--c-purple); outline-offset: 1px; }
+        .tree-tools { display: flex; gap: var(--space-1); margin: var(--space-2) 0; }
+
+        .paths-layout { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: var(--space-6); align-items: start; margin-top: var(--space-6); }
+        .paths-side {
+            position: sticky; top: var(--space-3); z-index: var(--z-sticky);
+            max-height: calc(100vh - 2 * var(--space-3)); overflow-y: auto;
+            padding: var(--space-3);
+            background: var(--bg-sunken); border: 1px solid var(--border); border-radius: var(--radius-lg);
+        }
+        .paths-side .tree-box { border: 0; padding: 0; background: transparent; }
+        .paths-main { min-width: 0; }
+        .paths-main > h3:first-child { margin-top: 0; }
+        @media (max-width: 760px) {
+            .paths-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+            .paths-side { top: 0; max-height: 44vh; border-radius: 0 0 var(--radius-lg) var(--radius-lg); box-shadow: var(--shadow-md); }
+            .paths-side .legend { display: none; }
+            .paths-side > .label { display: none; }
+            .paths-side .tree-tools { margin: var(--space-1) 0; }
+        }
     </style>
 </head>
 <body>
@@ -432,7 +463,14 @@
             </div>
         </div>
         <div class="tree-layout">
-            <div class="tree-box" id="treeA" role="group" aria-label="Strom adresářů, klepnutím vybereš položku"></div>
+            <div>
+                <div class="tree-tools">
+                    <button class="btn btn--sm btn--ghost" type="button" data-tree="collapse">Sbalit vše</button>
+                    <button class="btn btn--sm btn--ghost" type="button" data-tree="expand">Rozbalit vše</button>
+                </div>
+                <div class="tree-box" id="treeA" role="group" aria-label="Strom adresářů, klepnutím vybereš položku"></div>
+                <p class="muted text-sm mt-4">Šipkou vedle adresáře ho sbalíš nebo rozbalíš.</p>
+            </div>
             <div>
                 <span class="label">Vybraná položka</span>
                 <div class="code-box path-out" id="selPath" aria-live="polite"></div>
@@ -481,38 +519,38 @@
         </div>
         <p>V relativní cestě se používají dvě zvláštní jména: <code>..</code> znamená „o úroveň výš“ a <code>.</code> znamená „tady“.</p>
 
-        <h3>Odkud kam</h3>
-        <p>Vyber ve stromu <strong>aktuální adresář</strong> (kde stojíš) a <strong>cíl</strong> (kam se chceš dostat). Uvidíš obě cesty a postup.</p>
-        <div class="field--inline">
-            <div>
+        <div class="paths-layout">
+            <aside class="paths-side" aria-label="Adresářová struktura">
                 <span class="label">Klepnutím ve stromu nastavuji</span>
                 <div class="seg" id="pickMode" role="group" aria-label="Co nastavuji">
                     <button type="button" data-v="cwd" aria-pressed="false">aktuální adresář</button>
                     <button type="button" data-v="target" aria-pressed="true">cíl</button>
                 </div>
-            </div>
-        </div>
-        <div class="tree-layout">
-            <div>
+                <div class="tree-tools">
+                    <button class="btn btn--sm btn--ghost" type="button" data-tree="collapse">Sbalit vše</button>
+                    <button class="btn btn--sm btn--ghost" type="button" data-tree="expand">Rozbalit vše</button>
+                </div>
                 <div class="tree-box" id="treeB" role="group" aria-label="Strom adresářů"></div>
-                <div class="legend mt-4">
+                <div class="legend mt-4 mb-0">
                     <span class="legend__item"><span class="legend__swatch" style="background:var(--c-blue-bg);border:1px solid var(--c-blue)"></span>aktuální adresář</span>
                     <span class="legend__item"><span class="legend__swatch" style="background:var(--c-green-bg);border:1px solid var(--c-green)"></span>cíl</span>
-                    <span class="legend__item"><span class="legend__swatch" style="background:var(--c-yellow-bg);border:1px dashed var(--c-orange)"></span>cesta mezi nimi (čárkovaně nejvyšší bod)</span>
+                    <span class="legend__item"><span class="legend__swatch" style="background:var(--c-yellow-bg);border:1px dashed var(--c-orange)"></span>cesta mezi nimi</span>
+                    <span class="legend__item"><span class="legend__swatch" style="border:2px solid var(--c-purple)"></span>kam vede zadaná cesta</span>
                 </div>
-            </div>
-            <div>
-                <span class="label">Absolutní cesta k cíli</span>
-                <div class="code-box path-out" id="absOut"></div>
-                <span class="label">Relativní cesta z aktuálního adresáře</span>
-                <div class="code-box path-out" id="relOut"></div>
-                <span class="label">Postup</span>
-                <ol class="steps" id="relSteps"></ol>
-            </div>
-        </div>
+            </aside>
+            <div class="paths-main">
+
+        <h3>Odkud kam</h3>
+        <p>Vyber ve stromu <strong>aktuální adresář</strong> (kde stojíš) a <strong>cíl</strong> (kam se chceš dostat). Uvidíš obě cesty a postup. Strom zůstává při posouvání stránky stále na očích.</p>
+        <span class="label">Absolutní cesta k cíli</span>
+        <div class="code-box path-out" id="absOut"></div>
+        <span class="label">Relativní cesta z aktuálního adresáře</span>
+        <div class="code-box path-out" id="relOut"></div>
+        <span class="label">Postup</span>
+        <ol class="steps" id="relSteps"></ol>
 
         <h3>Kam vede tahle cesta?</h3>
-        <p>Opačná úloha: napiš cestu a sleduj, jak ji počítač krok za krokem vyhodnotí. Výchozím místem je aktuální adresář zvolený výše.</p>
+        <p>Opačná úloha: napiš cestu a sleduj, jak ji počítač krok za krokem vyhodnotí. Výchozím místem je aktuální adresář zvolený ve stromu; místo, kam cesta vede, se ve stromu orámuje fialově.</p>
         <div class="field--inline">
             <div class="grow">
                 <label class="label" for="resIn">Cesta</label>
@@ -543,7 +581,7 @@
         </div>
 
         <h3>Vyzkoušej si příkazovou řádku</h3>
-        <p>V terminálu se po stromu pohybuješ příkazy. Pracuje se stejným stromem jako ukázky výše — co tu vytvoříš, objeví se i tam.</p>
+        <p>V terminálu se po stromu pohybuješ příkazy. Pracuje se stejným stromem — co tu vytvoříš nebo smažeš, hned se v něm projeví.</p>
         <div class="term">
             <div class="term__out" id="termOut" aria-live="polite"></div>
             <div class="term__line"><label for="termIn" id="termPrompt">/ $</label><input type="text" id="termIn" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Příkaz"></div>
@@ -561,6 +599,9 @@
                 <tr><td class="mono">tree</td><td>vykreslí strom od aktuálního adresáře</td><td class="mono">tree</td></tr>
                 </tbody>
             </table>
+        </div>
+
+            </div>
         </div>
     </section>
 
@@ -974,18 +1015,31 @@ var FS = (function () {
 var ICON_DIR = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
 var ICON_FILE = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>';
 
-/** Vykreslí strom; deco(node) vrací { cls, badge }. Uzly se hledají přes pole `index`. */
+var ICON_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+
+/** Vykreslí strom; deco(node) vrací { cls, badge }. Uzly se hledají přes pole `index`.
+    Sbalení adresáře se pamatuje přímo na uzlu (node.collapsed), takže je společné pro všechny stromy. */
 function renderTree(el, index, deco) {
     index.length = 0;
     function li(n) {
         var id = index.push(n) - 1, d = deco(n) || {};
         var label = n.parent ? esc(n.name) : esc(FS.path(n)) + ' <span class="muted" style="font-family:var(--font-sans);font-weight:400">kořen</span>';
-        var h = '<li><button type="button" class="tnode is-' + n.type + ' ' + (d.cls || '') + '" data-id="' + id + '">' + (n.type === 'dir' ? ICON_DIR : ICON_FILE) + '<span>' + label + '</span>' +
+        var canTog = n.type === 'dir' && n.children.length > 0, open = canTog && !n.collapsed;
+        var h = '<li>' + (canTog
+            ? '<button type="button" class="ttog" data-tog="' + id + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Sbalit' : 'Rozbalit') + ' adresář ' + (n.parent ? esc(n.name) : 'kořen') + '">' + ICON_CHEV + '</button>'
+            : '<span class="ttog-sp"></span>') +
+            '<button type="button" class="tnode is-' + n.type + ' ' + (d.cls || '') + '" data-id="' + id + '">' + (n.type === 'dir' ? ICON_DIR : ICON_FILE) + '<span>' + label + '</span>' +
+            (canTog && !open ? '<span class="cnt">(' + n.children.length + ')</span>' : '') +
             (d.badge ? '<span class="badge">' + d.badge + '</span>' : '') + '</button>';
-        if (n.children.length) h += '<ul>' + n.children.map(li).join('') + '</ul>';
+        if (open) h += '<ul>' + n.children.map(li).join('') + '</ul>';
         return h + '</li>';
     }
     el.innerHTML = '<ul class="tree">' + li(FS.root) + '</ul>';
+}
+/** Rozbalí všechny nadřazené adresáře, aby byl uzel vidět. */
+function revealNode(n) { for (var p = n.parent; p; p = p.parent) p.collapsed = false; }
+function setAllCollapsed(v) {
+    (function walk(n) { if (n.type === 'dir') { n.collapsed = v && !!n.parent; n.children.forEach(walk); } })(FS.root);
 }
 
 /* ======================================================================
@@ -996,7 +1050,7 @@ var Paths = (function () {
     var find = function (p) { return FS.resolve(FS.root, p).node; };
     var sel = find('/skola/informatika/web/index.html');
     var cwd = find('/skola/informatika/ukoly'), target = find('/skola/informatika/web/obrazky/logo.png');
-    var idxA = [], idxB = [];
+    var idxA = [], idxB = [], resNode = null;
 
     function colored(p) {
         return esc(p).replace(/(\.\.)|([\/\\])/g, function (m, up) { return '<span class="' + (up ? 'up' : 'sep') + '">' + m + '</span>'; });
@@ -1022,6 +1076,8 @@ var Paths = (function () {
         if (!alive(cwd)) cwd = FS.root;
         if (!alive(target)) target = cwd;
         var rel = FS.relative(cwd, target);
+        var rs = $('resIn').value.trim();
+        resNode = rs ? FS.resolve(cwd, rs).node : null;
         // uzly na cestě: od cwd nahoru k nejvyššímu bodu, pak dolů k cíli
         var onPath = new Set(), n = cwd;
         while (n !== rel.top) { onPath.add(n); n = n.parent; }
@@ -1034,6 +1090,7 @@ var Paths = (function () {
             if (x === rel.top && x !== cwd && x !== target) cls.push('is-top');
             if (x === target) { cls.push('is-target'); badge = 'cíl'; }
             if (x === cwd) { cls.push('is-cwd'); badge = x === target ? 'tady + cíl' : 'tady'; }
+            if (x === resNode) cls.push('is-res');
             return { cls: cls.join(' '), badge: badge };
         });
         var s = FS.sep();
@@ -1061,11 +1118,26 @@ var Paths = (function () {
 
     function renderAll() { renderA(); renderB(); if (window.Term) Term.prompt(); }
 
+    function toggle(e, idx) {
+        var t = e.target.closest('.ttog');
+        if (!t) return false;
+        var n = idx[+t.dataset.tog], id = t.dataset.tog, box = t.closest('.tree-box');
+        n.collapsed = !n.collapsed;
+        renderA(); renderB();
+        var again = box.querySelector('.ttog[data-tog="' + id + '"]');
+        if (again) again.focus();
+        return true;
+    }
+    document.querySelectorAll('[data-tree]').forEach(function (btn) {
+        btn.addEventListener('click', function () { setAllCollapsed(btn.dataset.tree === 'collapse'); renderA(); renderB(); });
+    });
     $('treeA').addEventListener('click', function (e) {
+        if (toggle(e, idxA)) return;
         var b = e.target.closest('.tnode');
         if (b) { sel = idxA[+b.dataset.id]; renderA(); }
     });
     $('treeB').addEventListener('click', function (e) {
+        if (toggle(e, idxB)) return;
         var b = e.target.closest('.tnode');
         if (!b) return;
         var n = idxB[+b.dataset.id];
@@ -1075,10 +1147,14 @@ var Paths = (function () {
     });
     bindSeg($('pickMode'), function () {});
     bindSeg($('osStyle'), function (v) { FS.setStyle(v); renderAll(); });
-    $('resIn').addEventListener('input', renderRes);
+    $('resIn').addEventListener('input', function () {
+        var r = FS.resolve(cwd, this.value.trim());
+        if (r.node) revealNode(r.node);
+        renderB();
+    });
     $('resPresets').addEventListener('click', function (e) {
         var b = e.target.closest('button');
-        if (b) { $('resIn').value = b.dataset.p; renderRes(); }
+        if (b) { $('resIn').value = b.dataset.p; var r = FS.resolve(cwd, b.dataset.p); if (r.node) revealNode(r.node); renderB(); }
     });
     renderA(); renderB();
     return { renderAll: renderAll, getCwd: function () { return cwd; } };
@@ -1141,7 +1217,7 @@ var Term = (function () {
                 if (s.dir.type !== 'dir') { err(cmd + ': cílem není adresář'); break; }
                 if (!validName(s.name)) { err(cmd + ': jméno obsahuje nepovolené znaky'); break; }
                 if (FS.child(s.dir, s.name)) { if (cmd === 'mkdir') err('mkdir: „' + esc(s.name) + '“ už existuje'); break; }
-                FS.add(s.dir, s.name, cmd === 'mkdir' ? 'dir' : 'file');
+                revealNode(FS.add(s.dir, s.name, cmd === 'mkdir' ? 'dir' : 'file'));
                 Paths.renderAll();
                 break;
             case 'rm': case 'rmdir': case 'del':
