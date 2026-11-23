@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HTML — stavba webové stránky | Výukové aplikace</title>
+    <meta name="description" content="Základy jazyka HTML: jak funguje web, anatomie tagu, kostra dokumentu a technické náležitosti, přehled nejdůležitějších tagů, sémantické značky a živý editor s náhledem, stromem DOM a kontrolou kódu.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="HTML — stavba webové stránky">
+    <meta property="og:description" content="Základy jazyka HTML: jak funguje web, anatomie tagu, kostra dokumentu, přehled tagů, sémantika a živý editor.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ==================================================================
+           Společné prvky stránek Webové technologie
+           ================================================================== */
+
+        .lead { font-size: var(--fs-md); color: var(--text-muted); max-width: 70ch; }
+        .tab-content > p, .tab-content li { max-width: 78ch; }
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+        .center { text-align: center; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-0 { margin-bottom: 0 !important; }
+        .ok   { color: var(--c-green); font-weight: 600; }
+        .bad  { color: var(--c-red);   font-weight: 600; }
+        .warn { color: var(--c-orange); font-weight: 600; }
+
+        ol.steps { margin-bottom: var(--space-5); }
+        ol.steps li { margin-bottom: var(--space-2); }
+
+        /* Dvousloupcové rozložení, na mobilu pod sebou */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+        .two-col > * { min-width: 0; }
+
+        /* Ovládání vlevo, náhled vpravo (na mobilu pod sebou) */
+        .lab {
+            display: grid;
+            grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+        .lab > * { min-width: 0; }
+        .lab--side { grid-template-columns: minmax(0, 1fr) minmax(0, 260px); }
+        .lab--side-w { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
+        @media (max-width: 760px) { .lab, .lab--side, .lab--side-w { grid-template-columns: minmax(0, 1fr); } }
+
+        .ctrl { margin-bottom: var(--space-4); }
+        .ctrl:last-child { margin-bottom: 0; }
+        .ctrl > label, .ctrl > .ctrl__label {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-2);
+            margin-bottom: var(--space-1);
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .ctrl output, .ctrl .val { font-family: var(--font-mono); color: var(--text); }
+        .ctrl input[type="range"] { width: 100%; }
+        .ctrl select, .ctrl input[type="text"] { width: 100%; }
+        .ctrl--row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+        select.input { padding-right: var(--space-6); }
+
+        /* Segmentový přepínač */
+        .seg {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 2px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .seg button {
+            min-height: 30px;
+            padding: var(--space-1) var(--space-3);
+            font: inherit;
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .seg button:hover { color: var(--text); background: var(--hover-bg); }
+        .seg button[aria-pressed="true"] {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+        .seg--mono button { font-family: var(--font-mono); font-size: var(--fs-xs); }
+
+        /* Čipy (rychlá volba) */
+        .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+        .chip {
+            padding: 3px var(--space-2);
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .chip:hover { border-color: var(--border-strong); background: var(--hover-bg); }
+        .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--c-blue); }
+
+        /* ---------- Okno prohlížeče s náhledem ---------- */
+        .browser {
+            overflow: hidden;
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-4);
+        }
+        .browser__bar {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-2) var(--space-3);
+            background: var(--surface-sunken);
+            border-bottom: 1px solid var(--border);
+        }
+        .browser__dots { display: flex; gap: 5px; flex: none; }
+        .browser__dots span { width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--border-strong); }
+        .browser__url {
+            flex: 1;
+            min-width: 0;
+            padding: 2px var(--space-3);
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .browser iframe {
+            display: block;
+            width: 100%;
+            height: var(--frame-h, 260px);
+            border: 0;
+            background: #ffffff;
+        }
+
+        /* ---------- Kód se zvýrazněním syntaxe ---------- */
+        .code {
+            margin: 0 0 var(--space-4);
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            white-space: pre;
+            overflow-x: auto;
+            tab-size: 4;
+        }
+        .code--wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .hl-tag   { color: var(--c-blue); }
+        .hl-attr  { color: var(--c-orange); }
+        .hl-val   { color: var(--c-green); }
+        .hl-com   { color: var(--text-faint); font-style: italic; }
+        .hl-doc   { color: var(--c-purple); }
+        .hl-ent   { color: var(--c-pink); }
+        .hl-sel   { color: var(--c-purple); }
+        .hl-prop  { color: var(--c-blue); }
+        .hl-num   { color: var(--c-pink); }
+        .hl-at    { color: var(--c-red); }
+        .hl-punc  { color: var(--text-muted); }
+
+        /* Editovatelný kód: průhledný textarea nad zvýrazněným <pre> */
+        .code-edit {
+            position: relative;
+            margin-bottom: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            height: var(--edit-h, 260px);
+            overflow: hidden;
+        }
+        .code-edit:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--selection); }
+        .code-edit pre, .code-edit textarea {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+            white-space: pre;
+            tab-size: 4;
+            overflow: auto;
+            border: 0;
+            letter-spacing: normal;
+            word-spacing: normal;
+        }
+        .code-edit pre { pointer-events: none; color: var(--text); background: transparent; }
+        .code-edit textarea {
+            resize: none;
+            color: transparent;
+            caret-color: var(--text);
+            background: transparent;
+            outline: none;
+            overflow-wrap: normal;
+        }
+        .code-edit textarea::selection { background: var(--selection); color: transparent; }
+
+        /* ---------- Klikací rozbor kódu (anatomie) ---------- */
+        .anat {
+            padding: var(--space-5) var(--space-4);
+            margin-bottom: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: clamp(0.85rem, 0.65rem + 0.7vw, 1.1rem);
+            line-height: 2.3;
+            text-align: center;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        .anat span[data-p] {
+            padding: 2px 1px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+        }
+        .anat span[data-p].on { background: var(--c-yellow-bg); box-shadow: 0 -2px 0 var(--c-yellow) inset; }
+        .terms { display: flex; flex-direction: column; gap: var(--space-2); }
+        .term {
+            display: block;
+            width: 100%;
+            padding: var(--space-2) var(--space-3);
+            text-align: left;
+            font: inherit;
+            font-size: var(--fs-sm);
+            color: var(--text);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+        .term:hover { background: var(--hover-bg); }
+        .term[aria-pressed="true"] { border-color: var(--c-yellow); background: var(--c-yellow-bg); }
+        .term b { display: block; }
+        .term span { display: block; color: var(--text-muted); font-size: var(--fs-xs); }
+
+        .explain {
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            min-height: 4.5em;
+        }
+        .explain h4 { margin-top: 0; }
+        .explain p:last-child { margin-bottom: 0; }
+
+        /* Číslované řádky kódu, klikací */
+        .lines {
+            margin-bottom: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            padding: var(--space-2) 0;
+        }
+        .lines button {
+            display: flex;
+            width: 100%;
+            min-width: max-content;
+            padding: 1px var(--space-3) 1px 0;
+            font: inherit;
+            text-align: left;
+            color: var(--text);
+            background: transparent;
+            border: 0;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            white-space: pre;
+        }
+        .lines button:hover { background: var(--hover-bg); }
+        .lines button[aria-pressed="true"] { background: var(--c-yellow-bg); border-left-color: var(--c-yellow); }
+        .lines button.dim { opacity: 0.55; }
+        .lines .ln {
+            flex: none;
+            width: 2.6em;
+            padding-right: var(--space-3);
+            text-align: right;
+            color: var(--text-faint);
+            user-select: none;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .stat {
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            min-width: 0;
+        }
+        .stat__label { display: block; font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px; }
+        .stat__value { display: block; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+
+        .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+        .toolbar .spacer { flex: 1; }
+
+        .msg-list { list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+        .msg-list li {
+            display: flex;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            margin-bottom: var(--space-2);
+            font-size: var(--fs-sm);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            max-width: none;
+        }
+        .msg-list li.err  { background: var(--c-red-bg);    border-color: transparent; }
+        .msg-list li.warn { background: var(--c-yellow-bg); border-color: transparent; }
+        .msg-list li.good { background: var(--c-green-bg);  border-color: transparent; }
+        .msg-list .msg__kind { flex: none; font-weight: 600; min-width: 5.5em; }
+
+
+        /* ==================================================================
+           Specifika stránky HTML
+           ================================================================== */
+
+        /* Cesta stránky: klient – DNS – server */
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+        .flow__node {
+            padding: var(--space-3);
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+        }
+        .flow__node .icon { margin: 0 auto var(--space-1); width: 22px; height: 22px; }
+        .flow__node b { display: block; font-size: var(--fs-sm); }
+        .flow__node small { color: var(--text-muted); font-size: var(--fs-xs); }
+        .flow__node.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+        .flow__msg {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            min-height: 2.4em;
+            padding: var(--space-2) var(--space-3);
+            margin-bottom: var(--space-3);
+            font-size: var(--fs-sm);
+            background: var(--c-yellow-bg);
+            border-radius: var(--radius-md);
+        }
+        .flow__msg .icon { flex: none; }
+        .step-nav { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+        .step-dots { display: flex; gap: 4px; }
+        .step-dots span { width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--border-strong); }
+        .step-dots span.on { background: var(--accent); }
+
+        /* Vnořené elementy jako krabice */
+        .nest { font-size: var(--fs-sm); }
+        .nest-box {
+            margin: var(--space-1) 0;
+            padding: var(--space-1) var(--space-2) var(--space-2);
+            border: 1.5px solid var(--c-blue);
+            border-radius: var(--radius-md);
+            background: color-mix(in srgb, var(--c-blue-bg) 55%, transparent);
+        }
+        .nest-box .nest-box { border-color: var(--c-purple); background: color-mix(in srgb, var(--c-purple-bg) 55%, transparent); }
+        .nest-box .nest-box .nest-box { border-color: var(--c-green); background: color-mix(in srgb, var(--c-green-bg) 55%, transparent); }
+        .nest-box .nest-box .nest-box .nest-box { border-color: var(--c-orange); background: color-mix(in srgb, var(--c-orange-bg) 55%, transparent); }
+        .nest-box__tag { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); }
+        .nest-box__kids { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-1); }
+        .nest-box__kids > .nest-box { flex: 0 1 auto; }
+        .nest-text {
+            align-self: center;
+            padding: 0 var(--space-1);
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            color: var(--text);
+            background: var(--surface);
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-sm);
+            white-space: pre;
+        }
+
+        /* Strom DOM */
+        .dom-tree {
+            margin: 0 0 var(--space-4);
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.7;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: auto;
+            max-height: 420px;
+        }
+        .dom-tree ul { list-style: none; margin: 0; padding-left: 1.3em; border-left: 1px dotted var(--border-strong); }
+        .dom-tree > ul { padding-left: 0; border-left: 0; }
+        .dom-tree li { margin: 0; max-width: none; white-space: nowrap; }
+        .dom-tree .t-el { color: var(--c-blue); font-weight: 600; }
+        .dom-tree .t-at { color: var(--c-orange); }
+        .dom-tree .t-tx { color: var(--text-muted); }
+        .dom-tree .t-cm { color: var(--text-faint); font-style: italic; }
+
+        /* Osnova nadpisů */
+        .outline { list-style: none; margin: 0 0 var(--space-4); padding: 0; font-size: var(--fs-sm); }
+        .outline li { padding: 2px 0; max-width: none; }
+        .outline .lvl { display: inline-block; min-width: 2.4em; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+
+        /* URL po částech */
+        .url-anat { font-size: clamp(0.8rem, 0.6rem + 0.8vw, 1.05rem); white-space: normal; overflow-wrap: anywhere; line-height: 2.4; }
+
+        /* Přehled tagů */
+        .tag-list { padding-right: var(--space-1); }
+        .tag-list h4 {
+            margin: var(--space-3) 0 var(--space-2);
+            font-size: var(--fs-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            color: var(--text-muted);
+        }
+        .tag-list h4:first-child { margin-top: 0; }
+        .tag-list .chips { margin-bottom: 0; }
+        .tag-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+        .tag-head h3 { margin: 0; font-family: var(--font-mono); }
+
+        /* Blokové a řádkové elementy */
+        .flow-demo {
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .flow-demo h4 { margin: 0 0 var(--space-2); }
+        .flow-demo p { margin: 0 0 var(--space-2); }
+        .flow-demo ul { margin-bottom: 0; }
+        .flow-demo.show [data-k="b"] { outline: 2px solid var(--c-blue); outline-offset: 2px; background: color-mix(in srgb, var(--c-blue-bg) 60%, transparent); }
+        .flow-demo.show [data-k="i"] { outline: 2px dashed var(--c-orange); outline-offset: 1px; background: var(--c-orange-bg); }
+        .legend__swatch--block { border: 2px solid var(--c-blue); background: var(--c-blue-bg); }
+        .legend__swatch--inline { border: 2px dashed var(--c-orange); background: var(--c-orange-bg); }
+
+        /* Drátěný model sémantické stránky */
+        .wire {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+            grid-template-areas: "h h" "n n" "m a" "f f";
+            gap: var(--space-2);
+            padding: var(--space-3);
+            margin-bottom: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .wire button {
+            min-height: 46px;
+            padding: var(--space-2);
+            font: inherit;
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            text-align: left;
+            color: var(--text);
+            background: var(--surface);
+            border: 1.5px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            vertical-align: top;
+        }
+        .wire button:hover { border-color: var(--text-muted); }
+        .wire button[aria-pressed="true"] { border-color: var(--c-yellow); background: var(--c-yellow-bg); }
+        .wire .w-header { grid-area: h; }
+        .wire .w-nav { grid-area: n; min-height: 34px; }
+        .wire .w-main { grid-area: m; display: flex; flex-direction: column; gap: var(--space-2); min-height: 200px; background: var(--surface-sunken); }
+        .wire .w-aside { grid-area: a; }
+        .wire .w-footer { grid-area: f; }
+        .wire .w-main button { width: 100%; }
+        .wire .w-article { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); background: var(--surface-sunken); }
+        .wire .w-article button { flex: 1; }
+        .wire span.cap { display: block; font-family: var(--font-sans); font-weight: 400; color: var(--text-muted); }
+
+        /* Kódování znaků */
+        .bytes { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-xs); }
+        .bytes span { padding: 1px 4px; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+        .bytes span.multi { background: var(--c-purple-bg); border-color: transparent; color: var(--c-purple); }
+        .ws-out {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-4);
+            background: #fff;
+            color: #222;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            min-height: 3em;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+        .ws-out.pre { white-space: pre; font-family: var(--font-mono); font-size: var(--fs-sm); overflow-x: auto; }
+
+        .editor-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        @media (max-width: 900px) { .editor-layout { grid-template-columns: minmax(0, 1fr); } }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="web">Webové technologie</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">HTML</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <h1>HTML — stavba webové stránky</h1>
+            <p class="subtitle">Jak funguje web, z čeho se skládá tag, kostra dokumentu, nejdůležitější značky a živý editor</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Kapitoly">
+        <button class="tab active" type="button" role="tab" id="t-web" aria-controls="web" aria-selected="true" tabindex="0">Jak funguje web</button>
+        <button class="tab" type="button" role="tab" id="t-anatomie" aria-controls="anatomie" aria-selected="false" tabindex="-1">Anatomie tagu</button>
+        <button class="tab" type="button" role="tab" id="t-kostra" aria-controls="kostra" aria-selected="false" tabindex="-1">Kostra dokumentu</button>
+        <button class="tab" type="button" role="tab" id="t-tagy" aria-controls="tagy" aria-selected="false" tabindex="-1">Přehled tagů</button>
+        <button class="tab" type="button" role="tab" id="t-semantika" aria-controls="semantika" aria-selected="false" tabindex="-1">Sémantika</button>
+        <button class="tab" type="button" role="tab" id="t-editor" aria-controls="editor" aria-selected="false" tabindex="-1">Živý editor</button>
+    </div>
+
+    <!-- ================================================================
+         1. JAK FUNGUJE WEB
+         ================================================================ -->
+    <section id="web" class="tab-content active" role="tabpanel" aria-labelledby="t-web">
+        <h2>Webová stránka je textový soubor</h2>
+        <p class="lead">Každá webová stránka, kterou vidíš, začíná jako obyčejný textový soubor s příponou <code>.html</code>. Prohlížeč ho stáhne ze serveru, přečte značky, které v něm jsou, a podle nich stránku vykreslí. <strong>HTML</strong> (<em>HyperText Markup Language</em>) je jazyk těchto značek.</p>
+
+        <p>HTML je <strong>značkovací jazyk</strong>, ne programovací. Neobsahuje podmínky ani cykly, nic nepočítá — jen <em>popisuje</em>, co je na stránce nadpis, co odstavec, co odkaz nebo obrázek. „HyperText“ znamená text s odkazy, které vedou na jiné dokumenty.</p>
+
+        <h3>Cesta stránky od serveru k tobě</h3>
+        <p>Projdi krok za krokem, co se stane, když do adresního řádku napíšeš adresu a stiskneš Enter.</p>
+
+        <div class="panel">
+            <div class="flow" aria-hidden="true">
+                <div class="flow__node" data-node="klient">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    <b>Prohlížeč</b><small>klient</small>
+                </div>
+                <div class="flow__node" data-node="dns">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <b>Server DNS</b><small>„telefonní seznam“</small>
+                </div>
+                <div class="flow__node" data-node="server">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                    <b>Webový server</b><small>www.gymnazium.cz</small>
+                </div>
+            </div>
+            <div class="flow__msg" id="flowMsg" aria-live="polite"></div>
+            <div class="step-nav">
+                <button class="btn btn--sm" type="button" id="flowPrev">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Zpět
+                </button>
+                <button class="btn btn--sm btn--primary" type="button" id="flowNext">
+                    Další krok
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+                <span class="step-dots" id="flowDots" aria-hidden="true"></span>
+                <span class="muted text-sm" id="flowCount"></span>
+            </div>
+            <h4 id="flowTitle" class="mb-0"></h4>
+            <p id="flowText"></p>
+            <pre class="code code--wrap mb-0" id="flowCode"></pre>
+        </div>
+
+        <h3>Adresa URL po částech</h3>
+        <p>Klikni na část adresy nebo na pojem vpravo.</p>
+        <div class="lab lab--side">
+            <div>
+                <div class="anat url-anat" id="urlCode"></div>
+                <div class="explain" id="urlExplain"><p class="muted mb-0">Vyber část adresy.</p></div>
+            </div>
+            <div class="terms" id="urlTerms">
+                <button class="term" type="button" data-role="proto"><b>Protokol</b><span>https://</span></button>
+                <button class="term" type="button" data-role="domena"><b>Doménové jméno</b><span>www.gymnazium.cz</span></button>
+                <button class="term" type="button" data-role="tld"><b>Doména nejvyššího řádu</b><span>.cz</span></button>
+                <button class="term" type="button" data-role="port"><b>Port</b><span>:443</span></button>
+                <button class="term" type="button" data-role="cesta"><b>Cesta k souboru</b><span>/predmety/informatika.html</span></button>
+                <button class="term" type="button" data-role="dotaz"><b>Dotaz (parametry)</b><span>?trida=2A</span></button>
+                <button class="term" type="button" data-role="kotva"><b>Kotva (fragment)</b><span>#rozvrh</span></button>
+            </div>
+        </div>
+
+        <h3>HTML, CSS a JavaScript</h3>
+        <p>Webovou stránku obvykle tvoří tři jazyky, každý s jinou úlohou. Zapínej a vypínej CSS a JavaScript a sleduj, co se se stránkou stane.</p>
+        <div class="lab">
+            <div>
+                <div class="ctrl">
+                    <label class="row row--center" style="justify-content:flex-start"><input type="checkbox" checked disabled> <span><strong>HTML</strong> — obsah a struktura</span></label>
+                    <label class="row row--center" style="justify-content:flex-start"><input type="checkbox" id="layCss" checked> <span><strong>CSS</strong> — vzhled</span></label>
+                    <label class="row row--center" style="justify-content:flex-start"><input type="checkbox" id="layJs" checked> <span><strong>JavaScript</strong> — chování</span></label>
+                </div>
+                <div class="callout callout--info">
+                    <p class="mb-0">Bez CSS stránka pořád funguje — jen vypadá jako obyčejný dokument. Bez JavaScriptu tlačítko nic nedělá, protože HTML samo o sobě reagovat neumí.</p>
+                </div>
+            </div>
+            <div>
+                <div class="browser" style="--frame-h: 230px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">pocitadlo.html</span></div>
+                    <iframe id="layFrame" title="Náhled ukázkové stránky" sandbox="allow-scripts"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="two-col">
+            <div><p class="label">HTML</p><pre class="code" id="layHtml"></pre></div>
+            <div><p class="label">CSS</p><pre class="code" id="layCssCode"></pre><p class="label">JavaScript</p><pre class="code" id="layJsCode"></pre></div>
+        </div>
+
+        <h3>Základní pojmy</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Pojem</th><th>Význam</th></tr></thead>
+                <tbody>
+                <tr><td><strong>WWW</strong> (World Wide Web)</td><td>systém propojených dokumentů na internetu. Vymyslel ho Tim Berners-Lee v CERNu v roce 1989–1991 — spolu s prvním HTML, protokolem HTTP a adresami URL.</td></tr>
+                <tr><td><strong>Internet × web</strong></td><td>internet je síť počítačů; web je jen jedna ze služeb, které po ní běží (vedle e-mailu, přenosu souborů, her…).</td></tr>
+                <tr><td><strong>Prohlížeč</strong> (klient)</td><td>program, který stahuje a vykresluje stránky — Chrome, Firefox, Safari, Edge. Vykreslování obstarává jeho <em>vykreslovací jádro</em> (Blink, Gecko, WebKit).</td></tr>
+                <tr><td><strong>Webový server</strong></td><td>počítač (a program na něm, např. Apache nebo nginx), který na požádání posílá soubory stránek.</td></tr>
+                <tr><td><strong>HTTP / HTTPS</strong></td><td>protokol, kterým se prohlížeč a server domlouvají. HTTPS je šifrovaná varianta (zámek v adresním řádku).</td></tr>
+                <tr><td><strong>URL</strong></td><td>adresa dokumentu na webu: protokol, doména, cesta…</td></tr>
+                <tr><td><strong>Statická × dynamická stránka</strong></td><td>statická je uložená jako hotový soubor; dynamickou server sestaví až na požádání (např. z databáze v PHP, Pythonu…).</td></tr>
+                <tr><td><strong>DOM</strong> (Document Object Model)</td><td>strom objektů, který si prohlížeč z HTML postaví v paměti. Se stromem pracuje CSS i JavaScript.</td></tr>
+                <tr><td><strong>W3C, WHATWG</strong></td><td>organizace, které jazyk HTML standardizují. Dnešní HTML je tzv. <em>Living Standard</em> — průběžně se vyvíjí, verzi „HTML5“ už se oficiálně čísla nepřidávají.</td></tr>
+                <tr><td><strong>Zdrojový kód stránky</strong></td><td>HTML, jak přišlo ze serveru. Zobrazíš ho klávesami <kbd>Ctrl</kbd> + <kbd>U</kbd>; aktuální strom DOM ukazují vývojářské nástroje (<kbd>F12</kbd>).</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         2. ANATOMIE TAGU
+         ================================================================ -->
+    <section id="anatomie" class="tab-content" role="tabpanel" aria-labelledby="t-anatomie">
+        <h2>Z čeho se skládá tag</h2>
+        <p class="lead">Obsah stránky se v HTML označuje <strong>značkami</strong> (anglicky <em>tags</em>). Značka je slovo ve špičatých závorkách, které prohlížeči říká, čím daný kus obsahu je.</p>
+
+        <div class="toolbar">
+            <span class="label mb-0">Příklad:</span>
+            <div class="seg seg--mono" id="anatSeg" role="group" aria-label="Volba příkladu">
+                <button type="button" data-v="a" aria-pressed="true">&lt;a&gt;</button>
+                <button type="button" data-v="img" aria-pressed="false">&lt;img&gt;</button>
+                <button type="button" data-v="input" aria-pressed="false">&lt;input&gt;</button>
+                <button type="button" data-v="p" aria-pressed="false">&lt;p&gt; + &lt;strong&gt;</button>
+            </div>
+        </div>
+        <div class="lab lab--side">
+            <div>
+                <div class="anat" id="anatCode"></div>
+                <div class="explain" id="anatExplain"><p class="muted mb-0">Klikni na část kódu nebo na pojem vpravo.</p></div>
+                <p class="label">Výsledek v prohlížeči</p>
+                <div class="browser" style="--frame-h: 90px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">ukazka.html</span></div>
+                    <iframe id="anatFrame" title="Výsledek příkladu" sandbox></iframe>
+                </div>
+            </div>
+            <div class="terms" id="anatTerms"></div>
+        </div>
+
+        <h3>Párové a nepárové značky</h3>
+        <p>Většina elementů je <strong>párová</strong>: mají počáteční značku <code>&lt;p&gt;</code>, obsah a koncovou značku <code>&lt;/p&gt;</code>, která se liší lomítkem. Některé elementy žádný obsah mít nemohou — jsou <strong>nepárové</strong> (prázdné, anglicky <em>void elements</em>) a koncovou značku nemají.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Nepárová značka</th><th>K čemu je</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">&lt;br&gt;</td><td>zalomení řádku uvnitř textu</td></tr>
+                <tr><td class="mono">&lt;hr&gt;</td><td>tematický předěl (vodorovná čára)</td></tr>
+                <tr><td class="mono">&lt;img&gt;</td><td>obrázek — obsah je v souboru, na který ukazuje <code>src</code></td></tr>
+                <tr><td class="mono">&lt;input&gt;</td><td>vstupní pole formuláře</td></tr>
+                <tr><td class="mono">&lt;meta&gt;, &lt;link&gt;</td><td>informace o stránce a připojení souborů (v hlavičce)</td></tr>
+                <tr><td class="mono">&lt;source&gt;, &lt;track&gt;, &lt;wbr&gt;, &lt;col&gt;, &lt;area&gt;, &lt;embed&gt;</td><td>méně časté nepárové značky</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--neutral">
+            <p class="mb-0">Možná uvidíš i zápis <code>&lt;br /&gt;</code> s lomítkem na konci. Pochází ze staršího jazyka XHTML. V HTML je povolený, ale lomítko nic nedělá — <code>&lt;br&gt;</code> a <code>&lt;br /&gt;</code> znamenají totéž.</p>
+        </div>
+
+        <h3>Vnořování elementů</h3>
+        <p>Elementy se do sebe vkládají jako krabice. Pravidlo zní: <strong>co se otevřelo jako poslední, musí se zavřít jako první</strong>. Prohlížeč chyby v kódu neohlásí — potichu je „opraví“, a to často jinak, než bys čekal.</p>
+        <div class="toolbar">
+            <div class="seg" id="nestSeg" role="group" aria-label="Volba ukázky vnoření">
+                <button type="button" data-v="ok" aria-pressed="true">Správně</button>
+                <button type="button" data-v="cross" aria-pressed="false">Překřížené značky</button>
+                <button type="button" data-v="block" aria-pressed="false">Blok uvnitř odstavce</button>
+                <button type="button" data-v="open" aria-pressed="false">Neuzavřená značka</button>
+            </div>
+        </div>
+        <div class="two-col">
+            <div>
+                <p class="label">Napsaný kód</p>
+                <pre class="code code--wrap" id="nestSrc"></pre>
+                <p class="label">Co z toho prohlížeč udělal</p>
+                <pre class="code code--wrap" id="nestOut"></pre>
+                <div id="nestNote"></div>
+            </div>
+            <div>
+                <p class="label">Elementy jako krabice (podle prohlížeče)</p>
+                <div class="nest" id="nestBoxes"></div>
+            </div>
+        </div>
+
+        <h3>Atributy</h3>
+        <p>Atribut upřesňuje element: zapisuje se do počáteční značky jako <code>název="hodnota"</code>, odděluje se mezerou a hodnota patří do uvozovek. Některé atributy mají všechny elementy (<strong>globální</strong>), jiné jen určité.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Atribut</th><th>Kde</th><th>Význam</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">id</td><td>všude</td><td>jednoznačný identifikátor — na stránce smí být jen jednou (kotvy <code>#id</code>, CSS, JavaScript)</td></tr>
+                <tr><td class="mono">class</td><td>všude</td><td>jedna nebo více tříd oddělených mezerou; slouží hlavně pro CSS</td></tr>
+                <tr><td class="mono">style</td><td>všude</td><td>CSS přímo v elementu (raději nepoužívat, viz stránka CSS)</td></tr>
+                <tr><td class="mono">title</td><td>všude</td><td>doplňující text, ukáže se jako bublina po najetí myší</td></tr>
+                <tr><td class="mono">lang</td><td>všude</td><td>jazyk obsahu, např. <code>cs</code>, <code>en</code></td></tr>
+                <tr><td class="mono">hidden</td><td>všude</td><td>element se nezobrazí</td></tr>
+                <tr><td class="mono">data-*</td><td>všude</td><td>vlastní data pro JavaScript, např. <code>data-cena="120"</code></td></tr>
+                <tr><td class="mono">href</td><td>&lt;a&gt;, &lt;link&gt;</td><td>adresa, kam odkaz vede</td></tr>
+                <tr><td class="mono">src</td><td>&lt;img&gt;, &lt;script&gt;, &lt;video&gt;…</td><td>adresa souboru, který se má vložit</td></tr>
+                <tr><td class="mono">alt</td><td>&lt;img&gt;</td><td>náhradní text obrázku — povinný</td></tr>
+                <tr><td class="mono">type, name, value</td><td>&lt;input&gt;, &lt;button&gt;</td><td>druh pole, jméno pro odeslání, hodnota</td></tr>
+                <tr><td class="mono">target="_blank"</td><td>&lt;a&gt;</td><td>otevře odkaz v nové záložce</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Pojmy, které se pletou</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Pojem</th><th>Co přesně znamená</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Tag</strong> (značka)</td><td>jen ta část ve špičatých závorkách: <code>&lt;p&gt;</code> nebo <code>&lt;/p&gt;</code></td></tr>
+                <tr><td><strong>Element</strong></td><td>celek: počáteční značka + obsah + koncová značka. V běžné řeči se často říká „tag“ i elementu.</td></tr>
+                <tr><td><strong>Rodič, potomek, sourozenec</strong></td><td>vztahy ve stromu: <code>&lt;ul&gt;</code> je rodič svých <code>&lt;li&gt;</code>, ty jsou navzájem sourozenci</td></tr>
+                <tr><td><strong>Komentář</strong></td><td><code>&lt;!-- poznámka --&gt;</code> — prohlížeč ho nezobrazí, ale ve zdrojovém kódu je vidět</td></tr>
+                <tr><td><strong>Entita</strong></td><td>zápis znaku, který by jinak kolidoval se značkami: <code>&amp;lt;</code> = &lt;, <code>&amp;amp;</code> = &amp; (viz <a href="#kostra" data-tab>Kostra dokumentu</a>)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         3. KOSTRA DOKUMENTU
+         ================================================================ -->
+    <section id="kostra" class="tab-content" role="tabpanel" aria-labelledby="t-kostra">
+        <h2>Kostra HTML dokumentu</h2>
+        <p class="lead">Každý HTML soubor má stejnou základní stavbu. Dělí se na <strong>hlavičku</strong> <code>&lt;head&gt;</code> s informacemi <em>o</em> stránce a <strong>tělo</strong> <code>&lt;body&gt;</code> s tím, co se opravdu zobrazí.</p>
+        <p>Klikni na řádek kódu a vpravo se zobrazí, k čemu slouží.</p>
+
+        <div class="two-col">
+            <div class="lines" id="skelLines" role="group" aria-label="Řádky kostry dokumentu"></div>
+            <div style="position: sticky; top: var(--space-4);">
+                <div class="explain" id="skelExplain"></div>
+                <div class="toolbar">
+                    <div class="seg" id="skelSeg" role="group" aria-label="Zvýraznit část dokumentu">
+                        <button type="button" data-v="all" aria-pressed="true">Vše</button>
+                        <button type="button" data-v="head" aria-pressed="false">Hlavička</button>
+                        <button type="button" data-v="body" aria-pressed="false">Tělo</button>
+                    </div>
+                </div>
+                <p class="muted text-sm">Hlavička se nezobrazuje v okně — jen <code>&lt;title&gt;</code> uvidíš jako název záložky. Všechno viditelné patří do těla.</p>
+            </div>
+        </div>
+
+        <h3>Technické náležitosti</h3>
+
+        <h4>Kódování znaků</h4>
+        <p>Počítač ukládá text jako bajty (viz <a href="../informatika/kodovani_dat.html">Kódování dat</a>). Řádek <code>&lt;meta charset="UTF-8"&gt;</code> prohlížeči říká, podle jaké tabulky má bajty souboru převést zpátky na znaky. Soubor musí být v kódování UTF-8 i opravdu uložený — v editoru to bývá volba „Uložit s kódováním“. Když prohlížeč použije jinou tabulku, objeví se „rozsypaný čaj“.</p>
+        <div class="panel">
+            <div class="ctrl">
+                <label for="encIn">Text v souboru (uložený v UTF-8)</label>
+                <input class="input" type="text" id="encIn" value="Příliš žluťoučký kůň úpěl ďábelské ódy">
+            </div>
+            <p class="label">Bajty v souboru <span class="muted">(fialově znaky, které v UTF-8 zabírají víc bajtů)</span></p>
+            <div class="bytes" id="encBytes"></div>
+            <div class="toolbar">
+                <span class="label mb-0">Prohlížeč čte jako:</span>
+                <div class="seg" id="encSeg" role="group" aria-label="Kódování při čtení">
+                    <button type="button" data-v="utf-8" aria-pressed="true">UTF-8</button>
+                    <button type="button" data-v="windows-1250" aria-pressed="false">Windows-1250</button>
+                    <button type="button" data-v="iso-8859-2" aria-pressed="false">ISO-8859-2</button>
+                    <button type="button" data-v="windows-1252" aria-pressed="false">Západoevropské</button>
+                </div>
+            </div>
+            <div class="ws-out" id="encOut" aria-live="polite"></div>
+            <p class="muted text-sm mb-0" id="encNote"></p>
+        </div>
+
+        <h4>Bílé znaky</h4>
+        <p>Mezery, tabulátory a konce řádků v HTML prohlížeč <strong>slučuje do jedné mezery</strong>. Kód tak můžeš odsazovat, jak chceš, a na stránce to nebude vidět. Nový řádek udělá až <code>&lt;br&gt;</code> nebo nový odstavec; mezery zachová jen element <code>&lt;pre&gt;</code>.</p>
+        <div class="panel">
+            <div class="ctrl">
+                <label for="wsIn">Obsah odstavce — zkus přidat mezery a Enter</label>
+                <textarea class="input mono" id="wsIn" rows="4">Ahoj,      tady je    hodně   mezer.
+A tady
+    nový řádek.</textarea>
+            </div>
+            <div class="toolbar">
+                <div class="seg" id="wsSeg" role="group" aria-label="Element">
+                    <button type="button" data-v="p" aria-pressed="true">&lt;p&gt;</button>
+                    <button type="button" data-v="pre" aria-pressed="false">&lt;pre&gt;</button>
+                </div>
+            </div>
+            <div class="ws-out" id="wsOut"></div>
+        </div>
+
+        <h4>Speciální znaky a entity</h4>
+        <p>Znaky <code>&lt;</code> a <code>&amp;</code> mají v HTML zvláštní význam. Chceš-li je na stránce zobrazit jako text, zapiš je jako <strong>entitu</strong> — začíná <code>&amp;</code> a končí středníkem.</p>
+        <div class="two-col">
+            <div class="panel">
+                <div class="ctrl">
+                    <label for="entIn">Text, který chceš zobrazit</label>
+                    <input class="input mono" type="text" id="entIn" value="Platí 3 < 5 & 5 > 3, říká „učitel“.">
+                </div>
+                <p class="label">Zápis v HTML</p>
+                <pre class="code code--wrap mb-0" id="entOut"></pre>
+            </div>
+            <div class="table-wrap">
+                <table class="notion-table">
+                    <thead><tr><th>Entita</th><th>Znak</th><th>Kdy</th></tr></thead>
+                    <tbody>
+                    <tr><td class="mono">&amp;lt;</td><td class="mono">&lt;</td><td>vždy, když nejde o značku</td></tr>
+                    <tr><td class="mono">&amp;gt;</td><td class="mono">&gt;</td><td>pro symetrii, není nutná</td></tr>
+                    <tr><td class="mono">&amp;amp;</td><td class="mono">&amp;</td><td>ampersand</td></tr>
+                    <tr><td class="mono">&amp;quot;</td><td class="mono">"</td><td>uvnitř hodnoty atributu</td></tr>
+                    <tr><td class="mono">&amp;nbsp;</td><td>(nezlomitelná mezera)</td><td>„v Praze“, „5 kg“ — nerozdělí se na dva řádky</td></tr>
+                    <tr><td class="mono">&amp;copy;</td><td>©</td><td>copyright</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h4>Pravidla zápisu</h4>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Pravidlo</th><th>Proč</th></tr></thead>
+                <tbody>
+                <tr><td>Názvy značek a atributů piš <strong>malými písmeny</strong>.</td><td>HTML velikost písmen nerozlišuje (<code>&lt;P&gt;</code> = <code>&lt;p&gt;</code>), malá písmena jsou ale ustálená konvence.</td></tr>
+                <tr><td>Hodnoty atributů dávej do <strong>uvozovek</strong>.</td><td>Bez nich se hodnota s mezerou rozpadne: <code>alt=Moje kočka</code> je atribut <code>alt="Moje"</code> a nesmyslný atribut <code>kočka</code>.</td></tr>
+                <tr><td>Vnořené elementy <strong>odsazuj</strong>.</td><td>Na stránce to vidět není, ale kód je čitelný a chyby ve vnoření jsou hned znát.</td></tr>
+                <tr><td>Hlavní stránka webu se jmenuje <code>index.html</code>.</td><td>Server ji pošle, když adresa končí jen názvem složky (<code>www.skola.cz/</code>).</td></tr>
+                <tr><td>Názvy souborů <strong>bez diakritiky a mezer</strong>, malými písmeny.</td><td>Servery často rozlišují velká a malá písmena a mezery se v URL mění na <code>%20</code>.</td></tr>
+                <tr><td>Odkazy na vlastní soubory piš jako <strong>relativní cesty</strong>.</td><td><code>obrazky/logo.png</code> funguje na počítači i na serveru (viz <a href="../vypocetni_technika/souborovy_system.html#cesty">Absolutní a relativní cesty</a>).</td></tr>
+                <tr><td>Kód ověřuj <strong>validátorem</strong>.</td><td>Prohlížeč chyby toleruje, ale každý je opraví trochu jinak. Validátor W3C (validator.w3.org) je najde.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         4. PŘEHLED TAGŮ
+         ================================================================ -->
+    <section id="tagy" class="tab-content" role="tabpanel" aria-labelledby="t-tagy">
+        <h2>Nejdůležitější značky</h2>
+        <p class="lead">Vyber značku vlevo. Ukázkový kód můžeš libovolně upravovat — náhled pod ním se mění, jak píšeš.</p>
+
+        <div class="lab">
+            <div class="tag-list" id="tagList" aria-label="Seznam značek"></div>
+            <div>
+                <div class="tag-head">
+                    <h3 id="tagName"></h3>
+                    <span id="tagBadges"></span>
+                </div>
+                <p id="tagDesc"></p>
+                <div id="tagEdit" style="--edit-h: 190px"></div>
+                <div class="browser" style="--frame-h: 220px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">nahled.html</span>
+                        <button class="btn btn--sm btn--ghost" type="button" id="tagReset" title="Vrátit původní ukázku">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                            Původní kód
+                        </button>
+                    </div>
+                    <iframe id="tagFrame" title="Náhled značky" sandbox></iframe>
+                </div>
+            </div>
+        </div>
+
+        <h3>Blokové a řádkové elementy</h3>
+        <p>Elementy se v toku stránky chovají dvojím způsobem. <strong>Blokové</strong> (<code>h1</code>, <code>p</code>, <code>ul</code>, <code>div</code>, <code>table</code>…) začínají na novém řádku a zaberou celou šířku. <strong>Řádkové</strong> (<code>a</code>, <code>strong</code>, <code>em</code>, <code>span</code>, <code>img</code>…) zůstávají v textu a zaberou jen tolik místa, kolik potřebují. Toto chování lze v CSS změnit vlastností <code>display</code>.</p>
+        <div class="toolbar">
+            <label class="row row--center"><input type="checkbox" id="flowShow" checked> Zobrazit hranice elementů</label>
+            <span class="spacer"></span>
+            <span class="legend mb-0">
+                <span class="legend__item"><span class="legend__swatch legend__swatch--block"></span>blokový</span>
+                <span class="legend__item"><span class="legend__swatch legend__swatch--inline"></span>řádkový</span>
+            </span>
+        </div>
+        <div class="flow-demo show" id="flowDemo">
+            <h4 data-k="b">Výlet do Krkonoš <small class="muted mono">&lt;h4&gt;</small></h4>
+            <p data-k="b">V sobotu vyrážíme <strong data-k="i">v 7:30</strong> z nádraží. Trasu najdeš na <a data-k="i" href="#tagy" onclick="return false">mapě</a>, s sebou <em data-k="i">pevnou obuv</em> a <span data-k="i">svačinu</span>. <small class="muted mono">&lt;p&gt;</small></p>
+            <ul data-k="b">
+                <li data-k="b">pláštěnka <small class="muted mono">&lt;li&gt;</small></li>
+                <li data-k="b">láhev s vodou</li>
+            </ul>
+        </div>
+
+        <h3>Na vzhled, nebo na význam?</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Význam (doporučeno)</th><th>Jen vzhled</th><th>Rozdíl</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">&lt;strong&gt;</td><td class="mono">&lt;b&gt;</td><td><code>strong</code> = důležitý text, čtečka obrazovky ho zdůrazní; <code>b</code> = jen tučně bez zvláštního významu</td></tr>
+                <tr><td class="mono">&lt;em&gt;</td><td class="mono">&lt;i&gt;</td><td><code>em</code> = důraz v řeči; <code>i</code> = odlišný hlas (cizí slovo, název)</td></tr>
+                <tr><td class="mono">&lt;h1&gt;–&lt;h6&gt;</td><td class="mono">&lt;p style="font-size:2em"&gt;</td><td>nadpis je nadpis i pro vyhledávače a čtečky; zvětšený odstavec ne</td></tr>
+                <tr><td class="mono">&lt;ul&gt; + &lt;li&gt;</td><td class="mono">- položka&lt;br&gt;</td><td>skutečný seznam umí čtečka spočítat a CSS ho snadno nastyluje</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--warn">
+            <p class="mb-0">Vzhled se řeší v CSS. Staré značky jako <code>&lt;font&gt;</code>, <code>&lt;center&gt;</code> nebo <code>&lt;marquee&gt;</code> jsou zastaralé a v dnešním HTML se nepoužívají.</p>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         5. SÉMANTIKA
+         ================================================================ -->
+    <section id="semantika" class="tab-content" role="tabpanel" aria-labelledby="t-semantika">
+        <h2>Sémantické značky</h2>
+        <p class="lead"><strong>Sémantika</strong> znamená význam. Sémantické značky neříkají, jak má obsah vypadat, ale <em>čím je</em>: záhlaví, navigace, hlavní obsah, článek, postranní panel, patička.</p>
+        <p>Klikni na část stránky a podívej se, jak se zapíše.</p>
+
+        <div class="two-col">
+            <div>
+                <div class="wire" id="wire">
+                    <button type="button" class="w-header" data-r="header">&lt;header&gt;<span class="cap">logo a název webu</span></button>
+                    <button type="button" class="w-nav" data-r="nav">&lt;nav&gt;<span class="cap">hlavní menu</span></button>
+                    <div class="w-main">
+                        <button type="button" data-r="main" style="min-height:0; padding: var(--space-1) var(--space-2);">&lt;main&gt;</button>
+                        <div class="w-article">
+                            <button type="button" data-r="article" style="min-height:0; flex:none; padding: var(--space-1) var(--space-2);">&lt;article&gt;</button>
+                            <button type="button" data-r="h1">&lt;h1&gt;<span class="cap">nadpis článku</span></button>
+                            <button type="button" data-r="section">&lt;section&gt;<span class="cap">kapitola s &lt;h2&gt;</span></button>
+                            <button type="button" data-r="figure">&lt;figure&gt;<span class="cap">obrázek s popiskem</span></button>
+                        </div>
+                    </div>
+                    <button type="button" class="w-aside" data-r="aside">&lt;aside&gt;<span class="cap">související odkazy</span></button>
+                    <button type="button" class="w-footer" data-r="footer">&lt;footer&gt;<span class="cap">kontakt, autor</span></button>
+                </div>
+                <div class="explain" id="semExplain"></div>
+            </div>
+            <div>
+                <div class="toolbar">
+                    <div class="seg" id="semSeg" role="group" aria-label="Způsob zápisu">
+                        <button type="button" data-v="sem" aria-pressed="true">Sémantický zápis</button>
+                        <button type="button" data-v="div" aria-pressed="false">Jen &lt;div&gt;</button>
+                    </div>
+                </div>
+                <div class="lines" id="semLines" role="group" aria-label="Kód stránky"></div>
+                <p class="muted text-sm" id="semNote"></p>
+            </div>
+        </div>
+
+        <h3>Proč na sémantice záleží</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Kdo stránku „čte“</th><th>Co mu sémantika dává</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Čtečka obrazovky</strong> (nevidomí)</td><td>může přeskočit přímo na <code>&lt;main&gt;</code>, vypsat nadpisy jako obsah, ohlásit „navigace, 5 odkazů“</td></tr>
+                <tr><td><strong>Vyhledávač</strong></td><td>pozná, co je hlavní obsah a co jen menu nebo patička, a podle nadpisů pochopí téma</td></tr>
+                <tr><td><strong>Prohlížeč</strong></td><td>režim čtení, překladač nebo export do PDF vyberou jen článek</td></tr>
+                <tr><td><strong>Programátor</strong></td><td><code>&lt;nav&gt;</code> je čitelnější než <code>&lt;div class="menu-wrapper-2"&gt;</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Přístupnost v kostce</h3>
+        <ul>
+            <li>Každý obrázek má <code>alt</code>. Popisuje, co je na obrázku podstatné; čistě ozdobný obrázek má <code>alt=""</code>.</li>
+            <li>Na stránce je jeden <code>&lt;h1&gt;</code> a úrovně nadpisů se nepřeskakují (po <code>h2</code> následuje <code>h3</code>, ne <code>h5</code>).</li>
+            <li>Každé pole formuláře má <code>&lt;label&gt;</code> — klepnutím na popisek se pole aktivuje.</li>
+            <li>Text odkazu říká, kam vede: „Rozvrh hodin“, ne „klikni sem“.</li>
+            <li>Tlačítko je <code>&lt;button&gt;</code>, odkaz je <code>&lt;a&gt;</code> — ne <code>&lt;div&gt;</code> s JavaScriptem.</li>
+            <li><code>&lt;html lang="cs"&gt;</code> zajistí, že čtečka bude číst česky.</li>
+        </ul>
+        <p>Tyto zásady kontroluje i <a href="#editor" data-tab>Živý editor</a>.</p>
+    </section>
+
+    <!-- ================================================================
+         6. ŽIVÝ EDITOR
+         ================================================================ -->
+    <section id="editor" class="tab-content" role="tabpanel" aria-labelledby="t-editor">
+        <h2>Živý editor</h2>
+        <p class="lead">Piš HTML vlevo, výsledek se ukazuje vpravo. Pod editorem najdeš strom DOM, osnovu nadpisů a kontrolu nejčastějších chyb.</p>
+
+        <div class="toolbar">
+            <label for="edTpl" class="label mb-0">Šablona</label>
+            <select class="input" id="edTpl" style="width:auto"></select>
+            <span class="spacer"></span>
+            <span class="muted text-sm"><kbd>Tab</kbd> odsadí, <kbd>Esc</kbd> opustí editor</span>
+        </div>
+        <div class="lab editor-layout">
+            <div id="edCode" style="--edit-h: 440px"></div>
+            <div class="browser" style="--frame-h: 400px">
+                <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url" id="edUrl">index.html</span></div>
+                <iframe id="edFrame" title="Náhled stránky z editoru" sandbox="allow-scripts"></iframe>
+            </div>
+        </div>
+
+        <div class="tabs" role="group" aria-label="Rozbor kódu" id="edViews" style="margin-bottom: var(--space-4);">
+            <button class="tab active" type="button" data-v="check" aria-pressed="true">Kontrola kódu <span id="edCount"></span></button>
+            <button class="tab" type="button" data-v="dom" aria-pressed="false">Strom DOM</button>
+            <button class="tab" type="button" data-v="outline" aria-pressed="false">Osnova nadpisů</button>
+        </div>
+        <div id="edPanel" aria-live="polite"></div>
+    </section>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
+<script>
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/** Escapování textu pro innerHTML. */
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Segmentový přepínač: volá cb(hodnota) při změně. */
+function bindSeg(el, cb) {
+    el.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !el.contains(b)) return;
+        el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.dataset.v, b);
+    });
+}
+function segValue(el) {
+    var b = el.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.v : null;
+}
+function setSeg(el, v) {
+    el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v ? 'true' : 'false'); });
+}
+
+/** Debounce — pro živý náhled při psaní. */
+function debounce(fn, ms) {
+    var t;
+    return function () {
+        var args = arguments, self = this;
+        clearTimeout(t);
+        t = setTimeout(function () { fn.apply(self, args); }, ms);
+    };
+}
+
+/* ----------------------------------------------------------------------
+   Zvýraznění syntaxe HTML a CSS (jednoduché, pro výukové ukázky)
+   ---------------------------------------------------------------------- */
+function hlAttrs(s) {
+    var out = '';
+    var re = /(\s+)|([^\s=\/>]+)(\s*=\s*)?("[^"]*"?|'[^']*'?|[^\s"'>]+)?|([\s\S])/g, m;
+    while ((m = re.exec(s))) {
+        if (m[1]) out += m[1];
+        else if (m[2]) {
+            out += '<span class="hl-attr">' + esc(m[2]) + '</span>';
+            if (m[3] !== undefined) out += '<span class="hl-punc">' + esc(m[3]) + '</span>';
+            if (m[4] !== undefined) out += '<span class="hl-val">' + esc(m[4]) + '</span>';
+        } else out += '<span class="hl-punc">' + esc(m[5]) + '</span>';
+    }
+    return out;
+}
+
+function hlTag(t) {
+    var m = /^(<\/?)([a-zA-Z][\w-]*)([\s\S]*?)(\/?>)?$/.exec(t);
+    if (!m) return esc(t);
+    return '<span class="hl-tag">' + esc(m[1]) + esc(m[2]) + '</span>' + hlAttrs(m[3]) +
+        (m[4] ? '<span class="hl-tag">' + esc(m[4]) + '</span>' : '');
+}
+
+function hlHTML(src) {
+    var out = '', last = 0, m;
+    var re = /<\!--[\s\S]*?(?:-->|$)|<![^>]*>?|<\/?[a-zA-Z][^>]*>?|&#?\w+;/g;
+    while ((m = re.exec(src))) {
+        out += esc(src.slice(last, m.index));
+        var t = m[0];
+        if (t.indexOf('<\!--') === 0) out += '<span class="hl-com">' + esc(t) + '</span>';
+        else if (t.indexOf('<!') === 0) out += '<span class="hl-doc">' + esc(t) + '</span>';
+        else if (t.charAt(0) === '&') out += '<span class="hl-ent">' + esc(t) + '</span>';
+        else {
+            out += hlTag(t);
+            var open = /^<(style|script)\b/i.exec(t);
+            if (open && t.slice(-2) !== '/>') {
+                var endRe = new RegExp('</' + open[1] + '\\s*>', 'i');
+                var rest = src.slice(re.lastIndex);
+                var e = endRe.exec(rest);
+                var inner = e ? rest.slice(0, e.index) : rest;
+                out += open[1].toLowerCase() === 'style' ? hlCSS(inner) : esc(inner);
+                re.lastIndex += inner.length;
+            }
+        }
+        last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+}
+
+function hlValue(v) {
+    return esc(v).replace(/(&quot;.*?&quot;|&#39;.*?&#39;)|(!important)|(#[0-9a-fA-F]{3,8}\b)|(-?\d*\.?\d+(?:px|em|rem|%|s|ms|deg|vw|vh|fr|ch|turn)?)(?![\w-])|([a-zA-Z-]+(?=\())|([a-zA-Z-]+)/g,
+        function (all, str, imp, hex, num, fn, word) {
+            if (str) return '<span class="hl-val">' + str + '</span>';
+            if (imp) return '<span class="hl-at">' + imp + '</span>';
+            if (hex || num) return '<span class="hl-num">' + all + '</span>';
+            if (fn) return '<span class="hl-prop">' + fn + '</span>';
+            return '<span class="hl-val">' + word + '</span>';
+        });
+}
+
+function hlCSS(src) {
+    var out = '', i = 0, n = src.length, start = true;
+    while (i < n) {
+        if (src[i] === '/' && src[i + 1] === '*') {
+            var e = src.indexOf('*/', i + 2);
+            e = e < 0 ? n : e + 2;
+            out += '<span class="hl-com">' + esc(src.slice(i, e)) + '</span>';
+            i = e;
+            continue;
+        }
+        var ch = src[i];
+        if (ch === '{' || ch === '}' || ch === ';') {
+            out += '<span class="hl-punc">' + ch + '</span>';
+            i++;
+            start = true;
+            continue;
+        }
+        var j = i;
+        while (j < n && '{;}'.indexOf(src[j]) < 0 && !(src[j] === '/' && src[j + 1] === '*')) j++;
+        var chunk = src.slice(i, j);
+        var trimmed = chunk.trim();
+        if (trimmed.charAt(0) === '@') {
+            out += chunk.replace(/^(\s*)(@[\w-]+)([\s\S]*)$/, function (a, ws, at, rest) {
+                return ws + '<span class="hl-at">' + esc(at) + '</span>' + hlValue(rest);
+            });
+        } else if (src[j] === '{' || !start) {
+            out += '<span class="hl-sel">' + esc(chunk) + '</span>';
+        } else {
+            var c = chunk.indexOf(':');
+            if (c < 0) out += esc(chunk);
+            else out += '<span class="hl-prop">' + esc(chunk.slice(0, c)) + '</span><span class="hl-punc">:</span>' + hlValue(chunk.slice(c + 1));
+        }
+        i = j;
+    }
+    return out;
+}
+
+/* ----------------------------------------------------------------------
+   Editor kódu se zvýrazněním (průhledný textarea nad <pre>)
+   ---------------------------------------------------------------------- */
+function CodeEdit(host, lang, onChange, label) {
+    var pre = document.createElement('pre');
+    pre.setAttribute('aria-hidden', 'true');
+    var ta = document.createElement('textarea');
+    ta.spellcheck = false;
+    ta.setAttribute('autocomplete', 'off');
+    ta.setAttribute('autocapitalize', 'off');
+    ta.setAttribute('aria-label', label || 'Kód');
+    ta.wrap = 'off';
+    host.classList.add('code-edit');
+    host.appendChild(pre);
+    host.appendChild(ta);
+
+    var hl = lang === 'css' ? hlCSS : hlHTML;
+    function paint() { pre.innerHTML = hl(ta.value) + '\n'; sync(); }
+    function sync() { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; }
+
+    ta.addEventListener('input', function () { paint(); if (onChange) onChange(ta.value); });
+    ta.addEventListener('scroll', sync);
+    ta.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { ta.blur(); return; }
+        if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
+            var s = ta.selectionStart, en = ta.selectionEnd;
+            ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(en);
+            ta.selectionStart = ta.selectionEnd = s + 4;
+            paint();
+            if (onChange) onChange(ta.value);
+        }
+    });
+
+    return {
+        textarea: ta,
+        get: function () { return ta.value; },
+        set: function (v, silent) { ta.value = v; ta.scrollTop = 0; paint(); if (onChange && !silent) onChange(v); }
+    };
+}
+
+/** Vloží HTML do náhledového <iframe>. */
+function showInFrame(frame, html) {
+    frame.srcdoc = html;
+}
+
+/** Obalí kousek HTML do dokumentu pro náhled (bez vlastního <html>). */
+function wrapDoc(body, css) {
+    return '<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<style>:root{color-scheme:light}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:12px;line-height:1.45;color:#222;background:#fff}' +
+        (css || '') + '</style></head><body>' + body + '</body></html>';
+}
+
+/* ----------------------------------------------------------------------
+   Záložky: přepínání, ARIA stavy, šipky, odkaz přes #kotvu
+   ---------------------------------------------------------------------- */
+function showTab(id, focus) {
+    var panel = $(id);
+    if (!panel || !panel.classList.contains('tab-content')) return;
+    document.querySelectorAll('main > .tab-content').forEach(function (p) {
+        p.classList.toggle('active', p === panel);
+        p.hidden = (p !== panel);
+    });
+    document.querySelectorAll('.tabs[role="tablist"] .tab').forEach(function (b) {
+        var on = b.getAttribute('aria-controls') === id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        if (on) {
+            if (focus) b.focus();
+            if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// v některých prohlížečích */ }
+    window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: id } }));
+}
+
+function initTabs() {
+    var bar = document.querySelector('.tabs[role="tablist"]');
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (b) showTab(b.getAttribute('aria-controls'));
+    });
+    bar.addEventListener('keydown', function (e) {
+        if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        var next = e.key === 'Home' ? 0
+            : e.key === 'End' ? tabs.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        showTab(tabs[next].getAttribute('aria-controls'), true);
+    });
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-tab]');
+        if (!a) return;
+        e.preventDefault();
+        showTab(a.getAttribute('href').slice(1));
+        window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+    });
+    document.querySelectorAll('main > .tab-content:not(.active)').forEach(function (p) { p.hidden = true; });
+    var h = (location.hash || '').slice(1);
+    if (h && $(h) && $(h).classList.contains('tab-content')) showTab(h);
+}
+
+/** Klikací anatomie: termíny ↔ části kódu (data-p obsahuje seznam rolí). */
+function bindAnatomy(codeEl, termsEl, explainEl, texts) {
+    function select(role) {
+        codeEl.querySelectorAll('span[data-p]').forEach(function (s) {
+            s.classList.toggle('on', (' ' + s.dataset.p + ' ').indexOf(' ' + role + ' ') >= 0);
+        });
+        termsEl.querySelectorAll('.term').forEach(function (t) {
+            t.setAttribute('aria-pressed', t.dataset.role === role ? 'true' : 'false');
+        });
+        if (explainEl && texts[role]) explainEl.innerHTML = texts[role];
+    }
+    termsEl.addEventListener('click', function (e) {
+        var t = e.target.closest('.term');
+        if (t) select(t.dataset.role);
+    });
+    codeEl.addEventListener('click', function (e) {
+        var s = e.target.closest('span[data-p]');
+        if (s) select(s.dataset.p.split(' ')[0]);
+    });
+    return select;
+}
+
+
+/* ======================================================================
+   HTML — skripty stránky
+   ====================================================================== */
+
+var ICON_R = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+var ICON_L = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>';
+var ICON_CPU = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect></svg>';
+
+/** Vykreslí řádky kódu jako klikací tlačítka. */
+function renderLines(el, lines) {
+    el.innerHTML = lines.map(function (t, i) {
+        return '<button type="button" data-i="' + i + '" aria-pressed="false"><span class="ln">' + (i + 1) + '</span><span>' +
+            (hlHTML(t) || ' ') + '</span></button>';
+    }).join('');
+}
+
+/* ----------------------------------------------------------------------
+   1. Cesta stránky
+   ---------------------------------------------------------------------- */
+(function flow() {
+    var STEPS = [
+        { node: ['klient'], dir: 0, msg: 'Uživatel napíše adresu nebo klikne na odkaz',
+          title: '1. Zadání adresy',
+          text: 'Prohlížeč z adresy URL zjistí protokol (https), jméno serveru (www.gymnazium.cz) a cestu k souboru (/predmety/informatika.html).',
+          code: 'https://www.gymnazium.cz/predmety/informatika.html' },
+        { node: ['klient', 'dns'], dir: 1, msg: 'Jakou IP adresu má www.gymnazium.cz? → 203.0.113.10',
+          title: '2. Překlad jména na IP adresu',
+          text: 'Počítače v síti se adresují čísly. Server DNS funguje jako telefonní seznam: ke jménu domény vrátí IP adresu (podrobněji na stránce Počítačové sítě).',
+          code: 'dotaz:     www.gymnazium.cz  A ?\nodpověď:   www.gymnazium.cz  A  203.0.113.10' },
+        { node: ['klient', 'server'], dir: 1, msg: 'HTTP požadavek: pošli mi /predmety/informatika.html',
+          title: '3. Požadavek HTTP',
+          text: 'Prohlížeč se spojí se serverem (u HTTPS se nejdřív domluví šifrování) a pošle textový požadavek. Metoda GET znamená „chci dostat“.',
+          code: 'GET /predmety/informatika.html HTTP/1.1\nHost: www.gymnazium.cz\nUser-Agent: Mozilla/5.0 (Windows NT 10.0) Firefox/133.0\nAccept: text/html\nAccept-Language: cs' },
+        { node: ['server', 'klient'], dir: -1, msg: 'HTTP odpověď: 200 OK + obsah souboru HTML',
+          title: '4. Odpověď serveru',
+          text: 'Server najde soubor a pošle ho zpět. Na prvním řádku je stavový kód: 200 = v pořádku, 404 = nenalezeno, 500 = chyba serveru. Hlavička Content-Type říká, že jde o HTML v UTF-8.',
+          code: 'HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nContent-Length: 1832\n\n<!DOCTYPE html>\n<html lang="cs">\n<head>\n    <title>Informatika</title>\n    <link rel="stylesheet" href="styl.css">\n...' },
+        { node: ['klient', 'server'], dir: 1, msg: 'Další požadavky: styl.css, logo.png, skript.js',
+          title: '5. Čtení HTML a další soubory',
+          text: 'Prohlížeč čte HTML odshora dolů a staví z něj strom DOM. Kdykoli narazí na odkaz na další soubor (styl, obrázek, skript), pošle pro něj další požadavek. Jedna stránka tak může znamenat desítky požadavků.',
+          code: 'GET /predmety/styl.css   → 200 OK (text/css)\nGET /obrazky/logo.png     → 200 OK (image/png)\nGET /predmety/skript.js   → 200 OK (text/javascript)' },
+        { node: ['klient'], dir: 0, msg: 'Prohlížeč stránku vykreslí',
+          title: '6. Vykreslení',
+          text: 'Ke stromu DOM přidá pravidla z CSS, spočítá velikost a polohu každého prvku (layout) a nakreslí ho na obrazovku. JavaScript pak může stránku dál měnit — třeba po kliknutí.',
+          code: 'HTML  →  strom DOM\nCSS   →  pravidla stylů\n         ↓\nrozvržení (layout)  →  vykreslení (paint)  →  obrazovka' }
+    ];
+    var i = 0;
+    var dots = $('flowDots');
+    dots.innerHTML = STEPS.map(function () { return '<span></span>'; }).join('');
+
+    function render() {
+        var s = STEPS[i];
+        document.querySelectorAll('.flow__node').forEach(function (n) {
+            n.classList.toggle('on', s.node.indexOf(n.dataset.node) >= 0);
+        });
+        var names = { klient: 'Prohlížeč', dns: 'DNS', server: 'Server' };
+        var who = s.dir === 0 ? ICON_CPU + ' ' + names[s.node[0]] + ':'
+            : names[s.node[0]] + ' ' + ICON_R + ' ' + names[s.node[1]] + ':';
+        $('flowMsg').innerHTML = '<strong style="display:inline-flex;align-items:center;gap:4px">' + who + '</strong> <span>' + esc(s.msg) + '</span>';
+        $('flowTitle').textContent = s.title;
+        $('flowText').textContent = s.text;
+        $('flowCode').innerHTML = hlHTML(s.code);
+        $('flowCount').textContent = 'krok ' + (i + 1) + ' z ' + STEPS.length;
+        dots.querySelectorAll('span').forEach(function (d, k) { d.classList.toggle('on', k <= i); });
+        $('flowPrev').disabled = i === 0;
+        $('flowNext').disabled = i === STEPS.length - 1;
+    }
+    $('flowPrev').addEventListener('click', function () { if (i > 0) { i--; render(); } });
+    $('flowNext').addEventListener('click', function () { if (i < STEPS.length - 1) { i++; render(); } });
+    render();
+})();
+
+/* ----------------------------------------------------------------------
+   1b. Adresa URL po částech
+   ---------------------------------------------------------------------- */
+function anatHTML(parts) {
+    return parts.map(function (p) {
+        return p[1] ? '<span data-p="' + p[1] + '">' + esc(p[0]) + '</span>' : esc(p[0]);
+    }).join('');
+}
+
+(function url() {
+    $('urlCode').innerHTML = anatHTML([
+        ['https', 'proto'], ['://', 'proto'], ['www.', 'domena'], ['gymnazium', 'domena'], ['.cz', 'tld domena'],
+        [':443', 'port'], ['/predmety/informatika.html', 'cesta'], ['?trida=2A', 'dotaz'], ['#rozvrh', 'kotva']
+    ]);
+    bindAnatomy($('urlCode'), $('urlTerms'), $('urlExplain'), {
+        proto: '<h4>Protokol</h4><p>Určuje, jak se bude komunikovat. <code>https</code> je šifrované HTTP, <code>http</code> nešifrované. Další protokoly: <code>ftp</code>, <code>mailto:</code> (e-mail), <code>file://</code> (soubor na vlastním disku — tak se otevře HTML, na které poklepeš).</p>',
+        domena: '<h4>Doménové jméno</h4><p>Lidsky čitelné jméno serveru. Čte se zprava: <code>cz</code> je doména nejvyššího řádu, <code>gymnazium</code> doména 2. řádu (tu si škola zaregistrovala), <code>www</code> subdoména. Na IP adresu ho přeloží DNS.</p>',
+        tld: '<h4>Doména nejvyššího řádu (TLD)</h4><p>Poslední část jména. Buď národní (<code>.cz</code>, <code>.sk</code>, <code>.de</code>), nebo obecná (<code>.com</code>, <code>.org</code>, <code>.edu</code>). Českou doménu <code>.cz</code> spravuje sdružení CZ.NIC.</p>',
+        port: '<h4>Port</h4><p>Číslo „dveří“, na kterých program na serveru poslouchá. Pro HTTPS je výchozí 443, pro HTTP 80 — proto se v adrese obvykle nepíše. Uvidíš ho třeba u vývojového serveru: <code>localhost:8000</code>.</p>',
+        cesta: '<h4>Cesta</h4><p>Kde na serveru soubor leží — jako cesta ke složkám na disku, oddělovačem je vždy <code>/</code>. Když cesta končí lomítkem, server pošle soubor <code>index.html</code> z dané složky.</p>',
+        dotaz: '<h4>Dotaz (query string)</h4><p>Začíná otazníkem a obsahuje dvojice <code>název=hodnota</code> oddělené <code>&amp;</code>. Využívá je hlavně dynamický web: <code>?q=kočky&amp;strana=2</code> ve vyhledávači.</p>',
+        kotva: '<h4>Kotva (fragment)</h4><p>Odkazuje na místo uvnitř stránky — na element s atributem <code>id="rozvrh"</code>. Na server se neposílá, zpracuje ji jen prohlížeč. Záložky na této stránce ji využívají také: podívej se do adresního řádku.</p>'
+    });
+})();
+
+/* ----------------------------------------------------------------------
+   1c. HTML, CSS a JavaScript
+   ---------------------------------------------------------------------- */
+(function layers() {
+    var H = '<div class="karta">\n    <h1>Počítadlo</h1>\n    <p>Kliknuto: <strong id="pocet">0</strong>×</p>\n    <button id="tlacitko">Klikni</button>\n</div>';
+    var C = '.karta {\n    max-width: 260px;\n    margin: 10px auto;\n    padding: 16px;\n    text-align: center;\n    border-radius: 12px;\n    background: #eef4ff;\n}\nh1 { color: #1a4fa0; margin: 0; }\nbutton {\n    padding: 8px 20px;\n    font-size: 16px;\n    color: white;\n    background: #1a6dc4;\n    border: 0;\n    border-radius: 99px;\n}';
+    var J = 'var n = 0;\ndocument.getElementById("tlacitko")\n    .addEventListener("click", function () {\n        n = n + 1;\n        document.getElementById("pocet").textContent = n;\n    });';
+    $('layHtml').innerHTML = hlHTML(H);
+    $('layCssCode').innerHTML = hlCSS(C);
+    $('layJsCode').textContent = J;
+    function render() {
+        var css = $('layCss').checked;
+        var js = $('layJs').checked;
+        $('layCssCode').style.opacity = css ? 1 : 0.4;
+        $('layJsCode').style.opacity = js ? 1 : 0.4;
+        var doc = '<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8">' + (css ? '<style>body{font-family:system-ui,sans-serif}' + C + '</style>' : '') +
+            '</head><body>' + H + (js ? '<script>' + J + '<\/script>' : '') + '</body></html>';
+        showInFrame($('layFrame'), doc);
+    }
+    $('layCss').addEventListener('change', render);
+    $('layJs').addEventListener('change', render);
+    render();
+})();
+
+/* ----------------------------------------------------------------------
+   2. Anatomie tagu
+   ---------------------------------------------------------------------- */
+(function anatomy() {
+    var TERMS = {
+        el: ['Element', 'celý celek'],
+        start: ['Počáteční značka', 'otevírací tag'],
+        end: ['Koncová značka', 'uzavírací tag s lomítkem'],
+        name: ['Název značky', 'co je to za element'],
+        attr: ['Atribut', 'název="hodnota"'],
+        aname: ['Název atributu', 'co upřesňujeme'],
+        aval: ['Hodnota atributu', 'v uvozovkách'],
+        bool: ['Logický atribut', 'stačí uvést název'],
+        content: ['Obsah', 'text nebo další elementy'],
+        child: ['Vnořený element', 'potomek uvnitř obsahu']
+    };
+    var EX = {
+        a: {
+            parts: [['<', 'start el'], ['a', 'name start el'], [' ', 'start el'], ['href', 'aname attr start el'], ['=', 'attr start el'],
+                ['"https://cs.wikipedia.org"', 'aval attr start el'], [' ', 'start el'], ['title', 'aname attr start el'], ['=', 'attr start el'],
+                ['"Otevřít Wikipedii"', 'aval attr start el'], ['>', 'start el'], ['Wikipedie', 'content el'], ['</', 'end el'], ['a', 'name end el'], ['>', 'end el']],
+            html: '<a href="https://cs.wikipedia.org" title="Otevřít Wikipedii">Wikipedie</a>',
+            terms: ['el', 'start', 'name', 'attr', 'aname', 'aval', 'content', 'end'],
+            texts: {
+                el: '<h4>Element</h4><p>Celek od <code>&lt;a</code> až po <code>&lt;/a&gt;</code>. Element <code>a</code> (<em>anchor</em>, kotva) je <strong>odkaz</strong> — jeho obsah je klikací.</p>',
+                name: '<h4>Název značky</h4><p><code>a</code> — říká, že jde o odkaz. Název je v počáteční i koncové značce stejný.</p>',
+                attr: '<h4>Atributy</h4><p>Tento element má dva: <code>href</code> (kam odkaz vede) a <code>title</code> (bublina po najetí myší). Pořadí atributů nehraje roli.</p>',
+                aname: '<h4>Název atributu</h4><p><code>href</code> = <em>hypertext reference</em>, cílová adresa. Bez něj by odkaz nikam nevedl.</p>',
+                aval: '<h4>Hodnota atributu</h4><p>Píše se do uvozovek za rovnítko. U <code>href</code> je to adresa URL — absolutní (<code>https://…</code>) nebo relativní (<code>kontakt.html</code>).</p>',
+                content: '<h4>Obsah elementu</h4><p>Text „Wikipedie“ — to, co uživatel uvidí a na co klikne.</p>'
+            }
+        },
+        img: {
+            parts: [['<', 'start el'], ['img', 'name start el'], [' ', 'start el'], ['src', 'aname attr start el'], ['=', 'attr start el'],
+                ['"kocka.jpg"', 'aval attr start el'], [' ', 'start el'], ['alt', 'aname attr start el'], ['=', 'attr start el'],
+                ['"Kočka spí na okně"', 'aval attr start el'], ['>', 'start el']],
+            html: '<img src="kocka.jpg" alt="Kočka spí na okně">',
+            terms: ['el', 'start', 'name', 'attr', 'aname', 'aval'],
+            texts: {
+                el: '<h4>Nepárový element</h4><p><code>img</code> nemá obsah ani koncovou značku — celý element tvoří jen počáteční značka. Obrázek samotný je v samostatném souboru.</p>',
+                start: '<h4>Počáteční značka = celý element</h4><p>U nepárových elementů není co uzavírat. Lomítko na konci (<code>&lt;img … /&gt;</code>) je povolené, ale zbytečné.</p>',
+                name: '<h4>Název značky</h4><p><code>img</code> = <em>image</em>, obrázek. Je to řádkový element — stojí v textu jako velké písmeno.</p>',
+                attr: '<h4>Atributy</h4><p><code>src</code> (odkud obrázek načíst) a <code>alt</code> (náhradní text). Oba jsou povinné.</p>',
+                aname: '<h4>Název atributu</h4><p><code>src</code> = <em>source</em>, zdroj. <code>alt</code> = <em>alternative text</em>.</p>',
+                aval: '<h4>Hodnota atributu</h4><p>Soubor <code>kocka.jpg</code> v ukázce neexistuje — v náhledu proto vidíš místo obrázku text z <code>alt</code>. Stejný text přečte nevidomému čtečka obrazovky.</p>'
+            }
+        },
+        input: {
+            parts: [['<', 'start el'], ['input', 'name start el'], [' ', 'start el'], ['type', 'aname attr start el'], ['=', 'attr start el'],
+                ['"checkbox"', 'aval attr start el'], [' ', 'start el'], ['checked', 'bool aname attr start el'], ['>', 'start el']],
+            html: '<label><input type="checkbox" checked> Odebírat novinky</label>',
+            terms: ['el', 'name', 'attr', 'aname', 'aval', 'bool'],
+            texts: {
+                el: '<h4>Nepárový element</h4><p><code>input</code> je vstupní pole formuláře. Podle atributu <code>type</code> může být textové pole, zaškrtávací políčko, výběr data, barvy… (V náhledu je navíc obalené do <code>&lt;label&gt;</code> s popiskem.)</p>',
+                name: '<h4>Název značky</h4><p><code>input</code> — vstup.</p>',
+                attr: '<h4>Atributy</h4><p><code>type="checkbox"</code> je běžný atribut s hodnotou, <code>checked</code> je logický.</p>',
+                aname: '<h4>Název atributu</h4><p><code>type</code> určuje druh pole: <code>text</code>, <code>email</code>, <code>password</code>, <code>number</code>, <code>checkbox</code>, <code>radio</code>, <code>date</code>, <code>color</code>…</p>',
+                aval: '<h4>Hodnota atributu</h4><p><code>"checkbox"</code> — zaškrtávací políčko.</p>',
+                bool: '<h4>Logický (booleovský) atribut</h4><p>Nemá hodnotu — rozhoduje jen to, jestli je uveden. <code>checked</code> = políčko je předem zaškrtnuté. Podobně <code>disabled</code>, <code>required</code>, <code>hidden</code>. Zápis <code>checked="false"</code> políčko <strong>nezruší</strong> — atribut tam pořád je!</p>'
+            }
+        },
+        p: {
+            parts: [['<p>', 'start el'], ['Toto je ', 'content el'], ['<strong>', 'child content el'], ['důležité', 'child content el'],
+                ['</strong>', 'child content el'], ['.', 'content el'], ['</p>', 'end el']],
+            html: '<p>Toto je <strong>důležité</strong>.</p>',
+            terms: ['el', 'start', 'content', 'child', 'end'],
+            texts: {
+                el: '<h4>Element odstavce</h4><p><code>p</code> = <em>paragraph</em>. Obsahuje text i další element.</p>',
+                start: '<h4>Počáteční značka</h4><p><code>&lt;p&gt;</code> bez atributů.</p>',
+                end: '<h4>Koncová značka</h4><p>Stejný název s lomítkem: <code>&lt;/p&gt;</code>.</p>',
+                content: '<h4>Obsah</h4><p>Obsahem je text „Toto je “, celý element <code>strong</code> a tečka. Obsah tedy může míchat text a elementy.</p>',
+                child: '<h4>Vnořený element (potomek)</h4><p><code>strong</code> leží uvnitř <code>p</code>: <code>p</code> je jeho <strong>rodič</strong>, <code>strong</code> je <strong>potomek</strong>. Celý vnořený element musí být uvnitř — otevřít i zavřít se musí před <code>&lt;/p&gt;</code>.</p>'
+            }
+        }
+    };
+    var DEFAULT = {
+        start: '<h4>Počáteční značka</h4><p>Začíná <code>&lt;</code>, následuje název značky, případně atributy, a končí <code>&gt;</code>.</p>',
+        end: '<h4>Koncová značka</h4><p>Stejný název jako počáteční, jen s lomítkem: <code>&lt;/a&gt;</code>. Atributy nemá.</p>'
+    };
+    var select = null;
+    function load(key) {
+        var ex = EX[key];
+        $('anatCode').innerHTML = anatHTML(ex.parts);
+        $('anatTerms').innerHTML = ex.terms.map(function (t) {
+            return '<button class="term" type="button" data-role="' + t + '" aria-pressed="false"><b>' + TERMS[t][0] + '</b><span>' + TERMS[t][1] + '</span></button>';
+        }).join('');
+        var texts = Object.assign({}, DEFAULT, ex.texts);
+        $('anatExplain').innerHTML = '<p class="muted mb-0">Klikni na část kódu nebo na pojem vpravo.</p>';
+        // nové navázání pro každý příklad — nahradíme prvky klony, aby nezůstaly staré posluchače
+        var code = $('anatCode'), terms = $('anatTerms');
+        var c2 = code.cloneNode(true), t2 = terms.cloneNode(true);
+        code.parentNode.replaceChild(c2, code);
+        terms.parentNode.replaceChild(t2, terms);
+        select = bindAnatomy(c2, t2, $('anatExplain'), texts);
+        select('el');
+        showInFrame($('anatFrame'), wrapDoc(ex.html));
+    }
+    bindSeg($('anatSeg'), load);
+    load('a');
+})();
+
+/* ----------------------------------------------------------------------
+   2b. Vnořování — jak prohlížeč kód opraví
+   ---------------------------------------------------------------------- */
+function nestBoxes(node) {
+    if (node.nodeType === 3) {
+        var t = node.textContent.replace(/\s+/g, ' ');
+        return t.trim() ? '<span class="nest-text">' + esc(t) + '</span>' : '';
+    }
+    if (node.nodeType !== 1) return '';
+    var kids = Array.prototype.map.call(node.childNodes, nestBoxes).join('');
+    return '<div class="nest-box"><div class="nest-box__tag">&lt;' + node.tagName.toLowerCase() + '&gt;</div>' +
+        (kids ? '<div class="nest-box__kids">' + kids + '</div>' : '<div class="nest-box__kids"><span class="muted text-sm">(prázdný)</span></div>') + '</div>';
+}
+
+(function nesting() {
+    var EX = {
+        ok: { src: '<p>Toto je <strong>velmi <em>důležitý</em></strong> text.</p>',
+              note: '<div class="callout callout--success"><p class="mb-0">Značky se uzavírají v opačném pořadí, než se otevřely: nejdřív <code>em</code>, pak <code>strong</code>, nakonec <code>p</code>. Prohlížeč nemusel nic opravovat.</p></div>' },
+        cross: { src: '<p>Toto je <strong>velmi <em>důležitý</strong></em> text.</p>',
+              note: '<div class="callout callout--warn"><p class="mb-0"><code>&lt;/strong&gt;</code> přišlo dřív než <code>&lt;/em&gt;</code> — značky se kříží. Prohlížeč to tentokrát „uhádl“, ale v jiných případech vznikne nečekaný strom.</p></div>' },
+        block: { src: '<p>Odstavec <div>blok uvnitř</div> konec.</p>',
+              note: '<div class="callout callout--danger"><p class="mb-0">Odstavec nesmí obsahovat blokový element <code>div</code>. Prohlížeč proto odstavec <strong>ukončí</strong> už před <code>&lt;div&gt;</code>, text „konec.“ zůstane mimo něj a z osiřelé značky <code>&lt;/p&gt;</code> vytvoří nový prázdný odstavec. Na stránce pak nečekaně vznikne mezera navíc.</p></div>' },
+        open: { src: '<p>Tady začíná <strong>tučný text.</p>\n<p>A tučné je i tohle!</p>',
+              note: '<div class="callout callout--danger"><p class="mb-0"><code>&lt;strong&gt;</code> nikdo neuzavřel. Prohlížeč ho uzavře na konci odstavce, ale tučnost „přenese“ i do dalšího odstavce — nový <code>strong</code> si domyslí sám.</p></div>' }
+    };
+    function load(k) {
+        var ex = EX[k];
+        $('nestSrc').innerHTML = hlHTML(ex.src);
+        var doc = new DOMParser().parseFromString('<!DOCTYPE html><body>' + ex.src + '</body>', 'text/html');
+        $('nestOut').innerHTML = hlHTML(doc.body.innerHTML);
+        $('nestBoxes').innerHTML = '<div class="nest-box"><div class="nest-box__tag">&lt;body&gt;</div><div class="nest-box__kids">' +
+            Array.prototype.map.call(doc.body.childNodes, nestBoxes).join('') + '</div></div>';
+        $('nestNote').innerHTML = ex.note;
+    }
+    bindSeg($('nestSeg'), load);
+    load('ok');
+})();
+
+/* ----------------------------------------------------------------------
+   3. Kostra dokumentu
+   ---------------------------------------------------------------------- */
+(function skeleton() {
+    var L = [
+        ['<!DOCTYPE html>', '<h4>Deklarace typu dokumentu</h4><p>Úplně první řádek. Říká prohlížeči, že jde o moderní HTML. Bez něj by stránku vykresloval v tzv. <em>quirks mode</em> — režimu kompatibility se stránkami z 90. let, ve kterém se CSS chová jinak. Není to značka, nemá koncovou část.</p>'],
+        ['<html lang="cs">', '<h4>Kořenový element &lt;html&gt;</h4><p>Obaluje celý dokument, všechno ostatní je jeho potomek. Atribut <code>lang="cs"</code> říká, že stránka je česky — využije ho čtečka obrazovky (výslovnost), překladač, kontrola pravopisu i dělení slov.</p>'],
+        ['<head>', '<h4>Hlavička &lt;head&gt;</h4><p>Informace <em>o</em> stránce, tzv. metadata: kódování, název, popis, připojené styly. Nic z hlavičky se nezobrazuje v obsahu stránky.</p>'],
+        ['    <meta charset="UTF-8">', '<h4>Kódování znaků</h4><p>Říká, jak převést bajty souboru na znaky. Díky UTF-8 se správně zobrazí česká diakritika i jakékoli jiné písmo. Má být v hlavičce co nejdřív. Vyzkoušej si níže, co se stane, když se kódování splete.</p>'],
+        ['    <meta name="viewport" content="width=device-width, initial-scale=1">', '<h4>Viewport — stránka pro mobil</h4><p>Bez tohoto řádku by mobil stránku vykreslil jako na monitoru široká (asi 980 px) a zmenšil ji — text by byl drobný. Řádek říká: šířka stránky = šířka displeje, bez zvětšení. Nutný základ responzivního webu.</p>'],
+        ['    <title>Moje první stránka</title>', '<h4>Titulek &lt;title&gt;</h4><p>Jediný povinný element hlavičky. Zobrazí se jako název záložky v prohlížeči, v historii, v oblíbených a jako modrý nadpis ve výsledcích vyhledávání. Patří sem stručný a výstižný text.</p>'],
+        ['    <meta name="description" content="Stránka o mně a mých koníčcích.">', '<h4>Popis stránky</h4><p>Krátké shrnutí obsahu. Vyhledávače ho často ukazují pod titulkem ve výsledcích. Nepovinné, ale užitečné.</p>'],
+        ['    <link rel="stylesheet" href="styl.css">', '<h4>Připojení stylu</h4><p>Nepárová značka <code>link</code> připojí soubor CSS se vzhledem stránky. <code>rel</code> říká, o jaký vztah jde, <code>href</code>, kde soubor je. Podobně se připojuje ikona stránky: <code>&lt;link rel="icon" href="ikona.png"&gt;</code>.</p>'],
+        ['</head>', '<h4>Konec hlavičky</h4><p>Hned po ní začíná tělo.</p>'],
+        ['<body>', '<h4>Tělo &lt;body&gt;</h4><p>Všechno, co se má na stránce zobrazit: nadpisy, text, obrázky, odkazy, formuláře. Na stránce je jen jedno.</p>'],
+        ['    <h1>Ahoj, jsem Petra</h1>', '<h4>Hlavní nadpis</h4><p><code>h1</code> je nejvyšší úroveň nadpisu. Na stránce má být jeden a vystihovat její téma. Podnadpisy jsou <code>h2</code> až <code>h6</code>.</p>'],
+        ['    <p>Studuji na gymnáziu a baví mě <strong>programování</strong>.</p>', '<h4>Odstavec</h4><p>Blok textu. Uvnitř je vnořený element <code>strong</code> — důležitý text, zobrazí se tučně.</p>'],
+        ['    <img src="foto.jpg" alt="Petra na horách">', '<h4>Obrázek</h4><p>Nepárový element. <code>src</code> je relativní cesta — soubor <code>foto.jpg</code> leží ve stejné složce jako HTML.</p>'],
+        ['    <\!-- sem později přidám seznam koníčků -->', '<h4>Komentář</h4><p>Poznámka pro autora kódu. Prohlížeč ji nezobrazí, ale kdokoli ji uvidí ve zdrojovém kódu (<kbd>Ctrl</kbd> + <kbd>U</kbd>) — proto sem nepatří hesla ani nic tajného.</p>'],
+        ['    <script src="skript.js"><\/script>', '<h4>Skript</h4><p>Připojí JavaScript. Často se dává na konec těla, aby se skript spustil, až když je HTML načtené. Pozor: <code>script</code> je párový, i když je prázdný.</p>'],
+        ['</body>', '<h4>Konec těla</h4>'],
+        ['</html>', '<h4>Konec dokumentu</h4><p>Po <code>&lt;/html&gt;</code> už nic nenásleduje.</p>']
+    ];
+    var REG = { head: [2, 8], body: [9, 15] };
+    var box = $('skelLines');
+    renderLines(box, L.map(function (x) { return x[0]; }));
+    function pick(i) {
+        box.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.i === i ? 'true' : 'false'); });
+        $('skelExplain').innerHTML = L[i][1];
+    }
+    box.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (b) pick(+b.dataset.i);
+    });
+    bindSeg($('skelSeg'), function (v) {
+        box.querySelectorAll('button').forEach(function (b) {
+            var i = +b.dataset.i;
+            b.classList.toggle('dim', v !== 'all' && (i < REG[v][0] || i > REG[v][1]));
+        });
+        pick(v === 'all' ? 0 : REG[v][0]);
+    });
+    pick(0);
+})();
+
+/* ----------------------------------------------------------------------
+   3b. Kódování, bílé znaky, entity
+   ---------------------------------------------------------------------- */
+(function encoding() {
+    var NOTES = {
+        'utf-8': 'Správně: soubor je v UTF-8 a prohlížeč ho tak i čte.',
+        'windows-1250': 'Windows-1250 je starší české kódování (1 znak = 1 bajt). Dvoubajtové znaky UTF-8 se rozpadnou na dvojice nesmyslných znaků.',
+        'iso-8859-2': 'ISO-8859-2 (Latin-2) je jiné starší středoevropské kódování — rozsypaný čaj vypadá trochu jinak než u Windows-1250.',
+        'windows-1252': 'Západoevropské kódování češtinu vůbec nezná. Tak dopadne stránka bez meta charset u prohlížeče nastaveného na angličtinu.'
+    };
+    function render() {
+        var text = $('encIn').value;
+        var bytes = new TextEncoder().encode(text);
+        var html = '';
+        var i = 0;
+        Array.from(text).forEach(function (ch) {
+            var n = new TextEncoder().encode(ch).length;
+            for (var k = 0; k < n; k++) {
+                html += '<span' + (n > 1 ? ' class="multi"' : '') + ' title="' + esc(ch) + '">' + bytes[i].toString(16).toUpperCase().padStart(2, '0') + '</span>';
+                i++;
+            }
+        });
+        $('encBytes').innerHTML = html;
+        var enc = segValue($('encSeg'));
+        var out;
+        try { out = new TextDecoder(enc).decode(bytes); } catch (e) { out = '(tento prohlížeč kódování nepodporuje)'; }
+        $('encOut').textContent = out;
+        $('encNote').textContent = NOTES[enc] + ' Znaků: ' + Array.from(text).length + ', bajtů: ' + bytes.length + '.';
+    }
+    $('encIn').addEventListener('input', render);
+    bindSeg($('encSeg'), render);
+    render();
+
+    function ws() {
+        var pre = segValue($('wsSeg')) === 'pre';
+        var out = $('wsOut');
+        out.className = 'ws-out' + (pre ? ' pre' : '');
+        out.textContent = $('wsIn').value;
+    }
+    $('wsIn').addEventListener('input', ws);
+    bindSeg($('wsSeg'), ws);
+    ws();
+
+    function ent() {
+        var v = $('entIn').value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        $('entOut').innerHTML = hlHTML('<p>' + v + '</p>');
+    }
+    $('entIn').addEventListener('input', ent);
+    ent();
+})();
+
+/* ----------------------------------------------------------------------
+   4. Přehled tagů
+   ---------------------------------------------------------------------- */
+var TAGS = [
+    // Text
+    { g: 'Text', n: 'h1–h6', k: ['blok'], d: 'Nadpisy šesti úrovní. h1 je hlavní nadpis stránky, h2 kapitola, h3 podkapitola… Úroveň vyjadřuje strukturu, ne velikost písma.',
+      c: '<h1>Hlavní nadpis</h1>\n<h2>Kapitola</h2>\n<h3>Podkapitola</h3>\n<h4>Nadpis 4. úrovně</h4>' },
+    { g: 'Text', n: 'p', k: ['blok'], d: 'Odstavec textu. Prohlížeč mezi odstavci vytvoří mezeru.',
+      c: '<p>První odstavec. Text se sám zalamuje podle šířky okna.</p>\n<p>Druhý odstavec.</p>' },
+    { g: 'Text', n: 'br', k: ['řádkový', 'nepárový'], d: 'Zalomení řádku uvnitř odstavce — třeba v adrese nebo básni. Nepoužívej ho k vytváření mezer mezi bloky.',
+      c: '<p>Gymnázium Nové Město<br>\nŠkolní 12<br>\n110 00 Praha 1</p>' },
+    { g: 'Text', n: 'hr', k: ['blok', 'nepárový'], d: 'Tematický předěl mezi částmi obsahu. Zobrazí se jako vodorovná čára.',
+      c: '<p>Konec první části.</p>\n<hr>\n<p>Začátek další části.</p>' },
+    { g: 'Text', n: 'strong, em', k: ['řádkový'], d: 'strong = důležitý text (tučně), em = důraz (kurzívou). Nesou význam, nejen vzhled.',
+      c: '<p><strong>Pozor:</strong> test je <em>zítra</em>, ne ve čtvrtek.</p>' },
+    { g: 'Text', n: 'mark, small, sub, sup', k: ['řádkový'], d: 'mark = zvýraznění (jako zvýrazňovač), small = drobné poznámky, sub = dolní index, sup = horní index.',
+      c: '<p>Hledané slovo: <mark>kyslík</mark></p>\n<p>Voda je H<sub>2</sub>O, plocha 5 m<sup>2</sup>.</p>\n<p><small>Ceny jsou včetně DPH.</small></p>' },
+    { g: 'Text', n: 'blockquote, q, cite', k: ['blok', 'řádkový'], d: 'Citace: blockquote pro delší blok, q pro krátkou citaci v textu (přidá uvozovky), cite pro název díla.',
+      c: '<blockquote>\n    <p>Kdo se moc ptá, moc se dozví.</p>\n</blockquote>\n<p>Jak říká <cite>Malý princ</cite>: <q>Správně vidíme jen srdcem.</q></p>' },
+    { g: 'Text', n: 'code, pre, kbd', k: ['řádkový', 'blok'], d: 'code = kousek kódu, kbd = klávesa, pre = předformátovaný text (zachová mezery a řádky).',
+      c: '<p>Stiskni <kbd>Ctrl</kbd> + <kbd>S</kbd> a spusť <code>python hra.py</code>.</p>\n<pre>for i in range(3):\n    print(i)</pre>' },
+    { g: 'Text', n: 'span', k: ['řádkový'], d: 'Obecný řádkový obal bez významu. Slouží k označení části textu, kterou chceš nastylovat v CSS.',
+      c: '<p>Cena: <span style="color: crimson">199 Kč</span></p>' },
+    // Seznamy
+    { g: 'Seznamy', n: 'ul + li', k: ['blok'], d: 'Nečíslovaný seznam (unordered list). Každá položka je li (list item).',
+      c: '<ul>\n    <li>mléko</li>\n    <li>chleba</li>\n    <li>jablka</li>\n</ul>' },
+    { g: 'Seznamy', n: 'ol + li', k: ['blok'], d: 'Číslovaný seznam (ordered list). Atribut start určí první číslo, type="a" nebo "I" mění styl číslování.',
+      c: '<ol>\n    <li>Rozehřej pánev.</li>\n    <li>Rozklepni vejce.</li>\n    <li>Osol.</li>\n</ol>\n<ol type="I" start="4">\n    <li>čtvrtá kapitola</li>\n</ol>' },
+    { g: 'Seznamy', n: 'vnořený seznam', k: ['blok'], d: 'Vnořený seznam se vkládá dovnitř položky li, ne přímo do ul.',
+      c: '<ul>\n    <li>Ovoce\n        <ul>\n            <li>jablka</li>\n            <li>hrušky</li>\n        </ul>\n    </li>\n    <li>Zelenina</li>\n</ul>' },
+    { g: 'Seznamy', n: 'dl, dt, dd', k: ['blok'], d: 'Definiční seznam: pojem (dt) a jeho vysvětlení (dd). Hodí se pro slovníčky.',
+      c: '<dl>\n    <dt>HTML</dt>\n    <dd>značkovací jazyk pro obsah stránek</dd>\n    <dt>CSS</dt>\n    <dd>jazyk pro vzhled stránek</dd>\n</dl>' },
+    // Odkazy a média
+    { g: 'Odkazy a média', n: 'a', k: ['řádkový'], d: 'Odkaz. href může být adresa jiného webu, relativní cesta k souboru, kotva #id na stejné stránce, mailto: nebo tel:.',
+      c: '<p><a href="https://www.wikipedia.org">Wikipedie</a></p>\n<p><a href="kontakt.html">Kontakt</a> (relativní cesta)</p>\n<p><a href="#nahore">Nahoru</a> (kotva)</p>\n<p><a href="mailto:info@skola.cz">Napiš nám</a></p>\n<p><a href="https://www.wikipedia.org" target="_blank">V nové záložce</a></p>' },
+    { g: 'Odkazy a média', n: 'img', k: ['řádkový', 'nepárový'], d: 'Obrázek. Povinné jsou src a alt; width a height zarezervují místo ještě před načtením.',
+      c: '<img src="../assets/favicon.svg" alt="Ikona výukových aplikací" width="80" height="80">\n<img src="neexistuje.jpg" alt="Tento obrázek se nenačetl">' },
+    { g: 'Odkazy a média', n: 'figure, figcaption', k: ['blok'], d: 'Obrázek (graf, ukázka kódu…) s popiskem, který k němu patří.',
+      c: '<figure>\n    <img src="../assets/favicon.svg" alt="Ikona výukových aplikací" width="80">\n    <figcaption>Obr. 1: Ikona webu</figcaption>\n</figure>' },
+    { g: 'Odkazy a média', n: 'audio, video', k: ['řádkový'], d: 'Zvuk a video přímo v prohlížeči. controls zobrazí ovládání; více formátů se nabízí přes source.',
+      c: '<video controls width="260">\n    <source src="video.mp4" type="video/mp4">\n    Tvůj prohlížeč video nepodporuje.\n</video>\n<audio controls src="hudba.mp3"></audio>' },
+    { g: 'Odkazy a média', n: 'iframe', k: ['řádkový'], d: 'Vloží jinou stránku do rámečku — tak se vkládají mapy nebo videa z YouTube. Tato stránka ho používá pro všechny náhledy.',
+      c: '<iframe srcdoc="<h3>Jiná stránka</h3><p>uvnitř rámečku</p>" width="260" height="120"></iframe>' },
+    // Tabulky
+    { g: 'Tabulky', n: 'table, tr, td', k: ['blok'], d: 'Tabulka se zapisuje po řádcích (tr = table row), v řádku jsou buňky (td = table data). Tabulka je na data, ne na rozložení stránky.',
+      c: '<table border="1">\n    <tr>\n        <td>Po</td>\n        <td>Matematika</td>\n    </tr>\n    <tr>\n        <td>Út</td>\n        <td>Informatika</td>\n    </tr>\n</table>' },
+    { g: 'Tabulky', n: 'th, thead, tbody', k: ['blok'], d: 'th = záhlaví sloupce (tučně, na střed), thead a tbody oddělí hlavičku od dat. caption = název tabulky.',
+      c: '<table border="1">\n    <caption>Známky</caption>\n    <thead>\n        <tr><th>Předmět</th><th>Známka</th></tr>\n    </thead>\n    <tbody>\n        <tr><td>Fyzika</td><td>1</td></tr>\n        <tr><td>Chemie</td><td>2</td></tr>\n    </tbody>\n</table>' },
+    { g: 'Tabulky', n: 'colspan, rowspan', k: ['atribut'], d: 'Sloučení buněk: colspan přes více sloupců, rowspan přes více řádků.',
+      c: '<table border="1">\n    <tr><th colspan="3">Rozvrh</th></tr>\n    <tr><td rowspan="2">Po</td><td>1.</td><td>M</td></tr>\n    <tr><td>2.</td><td>ČJ</td></tr>\n</table>' },
+    // Formuláře
+    { g: 'Formuláře', n: 'form', k: ['blok'], d: 'Formulář — action říká, kam data odeslat, method jestli metodou GET (v adrese) nebo POST (skrytě).',
+      c: '<form action="/prihlaska" method="post">\n    <label for="jmeno">Jméno</label>\n    <input type="text" id="jmeno" name="jmeno" required>\n    <button type="submit">Odeslat</button>\n</form>' },
+    { g: 'Formuláře', n: 'input', k: ['řádkový', 'nepárový'], d: 'Vstupní pole. Typ určuje vzhled i kontrolu: text, email, password, number, date, color, range, checkbox, radio, file…',
+      c: '<p><input type="text" placeholder="Text"></p>\n<p><input type="email" placeholder="E-mail"></p>\n<p><input type="password" value="tajne"></p>\n<p><input type="number" min="1" max="10" value="5"></p>\n<p><input type="date"> <input type="color" value="#1a6dc4"></p>\n<p><input type="range"></p>' },
+    { g: 'Formuláře', n: 'label', k: ['řádkový'], d: 'Popisek pole. Propojí se s polem přes for = id pole (nebo pole obalí). Klepnutí na popisek aktivuje pole.',
+      c: '<p>\n    <label for="mail">E-mail:</label>\n    <input type="email" id="mail">\n</p>\n<p>\n    <label><input type="checkbox"> Souhlasím</label>\n</p>' },
+    { g: 'Formuláře', n: 'radio, checkbox', k: ['řádkový', 'nepárový'], d: 'radio = výběr jedné možnosti (stejné name), checkbox = libovolný počet zaškrtnutí.',
+      c: '<p>Ročník:\n    <label><input type="radio" name="r" checked> 1.</label>\n    <label><input type="radio" name="r"> 2.</label>\n    <label><input type="radio" name="r"> 3.</label>\n</p>\n<p>\n    <label><input type="checkbox" checked> obědy</label>\n    <label><input type="checkbox"> kroužky</label>\n</p>' },
+    { g: 'Formuláře', n: 'select, textarea', k: ['řádkový'], d: 'select = rozbalovací nabídka s položkami option, textarea = víceřádkový text.',
+      c: '<p>\n    <select>\n        <option>Praha</option>\n        <option selected>Brno</option>\n        <option>Ostrava</option>\n    </select>\n</p>\n<textarea rows="3" cols="30">Poznámka…</textarea>' },
+    { g: 'Formuláře', n: 'button', k: ['řádkový'], d: 'Tlačítko. type="submit" odešle formulář, type="button" nedělá nic (reaguje až JavaScript), type="reset" vymaže pole.',
+      c: '<button type="button">Obyčejné tlačítko</button>\n<button type="submit">Odeslat</button>\n<button disabled>Neaktivní</button>' },
+    // Struktura
+    { g: 'Struktura', n: 'div', k: ['blok'], d: 'Obecný blokový obal bez významu — „krabice“ pro rozložení v CSS. Pokud existuje sémantická značka, má přednost.',
+      c: '<div style="padding:10px; background:#eef4ff">\n    <p>Krabice s obsahem</p>\n</div>' },
+    { g: 'Struktura', n: 'header, footer', k: ['blok', 'sémantický'], d: 'Záhlaví a zápatí stránky nebo článku.',
+      c: '<header>\n    <h1>Školní časopis</h1>\n</header>\n<p>obsah…</p>\n<footer>\n    <p>&copy; 2026 Redakce</p>\n</footer>' },
+    { g: 'Struktura', n: 'nav', k: ['blok', 'sémantický'], d: 'Hlavní navigace webu — skupina odkazů na další stránky.',
+      c: '<nav>\n    <a href="/">Úvod</a> |\n    <a href="/clanky">Články</a> |\n    <a href="/kontakt">Kontakt</a>\n</nav>' },
+    { g: 'Struktura', n: 'main, article, section', k: ['blok', 'sémantický'], d: 'main = hlavní obsah (jednou na stránce), article = samostatný celek (článek, příspěvek), section = tematická část s nadpisem.',
+      c: '<main>\n    <article>\n        <h2>Výlet do Krkonoš</h2>\n        <section>\n            <h3>Program</h3>\n            <p>…</p>\n        </section>\n    </article>\n</main>' },
+    { g: 'Struktura', n: 'aside', k: ['blok', 'sémantický'], d: 'Obsah, který s hlavním souvisí jen volně: postranní panel, rámeček „Věděli jste?“, reklama.',
+      c: '<p>Hlavní text článku…</p>\n<aside style="border-left:3px solid #999; padding-left:8px">\n    <strong>Věděli jste?</strong> Sněžka měří 1 603 m.\n</aside>' },
+    { g: 'Struktura', n: 'details, summary', k: ['blok'], d: 'Rozbalovací blok bez JavaScriptu. summary je viditelný nadpis, zbytek se ukáže po kliknutí.',
+      c: '<details>\n    <summary>Zobrazit odpověď</summary>\n    <p>Hlavní město Slovenska je Bratislava.</p>\n</details>' }
+];
+
+(function tagRef() {
+    var BADGE = { 'blok': 'tag-blue', 'řádkový': 'tag-orange', 'nepárový': 'tag-purple', 'sémantický': 'tag-green', 'atribut': 'tag-gray' };
+    var groups = [];
+    TAGS.forEach(function (t) { if (groups.indexOf(t.g) < 0) groups.push(t.g); });
+    $('tagList').innerHTML = groups.map(function (g) {
+        return '<h4>' + g + '</h4><div class="chips">' + TAGS.map(function (t, i) {
+            return t.g === g ? '<button class="chip" type="button" data-i="' + i + '" aria-pressed="false">' + esc(t.n) + '</button>' : '';
+        }).join('') + '</div>';
+    }).join('');
+
+    var cur = 0;
+    var update = debounce(function (v) { showInFrame($('tagFrame'), wrapDoc(v)); }, 200);
+    var ed = CodeEdit($('tagEdit'), 'html', update, 'Ukázkový kód značky');
+
+    function pick(i) {
+        cur = i;
+        var t = TAGS[i];
+        $('tagName').textContent = t.n.indexOf(',') < 0 && t.n.indexOf(' ') < 0 && t.n.indexOf('–') < 0 ? '<' + t.n + '>' : t.n;
+        $('tagBadges').innerHTML = t.k.map(function (k) { return '<span class="tag ' + BADGE[k] + '">' + k + '</span>'; }).join(' ');
+        $('tagDesc').textContent = t.d;
+        $('tagList').querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', +c.dataset.i === i ? 'true' : 'false'); });
+        ed.set(t.c, true);
+        showInFrame($('tagFrame'), wrapDoc(t.c));
+    }
+    $('tagList').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (c) pick(+c.dataset.i);
+    });
+    $('tagReset').addEventListener('click', function () { pick(cur); });
+    pick(0);
+
+    $('flowShow').addEventListener('change', function () { $('flowDemo').classList.toggle('show', this.checked); });
+})();
+
+/* ----------------------------------------------------------------------
+   5. Sémantika
+   ---------------------------------------------------------------------- */
+(function semantics() {
+    var SEM = [
+        '<body>',
+        '    <header>',
+        '        <img src="logo.svg" alt="Gymnázium Nové Město">',
+        '        <p>Gymnázium Nové Město</p>',
+        '    </header>',
+        '    <nav>',
+        '        <ul>',
+        '            <li><a href="/">Úvod</a></li>',
+        '            <li><a href="/rozvrh">Rozvrh</a></li>',
+        '        </ul>',
+        '    </nav>',
+        '    <main>',
+        '        <article>',
+        '            <h1>Den otevřených dveří</h1>',
+        '            <p>Přijďte se podívat 15. ledna…</p>',
+        '            <section>',
+        '                <h2>Program</h2>',
+        '                <p>Prohlídka laboratoří…</p>',
+        '            </section>',
+        '            <figure>',
+        '                <img src="aula.jpg" alt="Aula plná návštěvníků">',
+        '                <figcaption>Loňský den otevřených dveří</figcaption>',
+        '            </figure>',
+        '        </article>',
+        '    </main>',
+        '    <aside>',
+        '        <h2>Mohlo by vás zajímat</h2>',
+        '        <p><a href="/prijimacky">Přijímací zkoušky</a></p>',
+        '    </aside>',
+        '    <footer>',
+        '        <p>&copy; 2026 Gymnázium Nové Město</p>',
+        '    </footer>',
+        '</body>'
+    ];
+    var MAP = { header: 'zahlavi', nav: 'menu', main: 'obsah', article: 'clanek', h1: 'nadpis', section: 'kapitola', figure: 'obrazek', aside: 'bocni-panel', footer: 'paticka', h2: 'podnadpis' };
+    var DIV = SEM.map(function (l) {
+        return l.replace(/<(header|nav|main|article|section|figure|aside|footer|h1|h2)>/g, function (a, t) { return '<div class="' + MAP[t] + '">'; })
+            .replace(/<\/(header|nav|main|article|section|figure|aside|footer|h1|h2)>/g, '</div>')
+            .replace(/<(\/?)figcaption>/g, function (a, s) { return s ? '</div>' : '<div class="popisek">'; })
+            .replace(/<ul>/g, '<div class="odkazy">').replace(/<\/ul>/g, '</div>')
+            .replace(/<li>/g, '<div>').replace(/<\/li>/g, '</div>');
+    });
+    var TEXT = {
+        header: '<h4>&lt;header&gt; — záhlaví</h4><p>Úvodní část stránky: logo, název webu, někdy vyhledávání. Může být i uvnitř <code>article</code> jako záhlaví článku (nadpis, autor, datum).</p>',
+        nav: '<h4>&lt;nav&gt; — navigace</h4><p>Hlavní menu webu. Čtečka obrazovky ho ohlásí a uživatel ho může přeskočit. Odkazy uvnitř se obvykle zapisují jako seznam <code>ul</code>.</p>',
+        main: '<h4>&lt;main&gt; — hlavní obsah</h4><p>To podstatné, kvůli čemu na stránku přicházíš. Na stránce je jen jeden a nepatří do něj menu ani patička, které se opakují na všech stránkách webu.</p>',
+        article: '<h4>&lt;article&gt; — samostatný celek</h4><p>Obsah, který dává smysl i vytržený ze stránky: článek, příspěvek na fóru, recenze, karta produktu. Test: šel by sdílet samostatně?</p>',
+        h1: '<h4>&lt;h1&gt; — hlavní nadpis</h4><p>Jeden na stránce, vystihuje její téma. Podle nadpisů si čtečky i vyhledávače sestaví osnovu stránky.</p>',
+        section: '<h4>&lt;section&gt; — tematická část</h4><p>Kapitola v rámci stránky nebo článku. Má mít vlastní nadpis (zde <code>h2</code>). Když jen potřebuješ krabici pro styl, použij <code>div</code>.</p>',
+        figure: '<h4>&lt;figure&gt; + &lt;figcaption&gt;</h4><p>Obrázek, graf nebo ukázka kódu spojená s popiskem. Popisek pak k obrázku patří i pro čtečky.</p>',
+        aside: '<h4>&lt;aside&gt; — doplňkový obsah</h4><p>Volně související obsah: postranní panel, související odkazy, rámeček s poznámkou.</p>',
+        footer: '<h4>&lt;footer&gt; — zápatí</h4><p>Konec stránky nebo článku: autor, kontakt, copyright, odkazy na podmínky.</p>'
+    };
+    function ranges(lines, keyOf) {
+        var stack = [], res = {};
+        lines.forEach(function (l, i) {
+            var re = /<(\/?)([a-z][\w]*)([^>]*)>/g, m;
+            while ((m = re.exec(l))) {
+                if (m[1]) {
+                    var top = stack.pop();
+                    if (top && top.key && !res[top.key]) res[top.key] = [top.start, i];
+                } else if (['img', 'br', 'hr', 'input', 'meta', 'link'].indexOf(m[2]) < 0) {
+                    stack.push({ key: keyOf(m[2], m[3]), start: i });
+                }
+            }
+        });
+        return res;
+    }
+    var R = {
+        sem: ranges(SEM, function (t) { return TEXT[t] ? t : null; }),
+        div: ranges(DIV, function (t, a) {
+            var c = /class="([^"]+)"/.exec(a);
+            if (!c) return null;
+            for (var k in MAP) if (MAP[k] === c[1]) return k;
+            return null;
+        })
+    };
+    var region = 'main';
+    function render() {
+        var mode = segValue($('semSeg'));
+        var lines = mode === 'sem' ? SEM : DIV;
+        renderLines($('semLines'), lines);
+        var r = R[mode][region];
+        var first = null;
+        $('semLines').querySelectorAll('button').forEach(function (b) {
+            var i = +b.dataset.i;
+            var on = r && i >= r[0] && i <= r[1];
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            b.tabIndex = -1;
+            if (on && first === null) first = b;
+        });
+        $('wire').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.r === region ? 'true' : 'false'); });
+        $('semExplain').innerHTML = TEXT[region];
+        $('semNote').innerHTML = mode === 'sem'
+            ? 'Z názvů značek je jasné, co která část znamená — pro člověka i pro počítač.'
+            : 'Vzhled může být úplně stejný, ale prohlížeč, čtečka ani vyhledávač z <code>&lt;div class="…"&gt;</code> nic nepoznají — název třídy je jen pro autora. Takovému kódu se říká „div polévka“.';
+    }
+    $('wire').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        region = b.dataset.r;
+        render();
+    });
+    $('semLines').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        var i = +b.dataset.i, best = null, size = 1e9, rr = R[segValue($('semSeg'))];
+        for (var k in rr) {
+            if (i >= rr[k][0] && i <= rr[k][1] && rr[k][1] - rr[k][0] < size) { best = k; size = rr[k][1] - rr[k][0]; }
+        }
+        if (best) { region = best; render(); }
+    });
+    bindSeg($('semSeg'), render);
+    render();
+})();
+
+/* ----------------------------------------------------------------------
+   6. Živý editor — kontrola kódu, strom DOM, osnova
+   ---------------------------------------------------------------------- */
+var VOID = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'];
+var P_CLOSERS = ['address', 'article', 'aside', 'blockquote', 'details', 'div', 'dl', 'fieldset', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'main', 'nav', 'ol', 'p', 'pre', 'section', 'table', 'ul'];
+var OPTIONAL_END = ['p', 'li', 'dt', 'dd', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'option', 'colgroup', 'html', 'head', 'body'];
+var OBSOLETE = { center: 'zarovnání se řeší v CSS (text-align)', font: 'písmo a barva se nastavují v CSS', marquee: 'pohyblivý text — zastaralé, použij CSS animaci', big: 'velikost písma patří do CSS', strike: 'použij <s> nebo <del>', tt: 'použij <code> nebo <kbd>', frame: 'rámy jsou zastaralé', frameset: 'rámy jsou zastaralé', blink: 'zastaralé' };
+
+/** Kontrola párování značek. Vrací seznam {kind, text, line}. */
+function checkBalance(src) {
+    var out = [];
+    // komentáře a obsah <script>/<style> nahradíme mezerami (zachová čísla řádků)
+    var clean = src.replace(/<\!--[\s\S]*?-->/g, function (m) { return m.replace(/[^\n]/g, ' '); })
+        .replace(/(<(script|style)\b[^>]*>)([\s\S]*?)(<\/\2\s*>)/gi, function (a, o, n, body, c) { return o + body.replace(/[^\n]/g, ' ') + c; });
+    function lineOf(idx) { return clean.slice(0, idx).split('\n').length; }
+    var stack = [];
+    var re = /<(\/?)([a-zA-Z][\w-]*)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/g, m;
+    while ((m = re.exec(clean))) {
+        var name = m[2].toLowerCase(), line = lineOf(m.index);
+        if (!m[1]) {
+            if (VOID.indexOf(name) >= 0) continue;
+            if (/\/\s*$/.test(m[3])) {
+                out.push({ kind: 'warn', line: line, text: '<' + name + ' /> — párový element nelze uzavřít lomítkem; HTML lomítko ignoruje a element zůstane otevřený.' });
+            }
+            var top = stack[stack.length - 1];
+            if (top && top.name === 'p' && P_CLOSERS.indexOf(name) >= 0) {
+                out.push({ kind: 'err', line: line, text: '<' + name + '> uvnitř odstavce <p> z řádku ' + top.line + ' — odstavec smí obsahovat jen řádkové elementy. Prohlížeč odstavec ukončí už před <' + name + '>.' });
+                stack.pop();
+            }
+            stack.push({ name: name, line: line });
+        } else {
+            if (VOID.indexOf(name) >= 0) {
+                out.push({ kind: 'warn', line: line, text: '</' + name + '> — nepárová značka <' + name + '> koncovou značku nemá.' });
+                continue;
+            }
+            var pos = -1;
+            for (var i = stack.length - 1; i >= 0; i--) if (stack[i].name === name) { pos = i; break; }
+            if (pos < 0) {
+                out.push({ kind: 'err', line: line, text: '</' + name + '> nemá odpovídající počáteční značku <' + name + '>.' });
+                continue;
+            }
+            for (var j = stack.length - 1; j > pos; j--) {
+                if (OPTIONAL_END.indexOf(stack[j].name) < 0) {
+                    out.push({ kind: 'err', line: line, text: 'Špatné vnoření: </' + name + '> uzavírá element, ale uvnitř je ještě otevřený <' + stack[j].name + '> z řádku ' + stack[j].line + '.' });
+                }
+            }
+            stack.length = pos;
+        }
+    }
+    stack.forEach(function (s) {
+        if (OPTIONAL_END.indexOf(s.name) < 0) out.push({ kind: 'err', line: s.line, text: '<' + s.name + '> není uzavřený (chybí </' + s.name + '>).' });
+    });
+    return out;
+}
+
+function lintHTML(src) {
+    var msgs = checkBalance(src);
+    var doc = new DOMParser().parseFromString(src, 'text/html');
+    var add = function (kind, text) { msgs.push({ kind: kind, text: text }); };
+    if (!/^\s*<!doctype html>/i.test(src)) add('warn', 'Chybí <!DOCTYPE html> na prvním řádku — prohlížeč přejde do režimu kompatibility (quirks mode).');
+    if (!/<html\b[^>]*\blang\s*=/i.test(src)) add('warn', 'Element <html> nemá atribut lang (např. lang="cs").');
+    if (!/<meta\b[^>]*charset/i.test(src)) add('warn', 'Chybí <meta charset="UTF-8"> — hrozí rozsypaná diakritika.');
+    if (!/<meta\b[^>]*name\s*=\s*["']?viewport/i.test(src)) add('warn', 'Chybí <meta name="viewport" …> — na mobilu bude stránka zmenšená.');
+    var title = doc.querySelector('title');
+    if (!title || !title.textContent.trim()) add('err', 'Stránka nemá <title> (nebo je prázdný). Je to povinný element hlavičky.');
+    doc.querySelectorAll('img').forEach(function (img) {
+        if (!img.hasAttribute('alt')) add('err', '<img src="' + (img.getAttribute('src') || '') + '"> nemá atribut alt.');
+    });
+    var h1 = doc.querySelectorAll('h1').length;
+    if (h1 === 0 && doc.body && doc.body.textContent.trim()) add('warn', 'Na stránce není hlavní nadpis <h1>.');
+    if (h1 > 1) add('warn', 'Na stránce je ' + h1 + '× <h1> — hlavní nadpis má být jen jeden.');
+    var prev = 0;
+    doc.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(function (h) {
+        var lvl = +h.tagName[1];
+        if (prev && lvl > prev + 1) add('warn', 'Přeskočená úroveň nadpisu: po <h' + prev + '> následuje <h' + lvl + '> („' + h.textContent.trim().slice(0, 30) + '“).');
+        prev = lvl;
+    });
+    var ids = {};
+    doc.querySelectorAll('[id]').forEach(function (el) {
+        var id = el.id;
+        if (ids[id]) add('err', 'id="' + id + '" je na stránce víckrát — id musí být jedinečné.');
+        ids[id] = true;
+    });
+    doc.querySelectorAll('input, select, textarea').forEach(function (el) {
+        var type = (el.getAttribute('type') || '').toLowerCase();
+        if (['hidden', 'submit', 'button', 'reset', 'image'].indexOf(type) >= 0) return;
+        var labelled = el.closest('label') || (el.id && doc.querySelector('label[for="' + el.id + '"]')) || el.hasAttribute('aria-label');
+        if (!labelled) add('warn', 'Pole <' + el.tagName.toLowerCase() + (type ? ' type="' + type + '"' : '') + '> nemá popisek <label>.');
+    });
+    doc.querySelectorAll('a').forEach(function (a) {
+        var t = a.textContent.trim().toLowerCase();
+        if (['klikni sem', 'zde', 'tady', 'sem', 'odkaz', 'více'].indexOf(t) >= 0) add('warn', 'Text odkazu „' + a.textContent.trim() + '“ neříká, kam odkaz vede.');
+        if (!a.hasAttribute('href')) add('warn', 'Odkaz „' + a.textContent.trim().slice(0, 30) + '“ nemá atribut href.');
+    });
+    Object.keys(OBSOLETE).forEach(function (t) {
+        if (new RegExp('<' + t + '\\b', 'i').test(src)) add('warn', 'Zastaralá značka <' + t + '>: ' + OBSOLETE[t] + '.');
+    });
+    var noComments = src.replace(/<\!--[\s\S]*?-->/g, '').replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '');
+    var tagRe = /<[a-zA-Z][\w-]*((?:[^>"']|"[^"]*"|'[^']*')*)>/g, tm, seen = 0;
+    while ((tm = tagRe.exec(noComments)) && seen < 3) {
+        var ar = /\s*([^\s=\/>]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?/g, am;
+        while ((am = ar.exec(tm[1])) && am[0]) {
+            if (am[2] && am[2][0] !== '"' && am[2][0] !== "'") {
+                add('warn', 'Hodnota atributu ' + am[1] + '=' + am[2] + ' není v uvozovkách — kdyby obsahovala mezeru, rozpadne se.');
+                seen++;
+            }
+        }
+    }
+    return { msgs: msgs, doc: doc };
+}
+
+function domTree(node, budget) {
+    if (budget.n-- <= 0) return '';
+    if (node.nodeType === 3) {
+        var t = node.textContent.replace(/\s+/g, ' ').trim();
+        if (!t) return '';
+        return '<li><span class="t-tx">"' + esc(t.length > 40 ? t.slice(0, 40) + '…' : t) + '"</span></li>';
+    }
+    if (node.nodeType === 8) return '<li><span class="t-cm">&lt;!-- ' + esc(node.textContent.trim().slice(0, 40)) + ' --&gt;</span></li>';
+    if (node.nodeType !== 1) return '';
+    var attrs = '';
+    ['id', 'class', 'href', 'src', 'type'].forEach(function (a) {
+        if (node.hasAttribute(a)) attrs += ' <span class="t-at">' + a + '="' + esc(node.getAttribute(a).slice(0, 30)) + '"</span>';
+    });
+    var kids = Array.prototype.map.call(node.childNodes, function (c) { return domTree(c, budget); }).join('');
+    return '<li><span class="t-el">' + node.tagName.toLowerCase() + '</span>' + attrs + (kids ? '<ul>' + kids + '</ul>' : '') + '</li>';
+}
+
+var TEMPLATES = [
+    { n: 'Kostra stránky', c: '<!DOCTYPE html>\n<html lang="cs">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1">\n    <title>Moje stránka</title>\n</head>\n<body>\n    <h1>Nadpis stránky</h1>\n    <p>Sem napiš první odstavec.</p>\n</body>\n</html>\n' },
+    { n: 'Vizitka', c: '<!DOCTYPE html>\n<html lang="cs">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1">\n    <title>Petra Nováková — vizitka</title>\n</head>\n<body>\n    <header>\n        <h1>Petra Nováková</h1>\n        <p><em>studentka 2. ročníku</em></p>\n    </header>\n    <main>\n        <h2>O mně</h2>\n        <p>Baví mě <strong>programování</strong>, fotografie a lezení.</p>\n        <h2>Co umím</h2>\n        <ul>\n            <li>HTML a CSS</li>\n            <li>Python</li>\n            <li>Photoshop</li>\n        </ul>\n        <h2>Kontakt</h2>\n        <p><a href="mailto:petra@example.com">petra@example.com</a></p>\n    </main>\n    <footer>\n        <p>&copy; 2026 Petra Nováková</p>\n    </footer>\n</body>\n</html>\n' },
+    { n: 'Tabulka — rozvrh', c: '<!DOCTYPE html>\n<html lang="cs">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1">\n    <title>Rozvrh 2.A</title>\n</head>\n<body>\n    <h1>Rozvrh třídy 2.A</h1>\n    <table border="1">\n        <thead>\n            <tr><th>Den</th><th>1.</th><th>2.</th><th>3.</th></tr>\n        </thead>\n        <tbody>\n            <tr><th>Po</th><td>M</td><td>ČJ</td><td>INF</td></tr>\n            <tr><th>Út</th><td>AJ</td><td colspan="2">Laboratoře</td></tr>\n            <tr><th>St</th><td>F</td><td>D</td><td>TV</td></tr>\n        </tbody>\n    </table>\n</body>\n</html>\n' },
+    { n: 'Formulář — přihláška', c: '<!DOCTYPE html>\n<html lang="cs">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1">\n    <title>Přihláška na kroužek</title>\n</head>\n<body>\n    <h1>Přihláška na kroužek</h1>\n    <form>\n        <p>\n            <label for="jmeno">Jméno a příjmení</label><br>\n            <input type="text" id="jmeno" name="jmeno" required>\n        </p>\n        <p>\n            <label for="mail">E-mail</label><br>\n            <input type="email" id="mail" name="mail">\n        </p>\n        <p>\n            <label for="krouzek">Kroužek</label><br>\n            <select id="krouzek" name="krouzek">\n                <option>Robotika</option>\n                <option>Fotografie</option>\n                <option>Šachy</option>\n            </select>\n        </p>\n        <p>\n            <label><input type="checkbox" name="souhlas"> Souhlasím s podmínkami</label>\n        </p>\n        <button type="submit">Odeslat</button>\n    </form>\n</body>\n</html>\n' },
+    { n: 'Stránka s chybami', c: '<html>\n<head>\n    <title></title>\n</head>\n<body>\n    <h1>Můj web</h1>\n    <h1>Vítejte</h1>\n    <p>Tohle je <strong>důležité <em>upozornění</strong></em>.</p>\n    <img src="foto.jpg">\n    <h4>Novinky</h4>\n    <div class=box id="info">\n        <p>Informace <div>uvnitř</div></p>\n    </div>\n    <p id="info">Druhý odstavec se stejným id.</p>\n    <input type="text">\n    <center>Na střed</center>\n    <a href="novinky.html">klikni sem</a>\n    <ul>\n        <li>první\n        <li>druhá\n    </ul>\n    <span>neuzavřený span\n</body>\n</html>\n' }
+];
+
+(function editor() {
+    var sel = $('edTpl');
+    sel.innerHTML = TEMPLATES.map(function (t, i) { return '<option value="' + i + '">' + esc(t.n) + '</option>'; }).join('');
+    var view = 'check';
+    var last = null;
+
+    function analyse(src) {
+        showInFrame($('edFrame'), src);
+        var t = /<title>([\s\S]*?)<\/title>/i.exec(src);
+        $('edUrl').textContent = (t && t[1].trim()) ? t[1].trim() : 'index.html';
+        last = lintHTML(src);
+        var errs = last.msgs.filter(function (m) { return m.kind === 'err'; }).length;
+        var warns = last.msgs.length - errs;
+        $('edCount').innerHTML = last.msgs.length ? '<span class="tag ' + (errs ? 'tag-red' : 'tag-yellow') + '">' + last.msgs.length + '</span>' : '<span class="tag tag-green">OK</span>';
+        renderPanel();
+    }
+    function renderPanel() {
+        if (!last) return;
+        var p = $('edPanel');
+        if (view === 'check') {
+            var ms = last.msgs.slice().sort(function (a, b) { return (a.kind === 'err' ? 0 : 1) - (b.kind === 'err' ? 0 : 1) || (a.line || 0) - (b.line || 0); });
+            p.innerHTML = ms.length ? '<ul class="msg-list">' + ms.map(function (m) {
+                return '<li class="' + m.kind + '"><span class="msg__kind">' + (m.kind === 'err' ? 'Chyba' : 'Upozornění') + '</span><span>' +
+                    (m.line ? '<span class="mono">řádek ' + m.line + ':</span> ' : '') + esc(m.text) + '</span></li>';
+            }).join('') + '</ul><p class="muted text-sm">Kontrola hledá nejčastější chyby, není to úplný validátor. Ten najdeš na validator.w3.org.</p>'
+                : '<ul class="msg-list"><li class="good"><span class="msg__kind">V pořádku</span><span>Nenašel jsem žádnou z hlídaných chyb.</span></li></ul>';
+        } else if (view === 'dom') {
+            p.innerHTML = '<div class="dom-tree"><ul>' + domTree(last.doc.documentElement, { n: 600 }) + '</ul></div>' +
+                '<p class="muted text-sm">Takový strom si prohlížeč postavil — včetně elementů, které si sám doplnil (třeba <code>head</code> nebo <code>tbody</code>). Bílé znaky mezi značkami jsou vynechané.</p>';
+        } else {
+            var hs = last.doc.querySelectorAll('h1,h2,h3,h4,h5,h6');
+            p.innerHTML = hs.length ? '<ul class="outline">' + Array.prototype.map.call(hs, function (h) {
+                var lvl = +h.tagName[1];
+                return '<li style="padding-left:' + (lvl - 1) * 1.4 + 'em"><span class="lvl">h' + lvl + '</span>' + esc(h.textContent.trim() || '(prázdný nadpis)') + '</li>';
+            }).join('') + '</ul><p class="muted text-sm">Tak vidí strukturu stránky čtečka obrazovky nebo vyhledávač.</p>'
+                : '<p class="muted">Stránka nemá žádné nadpisy.</p>';
+        }
+    }
+    var ed = CodeEdit($('edCode'), 'html', debounce(analyse, 300), 'Kód HTML stránky');
+    sel.addEventListener('change', function () { ed.set(TEMPLATES[+sel.value].c, true); analyse(ed.get()); });
+    $('edViews').addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (!b) return;
+        view = b.dataset.v;
+        $('edViews').querySelectorAll('.tab').forEach(function (x) {
+            x.classList.toggle('active', x === b);
+            x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+        renderPanel();
+    });
+    sel.value = '1';
+    ed.set(TEMPLATES[1].c, true);
+    analyse(ed.get());
+})();
+
+initTabs();
+</script>
+
+</body>
+</html>

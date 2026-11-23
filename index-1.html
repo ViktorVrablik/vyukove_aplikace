@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Výukové aplikace | Ing. Viktor Vráblík</title>
+    <meta name="description" content="Interaktivní výukové aplikace pro informatiku, programování a výpočetní techniku — číselné soustavy, kódování dat, převody jednotek, třídící algoritmy, logická hradla, editor vývojových diagramů, simulátor gitu a základy HTML a CSS.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="Výukové aplikace">
+    <meta property="og:description" content="Interaktivní nástroje pro výuku informatiky a odborných předmětů.">
+    <link rel="stylesheet" href="assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            <h1>Výukové aplikace</h1>
+            <p class="subtitle">Přehled interaktivních nástrojů pro výuku informatiky a odborných předmětů.</p>
+        </div>
+        <div class="site-header__actions">
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <nav class="tabs" id="filtry" aria-label="Filtr podle předmětu">
+        <button class="tab active" type="button" aria-pressed="true" onclick="filter('all', this)">Vše</button>
+        <button class="tab" type="button" aria-pressed="false" onclick="filter('inf', this)">Informatika</button>
+        <button class="tab" type="button" aria-pressed="false" onclick="filter('prog', this)">Programování</button>
+        <button class="tab" type="button" aria-pressed="false" onclick="filter('vypocet', this)">Výpočetní technika</button>
+        <button class="tab" type="button" aria-pressed="false" onclick="filter('web', this)">Webové technologie</button>
+    </nav>
+
+    <main class="card-grid" id="grid" aria-label="Seznam aplikací" tabindex="-1">
+
+        <a href="informatika/ciselne_soustavy.html" class="card" data-cat="inf">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
+            <div class="tag-container"><span class="tag tag-math">Informatika</span></div>
+            <div class="card-title">Číselné soustavy</div>
+            <div class="card-desc">Teoretický úvod do číselných soustav včetně příkladů k procvičení</div>
+        </a>
+
+        <a href="informatika/kodovani_dat.html" class="card" data-cat="inf">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <div class="tag-container"><span class="tag tag-math">Informatika</span></div>
+            <div class="card-title">Kódování dat</div>
+            <div class="card-desc">Aplikace popisující kódování základních datových typů</div>
+        </a>
+
+        <a href="informatika/prevody_jednotek.html" class="card" data-cat="inf">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            <div class="tag-container"><span class="tag tag-math">Informatika</span></div>
+            <div class="card-title">Převody jednotek</div>
+            <div class="card-desc">Interaktivní nástroj pro převody násobných jednotek informatiky</div>
+        </a>
+
+        <a href="informatika/sifrovani.html" class="card" data-cat="inf">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <div class="tag-container"><span class="tag tag-math">Informatika</span></div>
+            <div class="card-title">Šifrování a bezpečnost</div>
+            <div class="card-desc">Caesarova a Vigenèrova šifra, lámání šifer, veřejný klíč, hash a síla hesla</div>
+        </a>
+
+        <a href="programovani/tridici_algoritmy.html" class="card" data-cat="prog">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <div class="tag-container"><span class="tag tag-physics">Programování</span></div>
+            <div class="card-title">Třídící algoritmy</div>
+            <div class="card-desc">Simulace a porovnání efektivity jednotlivých třídících algoritmů</div>
+        </a>
+
+        <a href="programovani/vyvojove_diagramy.html" class="card" data-cat="prog">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <div class="tag-container">
+                <span class="tag tag-physics">Programování</span>
+                <span class="tag tag-gray">Jen pro počítač</span>
+            </div>
+            <div class="card-title">Editor vývojových diagramů</div>
+            <div class="card-desc">Interaktivní editor vývojových diagramů pro návrh a ladění algoritmů</div>
+        </a>
+
+        <a href="programovani/git_simulator.html" class="card" data-cat="prog">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+            <div class="tag-container"><span class="tag tag-physics">Programování</span></div>
+            <div class="card-title">Git a GitHub</div>
+            <div class="card-desc">Interaktivní simulátor gitu a spolupráce přes GitHub</div>
+        </a>
+
+        <a href="vypocetni_technika/logicka_hradla.html" class="card" data-cat="vypocet">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <div class="tag-container"><span class="tag tag-cs">Výpočetní technika</span></div>
+            <div class="card-title">Logická hradla</div>
+            <div class="card-desc">Booleova algebra, interaktivní simulátor hradel a logické hádanky</div>
+        </a>
+
+        <a href="vypocetni_technika/pocitacove_site.html" class="card" data-cat="vypocet">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <div class="tag-container"><span class="tag tag-cs">Výpočetní technika</span></div>
+            <div class="card-title">Počítačové sítě</div>
+            <div class="card-desc">Vrstvy ISO/OSI a TCP/IP se zapouzdřením, IP adresy, podsítě a cesta paketu sítí</div>
+        </a>
+
+        <a href="vypocetni_technika/procesor.html" class="card" data-cat="vypocet">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+            <div class="tag-container"><span class="tag tag-cs">Výpočetní technika</span></div>
+            <div class="card-title">Jak pracuje procesor</div>
+            <div class="card-desc">Instrukční cyklus krok za krokem na simulátoru jednoduchého procesoru</div>
+        </a>
+
+        <a href="vypocetni_technika/souborovy_system.html" class="card" data-cat="vypocet">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg>
+            <div class="tag-container"><span class="tag tag-cs">Výpočetní technika</span></div>
+            <div class="card-title">Souborový systém</div>
+            <div class="card-desc">Adresáře, absolutní a relativní cesty, ukládání souborů a adresování na HDD a SSD</div>
+        </a>
+
+        <a href="webove_technologie/html.html" class="card" data-cat="web">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <div class="tag-container"><span class="tag tag-blue">Webové technologie</span></div>
+            <div class="card-title">HTML</div>
+            <div class="card-desc">Jak funguje web, anatomie tagu, kostra dokumentu, přehled značek, sémantika a živý editor</div>
+        </a>
+
+        <a href="webove_technologie/css.html" class="card" data-cat="web">
+            <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+            <div class="tag-container"><span class="tag tag-blue">Webové technologie</span></div>
+            <div class="card-title">CSS</div>
+            <div class="card-desc">Selektory a kaskáda, box model, Flexbox a Grid, transformace, přechody a animace</div>
+        </a>
+
+    </main>
+
+    <p class="muted text-sm" id="prazdno" style="display:none; margin-top: var(--space-6);">
+        V této kategorii zatím žádná aplikace není.
+    </p>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno s pomocí <b>Claude</b> a <b>Gemini AI</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="assets/theme.js"></script>
+<script>
+    function filter(cat, btn) {
+        var cards = document.querySelectorAll('.card');
+        var visible = 0;
+
+        cards.forEach(function (card) {
+            var match = (cat === 'all' || card.dataset.cat === cat);
+            card.style.display = match ? 'flex' : 'none';
+            if (match) visible++;
+        });
+
+        document.getElementById('prazdno').style.display = visible ? 'none' : 'block';
+
+        document.querySelectorAll('#filtry .tab').forEach(function (b) {
+            var on = (b === btn);
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+    }
+
+    // Ovládání filtru šipkami
+    document.getElementById('filtry').addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var btns = Array.prototype.slice.call(this.querySelectorAll('.tab'));
+        var i = btns.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        btns[(i + (e.key === 'ArrowRight' ? 1 : btns.length - 1)) % btns.length].focus();
+    });
+</script>
+
+</body>
+</html>

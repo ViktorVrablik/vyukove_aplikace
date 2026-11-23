@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CSS — vzhled webové stránky | Výukové aplikace</title>
+    <meta name="description" content="Základy CSS: zápis pravidla, připojení stylu, barvy, box model a jednotky, selektory se specificitou a kaskádou, Flexbox, Grid, transformace, přechody a animace. S interaktivními ukázkami.">
+    <meta name="author" content="Ing. Viktor Vráblík">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="cs_CZ">
+    <meta property="og:title" content="CSS — vzhled webové stránky">
+    <meta property="og:description" content="Základy CSS, selektory, box model, Flexbox, Grid, přechody a animace s interaktivními ukázkami.">
+    <link rel="stylesheet" href="../assets/style.css">
+    <script>
+        // Nastaví motiv ještě před vykreslením, aby stránka neproblikla.
+        (function () {
+            try {
+                var t = localStorage.getItem('va-theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ==================================================================
+           Společné prvky stránek Webové technologie
+           ================================================================== */
+
+        .lead { font-size: var(--fs-md); color: var(--text-muted); max-width: 70ch; }
+        .tab-content > p, .tab-content li { max-width: 78ch; }
+        .mono { font-family: var(--font-mono); }
+        .nowrap { white-space: nowrap; }
+        .center { text-align: center; }
+        .mt-4 { margin-top: var(--space-4); }
+        .mt-6 { margin-top: var(--space-6); }
+        .mb-0 { margin-bottom: 0 !important; }
+        .ok   { color: var(--c-green); font-weight: 600; }
+        .bad  { color: var(--c-red);   font-weight: 600; }
+        .warn { color: var(--c-orange); font-weight: 600; }
+
+        ol.steps { margin-bottom: var(--space-5); }
+        ol.steps li { margin-bottom: var(--space-2); }
+
+        /* Dvousloupcové rozložení, na mobilu pod sebou */
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+        .two-col > * { min-width: 0; }
+
+        /* Ovládání vlevo, náhled vpravo (na mobilu pod sebou) */
+        .lab {
+            display: grid;
+            grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+            gap: var(--space-5);
+            align-items: start;
+            margin-bottom: var(--space-5);
+        }
+        .lab > * { min-width: 0; }
+        .lab--side { grid-template-columns: minmax(0, 1fr) minmax(0, 260px); }
+        .lab--side-w { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); }
+        @media (max-width: 760px) { .lab, .lab--side, .lab--side-w { grid-template-columns: minmax(0, 1fr); } }
+
+        .ctrl { margin-bottom: var(--space-4); }
+        .ctrl:last-child { margin-bottom: 0; }
+        .ctrl > label, .ctrl > .ctrl__label {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-2);
+            margin-bottom: var(--space-1);
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .ctrl output, .ctrl .val { font-family: var(--font-mono); color: var(--text); }
+        .ctrl input[type="range"] { width: 100%; }
+        .ctrl select, .ctrl input[type="text"] { width: 100%; }
+        .ctrl--row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+        select.input { padding-right: var(--space-6); }
+
+        /* Segmentový přepínač */
+        .seg {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 2px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .seg button {
+            min-height: 30px;
+            padding: var(--space-1) var(--space-3);
+            font: inherit;
+            font-size: var(--fs-sm);
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .seg button:hover { color: var(--text); background: var(--hover-bg); }
+        .seg button[aria-pressed="true"] {
+            color: var(--text);
+            font-weight: 600;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+        .seg--mono button { font-family: var(--font-mono); font-size: var(--fs-xs); }
+
+        /* Čipy (rychlá volba) */
+        .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+        .chip {
+            padding: 3px var(--space-2);
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .chip:hover { border-color: var(--border-strong); background: var(--hover-bg); }
+        .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--c-blue); }
+
+        /* ---------- Okno prohlížeče s náhledem ---------- */
+        .browser {
+            overflow: hidden;
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-4);
+        }
+        .browser__bar {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-2) var(--space-3);
+            background: var(--surface-sunken);
+            border-bottom: 1px solid var(--border);
+        }
+        .browser__dots { display: flex; gap: 5px; flex: none; }
+        .browser__dots span { width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--border-strong); }
+        .browser__url {
+            flex: 1;
+            min-width: 0;
+            padding: 2px var(--space-3);
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .browser iframe {
+            display: block;
+            width: 100%;
+            height: var(--frame-h, 260px);
+            border: 0;
+            background: #ffffff;
+        }
+
+        /* ---------- Kód se zvýrazněním syntaxe ---------- */
+        .code {
+            margin: 0 0 var(--space-4);
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            white-space: pre;
+            overflow-x: auto;
+            tab-size: 4;
+        }
+        .code--wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .hl-tag   { color: var(--c-blue); }
+        .hl-attr  { color: var(--c-orange); }
+        .hl-val   { color: var(--c-green); }
+        .hl-com   { color: var(--text-faint); font-style: italic; }
+        .hl-doc   { color: var(--c-purple); }
+        .hl-ent   { color: var(--c-pink); }
+        .hl-sel   { color: var(--c-purple); }
+        .hl-prop  { color: var(--c-blue); }
+        .hl-num   { color: var(--c-pink); }
+        .hl-at    { color: var(--c-red); }
+        .hl-punc  { color: var(--text-muted); }
+
+        /* Editovatelný kód: průhledný textarea nad zvýrazněným <pre> */
+        .code-edit {
+            position: relative;
+            margin-bottom: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            height: var(--edit-h, 260px);
+            overflow: hidden;
+        }
+        .code-edit:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--selection); }
+        .code-edit pre, .code-edit textarea {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+            white-space: pre;
+            tab-size: 4;
+            overflow: auto;
+            border: 0;
+            letter-spacing: normal;
+            word-spacing: normal;
+        }
+        .code-edit pre { pointer-events: none; color: var(--text); background: transparent; }
+        .code-edit textarea {
+            resize: none;
+            color: transparent;
+            caret-color: var(--text);
+            background: transparent;
+            outline: none;
+            overflow-wrap: normal;
+        }
+        .code-edit textarea::selection { background: var(--selection); color: transparent; }
+
+        /* ---------- Klikací rozbor kódu (anatomie) ---------- */
+        .anat {
+            padding: var(--space-5) var(--space-4);
+            margin-bottom: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: clamp(0.85rem, 0.65rem + 0.7vw, 1.1rem);
+            line-height: 2.3;
+            text-align: center;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        .anat span[data-p] {
+            padding: 2px 1px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+        }
+        .anat span[data-p].on { background: var(--c-yellow-bg); box-shadow: 0 -2px 0 var(--c-yellow) inset; }
+        .terms { display: flex; flex-direction: column; gap: var(--space-2); }
+        .term {
+            display: block;
+            width: 100%;
+            padding: var(--space-2) var(--space-3);
+            text-align: left;
+            font: inherit;
+            font-size: var(--fs-sm);
+            color: var(--text);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+        .term:hover { background: var(--hover-bg); }
+        .term[aria-pressed="true"] { border-color: var(--c-yellow); background: var(--c-yellow-bg); }
+        .term b { display: block; }
+        .term span { display: block; color: var(--text-muted); font-size: var(--fs-xs); }
+
+        .explain {
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            min-height: 4.5em;
+        }
+        .explain h4 { margin-top: 0; }
+        .explain p:last-child { margin-bottom: 0; }
+
+        /* Číslované řádky kódu, klikací */
+        .lines {
+            margin-bottom: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: 1.6;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            padding: var(--space-2) 0;
+        }
+        .lines button {
+            display: flex;
+            width: 100%;
+            min-width: max-content;
+            padding: 1px var(--space-3) 1px 0;
+            font: inherit;
+            text-align: left;
+            color: var(--text);
+            background: transparent;
+            border: 0;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            white-space: pre;
+        }
+        .lines button:hover { background: var(--hover-bg); }
+        .lines button[aria-pressed="true"] { background: var(--c-yellow-bg); border-left-color: var(--c-yellow); }
+        .lines button.dim { opacity: 0.55; }
+        .lines .ln {
+            flex: none;
+            width: 2.6em;
+            padding-right: var(--space-3);
+            text-align: right;
+            color: var(--text-faint);
+            user-select: none;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .stat {
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            min-width: 0;
+        }
+        .stat__label { display: block; font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 2px; }
+        .stat__value { display: block; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; overflow-wrap: anywhere; }
+
+        .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+        .toolbar .spacer { flex: 1; }
+
+        .msg-list { list-style: none; margin: 0 0 var(--space-4); padding: 0; }
+        .msg-list li {
+            display: flex;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            margin-bottom: var(--space-2);
+            font-size: var(--fs-sm);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            max-width: none;
+        }
+        .msg-list li.err  { background: var(--c-red-bg);    border-color: transparent; }
+        .msg-list li.warn { background: var(--c-yellow-bg); border-color: transparent; }
+        .msg-list li.good { background: var(--c-green-bg);  border-color: transparent; }
+        .msg-list .msg__kind { flex: none; font-weight: 600; min-width: 5.5em; }
+
+
+        /* ==================================================================
+           Specifika stránky CSS
+           ================================================================== */
+
+        /* Plocha s náhledem (obsah je ve stínovém DOM, aby se styly nemíchaly se stránkou) */
+        .stage-host { display: block; }
+        .browser .stage-host { min-height: var(--frame-h, 200px); }
+
+        .formula {
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            line-height: var(--lh-relaxed);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--c-purple);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+        }
+
+        .two-col.tight { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+
+        /* Barvy */
+        .swatch {
+            height: 110px;
+            margin-bottom: var(--space-4);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+            background-color: #fff;
+            overflow: hidden;
+        }
+        .swatch > div { width: 100%; height: 100%; }
+        .color-codes { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+        .color-codes div {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-3);
+            padding: var(--space-2) var(--space-3);
+            font-family: var(--font-mono);
+            font-size: var(--fs-sm);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .color-codes span { color: var(--text-muted); font-family: var(--font-sans); }
+        input[type="color"] { width: 100%; height: 38px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); cursor: pointer; }
+
+        /* Box model */
+        .bm-stage {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 280px;
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: auto;
+        }
+        .bm-margin { display: flow-root; background: repeating-linear-gradient(45deg, #f9cc9d, #f9cc9d 6px, #fbdcbb 6px, #fbdcbb 12px); }
+        .bm-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-style: solid;
+            border-color: #f3c84a;
+            background: linear-gradient(#8cb6e8, #8cb6e8) content-box, #b9dcb0 padding-box;
+            color: #1b2b44;
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            text-align: center;
+            overflow: hidden;
+        }
+        .legend__swatch.lg-m { background: #f9cc9d; }
+        .legend__swatch.lg-b { background: #f3c84a; }
+        .legend__swatch.lg-p { background: #b9dcb0; }
+        .legend__swatch.lg-c { background: #8cb6e8; }
+
+        /* Jednotky */
+        .units { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+        .unit-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 5.5em; align-items: center; gap: var(--space-3); font-size: var(--fs-sm); }
+        .unit-row code { justify-self: start; }
+        .unit-bar { height: 22px; border-radius: var(--radius-sm); background: var(--c-blue); max-width: 100%; transition: width var(--dur-base) var(--ease); }
+        .unit-row .val { font-family: var(--font-mono); text-align: right; color: var(--text-muted); }
+        .unit-track { position: relative; min-width: 0; }
+
+        /* Selektory */
+        .sel-input { font-family: var(--font-mono); font-size: var(--fs-md); }
+        .sel-status { min-height: 1.6em; margin-bottom: var(--space-3); font-size: var(--fs-sm); }
+        .spec {
+            display: inline-flex;
+            gap: 2px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            vertical-align: middle;
+        }
+        .spec span { min-width: 1.9em; padding: 1px 6px; text-align: center; border-radius: var(--radius-sm); }
+        .spec .sa { background: var(--c-red-bg); color: var(--c-red); }
+        .spec .sb { background: var(--c-blue-bg); color: var(--c-blue); }
+        .spec .sc { background: var(--c-green-bg); color: var(--c-green); }
+        .duel-rule {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-2) var(--space-3);
+            margin-bottom: var(--space-2);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: var(--fs-sm);
+        }
+        .duel-rule.off { opacity: 0.5; }
+        .duel-rule.win { border-color: var(--c-green); box-shadow: 0 0 0 1px var(--c-green); background: var(--c-green-bg); }
+        .duel-rule code { background: none; padding: 0; color: var(--text); font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .duel-rule label { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); font-size: var(--fs-xs); white-space: nowrap; }
+        @media (max-width: 560px) { .duel-rule { grid-template-columns: auto minmax(0, 1fr); } .duel-rule .spec, .duel-rule label.imp { grid-column: 2; } }
+
+        /* Flexbox a Grid */
+        .playground {
+            position: relative;
+            margin-bottom: var(--space-4);
+            padding: var(--space-6) var(--space-3) var(--space-3) var(--space-6);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .pg-box {
+            position: relative;
+            min-height: 260px;
+            padding: 8px;
+            background: var(--surface);
+            border: 2px dashed var(--border-strong);
+            border-radius: var(--radius-md);
+        }
+        .pg-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            padding: var(--space-2) var(--space-3);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: var(--fs-sm);
+            color: var(--text);
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            user-select: none;
+            transition: border-color var(--dur-fast) var(--ease);
+        }
+        .pg-item:focus-visible { outline-offset: 2px; }
+        .pg-item.sel { border-color: var(--text); box-shadow: var(--shadow-md); }
+        .pg-item:nth-child(6n+1) { background: var(--c-blue-bg); }
+        .pg-item:nth-child(6n+2) { background: var(--c-orange-bg); }
+        .pg-item:nth-child(6n+3) { background: var(--c-green-bg); }
+        .pg-item:nth-child(6n+4) { background: var(--c-purple-bg); }
+        .pg-item:nth-child(6n+5) { background: var(--c-pink-bg); }
+        .pg-item:nth-child(6n+6) { background: var(--c-yellow-bg); }
+        .pg-box.varied .pg-item:nth-child(3n+2) { padding-top: 22px; padding-bottom: 22px; }
+        .pg-box.varied .pg-item:nth-child(3n) { padding-left: 30px; padding-right: 30px; }
+
+        .axis {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .axis--main { color: var(--c-red); }
+        .axis--cross { color: var(--c-blue); }
+        .axis i { display: block; background: currentColor; }
+        .axis--h { left: var(--space-6); right: var(--space-3); top: 4px; height: 16px; }
+        .axis--h i { flex: 1; height: 2px; }
+        .axis--v { top: var(--space-6); bottom: var(--space-3); left: 4px; width: 16px; flex-direction: column; }
+        .axis--v i { flex: 1; width: 2px; }
+        .axis--v b { writing-mode: vertical-rl; }
+        .axis .arr { flex: none; width: 0; height: 0; background: none; border: 5px solid transparent; }
+        .axis--h .arr.fw { border-left: 8px solid currentColor; border-right: 0; }
+        .axis--h .arr.bw { border-right: 8px solid currentColor; border-left: 0; }
+        .axis--v .arr.fw { border-top: 8px solid currentColor; border-bottom: 0; }
+        .axis--v .arr.bw { border-bottom: 8px solid currentColor; border-top: 0; }
+
+        .grid-lines { position: absolute; inset: 0; pointer-events: none; }
+        .grid-lines .gl {
+            position: absolute;
+            border: 0 dashed var(--c-purple);
+            opacity: 0.85;
+        }
+        .grid-lines .gl--v { top: 0; bottom: 0; border-left-width: 1px; }
+        .grid-lines .gl--h { left: 0; right: 0; border-top-width: 1px; }
+        .grid-lines .gn {
+            position: absolute;
+            padding: 0 4px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            background: var(--c-purple);
+            border-radius: var(--radius-sm);
+            transform: translate(-50%, -50%);
+        }
+        .item-panel {
+            padding: var(--space-3);
+            margin-top: var(--space-4);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .item-panel h4 { margin: 0 0 var(--space-3); }
+
+        .areas-box {
+            display: grid;
+            gap: 8px;
+            min-height: 260px;
+            padding: 8px;
+            background: var(--surface);
+            border: 2px dashed var(--border-strong);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-4);
+        }
+        .areas-box > div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: var(--space-2);
+            font-family: var(--font-mono);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            border-radius: var(--radius-md);
+        }
+
+        /* Přechody a transformace */
+        .tr-stage {
+            position: relative;
+            height: 170px;
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .tr-box {
+            position: absolute;
+            left: 24px;
+            top: 50px;
+            width: 70px;
+            height: 70px;
+            border-radius: 10px;
+            background: #1a6dc4;
+            opacity: 1;
+        }
+        .tr-box.b {
+            width: 110px;
+            border-radius: 50%;
+            background: #e8890c;
+            transform: translateX(var(--tr-dist, 200px)) rotate(180deg);
+            opacity: 0.5;
+        }
+        .curve { width: 100%; max-width: 260px; display: block; margin: 0 auto var(--space-3); }
+        .curve .grid { stroke: var(--border); stroke-width: 1; }
+        .curve .axis-l { stroke: var(--text-faint); stroke-width: 1; }
+        .curve .handle { stroke: var(--text-faint); stroke-width: 1.2; stroke-dasharray: 3 3; }
+        .curve .knob { fill: var(--c-pink); }
+        .curve .path { fill: none; stroke: var(--c-blue); stroke-width: 3; stroke-linecap: round; }
+        .curve text { fill: var(--text-muted); font-size: 10px; font-family: var(--font-sans); }
+
+        .race { margin-bottom: var(--space-4); }
+        .lane { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: var(--space-3); align-items: center; margin-bottom: var(--space-2); }
+        .lane code { font-size: var(--fs-xs); justify-self: start; }
+        .lane__track { position: relative; height: 24px; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-full); }
+        .lane__dot {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: var(--radius-full);
+            background: var(--c-blue);
+        }
+        .race.go .lane__dot { left: calc(100% - 20px); }
+
+        .tf-stage {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 260px;
+            margin-bottom: var(--space-4);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .tf-ghost, .tf-box {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 8px;
+        }
+        .tf-ghost { border: 2px dashed var(--border-strong); }
+        .tf-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #1a6dc4, #6b3fa8);
+        }
+        .tf-origin { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--c-red); box-shadow: 0 0 0 2px #fff; }
+
+        /* Animace */
+        .timeline { position: relative; height: 34px; margin: var(--space-2) 0 var(--space-4); }
+        .timeline__bar { position: absolute; left: 0; right: 0; top: 14px; height: 6px; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-full); }
+        .timeline__fill { position: absolute; left: 0; top: 14px; height: 6px; background: var(--c-blue); border-radius: var(--radius-full); }
+        .timeline__mark { position: absolute; top: 9px; width: 2px; height: 16px; margin-left: -1px; background: var(--c-pink); }
+        .timeline__lbl { position: absolute; top: 24px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+        .timeline__head { position: absolute; top: 6px; width: 14px; height: 22px; margin-left: -7px; border-radius: 4px; background: var(--text); }
+    </style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="page">
+
+    <header class="site-header">
+        <div class="site-header__text">
+            <nav class="breadcrumb" aria-label="Drobečková navigace">
+                <a href="../index.html">Výukové aplikace</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <a href="../index.html#filtry" data-cat="web">Webové technologie</a>
+                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                <span class="breadcrumb__current" aria-current="page">CSS</span>
+            </nav>
+            <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+            <h1>CSS — vzhled webové stránky</h1>
+            <p class="subtitle">Pravidla a selektory, box model, rozložení pomocí Flexboxu a Gridu, přechody a animace</p>
+        </div>
+        <div class="site-header__actions">
+            <a class="btn" href="../index.html">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Zpět
+            </a>
+            <button class="btn btn--icon theme-toggle" type="button" aria-pressed="false" title="Přepnout na tmavý režim">
+                <span class="visually-hidden">Přepnout světlý a tmavý režim</span>
+                <svg class="icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+<main id="obsah" tabindex="-1">
+
+    <div class="tabs" role="tablist" aria-label="Kapitoly">
+        <button class="tab active" type="button" role="tab" id="t-zaklady" aria-controls="zaklady" aria-selected="true" tabindex="0">Základy</button>
+        <button class="tab" type="button" role="tab" id="t-box" aria-controls="box" aria-selected="false" tabindex="-1">Box model a jednotky</button>
+        <button class="tab" type="button" role="tab" id="t-selektory" aria-controls="selektory" aria-selected="false" tabindex="-1">Selektory a kaskáda</button>
+        <button class="tab" type="button" role="tab" id="t-flex" aria-controls="flex" aria-selected="false" tabindex="-1">Flexbox</button>
+        <button class="tab" type="button" role="tab" id="t-grid" aria-controls="grid" aria-selected="false" tabindex="-1">Grid</button>
+        <button class="tab" type="button" role="tab" id="t-prechody" aria-controls="prechody" aria-selected="false" tabindex="-1">Transformace a přechody</button>
+        <button class="tab" type="button" role="tab" id="t-animace" aria-controls="animace" aria-selected="false" tabindex="-1">Animace</button>
+    </div>
+
+    <!-- ================================================================
+         1. ZÁKLADY
+         ================================================================ -->
+    <section id="zaklady" class="tab-content active" role="tabpanel" aria-labelledby="t-zaklady">
+        <h2>Co je CSS</h2>
+        <p class="lead"><strong>CSS</strong> (<em>Cascading Style Sheets</em>, kaskádové styly) je jazyk, který říká, jak mají elementy HTML <em>vypadat</em>: barvy, písmo, velikosti, odstupy, rozložení na stránce i pohyb. HTML určuje, <em>co</em> na stránce je, CSS určuje, <em>jak</em> to vypadá.</p>
+        <p>Díky oddělení obsahu a vzhledu stačí jeden soubor stylů pro celý web: změníš barvu na jednom místě a změní se na všech stránkách. Stejné HTML může mít úplně jiný vzhled na monitoru, na mobilu i při tisku.</p>
+
+        <h3>Z čeho se skládá pravidlo</h3>
+        <p>Klikni na část pravidla nebo na pojem vpravo.</p>
+        <div class="lab lab--side">
+            <div>
+                <div class="anat" id="ruleCode"></div>
+                <div class="explain" id="ruleExplain"></div>
+            </div>
+            <div class="terms" id="ruleTerms">
+                <button class="term" type="button" data-role="rule"><b>Pravidlo</b><span>selektor + blok deklarací</span></button>
+                <button class="term" type="button" data-role="sel"><b>Selektor</b><span>na které elementy</span></button>
+                <button class="term" type="button" data-role="block"><b>Deklarační blok</b><span>ve složených závorkách</span></button>
+                <button class="term" type="button" data-role="decl"><b>Deklarace</b><span>vlastnost: hodnota;</span></button>
+                <button class="term" type="button" data-role="prop"><b>Vlastnost</b><span>co měníme</span></button>
+                <button class="term" type="button" data-role="val"><b>Hodnota</b><span>na co to měníme</span></button>
+                <button class="term" type="button" data-role="unit"><b>Jednotka</b><span>px, em, %, s…</span></button>
+                <button class="term" type="button" data-role="semi"><b>Středník</b><span>oddělovač deklarací</span></button>
+            </div>
+        </div>
+
+        <h3>Jak CSS připojit k HTML</h3>
+        <div class="toolbar">
+            <div class="seg" id="linkSeg" role="group" aria-label="Způsob připojení">
+                <button type="button" data-v="ext" aria-pressed="true">Externí soubor</button>
+                <button type="button" data-v="int" aria-pressed="false">Interní &lt;style&gt;</button>
+                <button type="button" data-v="inl" aria-pressed="false">Atribut style</button>
+            </div>
+        </div>
+        <div class="two-col">
+            <div><pre class="code" id="linkCode"></pre></div>
+            <div class="explain" id="linkExplain"></div>
+        </div>
+
+        <h3>Vyzkoušej si</h3>
+        <p>Vlevo nahoře je HTML, které se nemění, pod ním CSS, které můžeš upravovat. Zkus změnit barvy, velikost písma nebo přidat nové pravidlo.</p>
+        <div class="two-col">
+            <div>
+                <p class="label">HTML (jen ke čtení)</p>
+                <pre class="code" id="tryHtml"></pre>
+                <p class="label">CSS</p>
+                <div id="tryCss" style="--edit-h: 300px"></div>
+                <button class="btn btn--sm" type="button" id="tryReset">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    Původní CSS
+                </button>
+            </div>
+            <div style="position: sticky; top: var(--space-4);">
+                <p class="label">Výsledek</p>
+                <div class="browser" style="--frame-h: 340px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">karta.html</span></div>
+                    <div class="stage-host" id="tryStage"></div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Barvy</h3>
+        <p>Barvu lze zapsat několika způsoby — všechny níže znamenají totéž. Nejčastější je šestnáctkový zápis <code>#RRGGBB</code> (dvě šestnáctkové číslice na každou složku, viz <a href="../informatika/ciselne_soustavy.html">Číselné soustavy</a>). Zápis <code>hsl()</code> je nejpřirozenější pro člověka: odstín na barevném kruhu, sytost a světlost.</p>
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="colPick">Výběr barvy</label><input type="color" id="colPick" value="#1a6dc4"></div>
+                <div class="ctrl"><label for="colH">Odstín (hue) <output id="colHv"></output></label><input type="range" id="colH" min="0" max="360"></div>
+                <div class="ctrl"><label for="colS">Sytost (saturation) <output id="colSv"></output></label><input type="range" id="colS" min="0" max="100"></div>
+                <div class="ctrl"><label for="colL">Světlost (lightness) <output id="colLv"></output></label><input type="range" id="colL" min="0" max="100"></div>
+                <div class="ctrl"><label for="colA">Průhlednost (alpha) <output id="colAv"></output></label><input type="range" id="colA" min="0" max="100" value="100"></div>
+            </div>
+            <div>
+                <div class="swatch"><div id="colSwatch"></div></div>
+                <div class="color-codes" id="colCodes"></div>
+                <p class="muted text-sm">Kromě toho zná CSS 148 pojmenovaných barev (<code>red</code>, <code>navy</code>, <code>tomato</code>, <code>rebeccapurple</code>…) a klíčová slova <code>transparent</code> a <code>currentColor</code> (barva textu).</p>
+            </div>
+        </div>
+
+        <h3>Základní vlastnosti</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Vlastnost</th><th>Příklad</th><th>Co dělá</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">color</td><td class="mono">color: #333;</td><td>barva textu</td></tr>
+                <tr><td class="mono">background</td><td class="mono">background: #eef4ff;</td><td>pozadí (barva, obrázek, přechod)</td></tr>
+                <tr><td class="mono">font-family</td><td class="mono">font-family: Arial, sans-serif;</td><td>písmo; za čárkou náhradní, když první není k dispozici</td></tr>
+                <tr><td class="mono">font-size, font-weight</td><td class="mono">font-size: 1.2rem; font-weight: 700;</td><td>velikost a tloušťka písma</td></tr>
+                <tr><td class="mono">text-align</td><td class="mono">text-align: center;</td><td>zarovnání textu</td></tr>
+                <tr><td class="mono">line-height</td><td class="mono">line-height: 1.5;</td><td>výška řádku (násobek velikosti písma)</td></tr>
+                <tr><td class="mono">width, height</td><td class="mono">width: 50%;</td><td>rozměry obsahu</td></tr>
+                <tr><td class="mono">margin, padding</td><td class="mono">margin: 10px 20px;</td><td>vnější a vnitřní okraj (viz Box model)</td></tr>
+                <tr><td class="mono">border, border-radius</td><td class="mono">border: 1px solid #ccc;</td><td>rámeček a zaoblení rohů</td></tr>
+                <tr><td class="mono">display</td><td class="mono">display: flex;</td><td>způsob zobrazení: block, inline, inline-block, flex, grid, none</td></tr>
+                <tr><td class="mono">box-shadow</td><td class="mono">box-shadow: 0 2px 8px #0003;</td><td>stín</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--info">
+            <p class="mb-0"><strong>Komentář</strong> se v CSS píše mezi <code>/*</code> a <code>*/</code>. Pozor — dvojité lomítko <code>//</code> v CSS komentář <em>není</em> a pokazí následující pravidlo.</p>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         2. BOX MODEL A JEDNOTKY
+         ================================================================ -->
+    <section id="box" class="tab-content" role="tabpanel" aria-labelledby="t-box">
+        <h2>Box model</h2>
+        <p class="lead">Pro CSS je každý element obdélník — krabice. Skládá se ze čtyř vrstev: <strong>obsah</strong>, <strong>vnitřní okraj</strong> (<code>padding</code>), <strong>rámeček</strong> (<code>border</code>) a <strong>vnější okraj</strong> (<code>margin</code>). Pochopit box model je základ pro jakékoli rozložení stránky.</p>
+
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="bmW">width <output id="bmWv"></output></label><input type="range" id="bmW" min="60" max="300" value="180"></div>
+                <div class="ctrl"><label for="bmP">padding <output id="bmPv"></output></label><input type="range" id="bmP" min="0" max="50" value="20"></div>
+                <div class="ctrl"><label for="bmB">border <output id="bmBv"></output></label><input type="range" id="bmB" min="0" max="25" value="6"></div>
+                <div class="ctrl"><label for="bmM">margin <output id="bmMv"></output></label><input type="range" id="bmM" min="0" max="50" value="24"></div>
+                <div class="ctrl">
+                    <span class="ctrl__label">box-sizing</span>
+                    <div class="seg seg--mono" id="bmSeg" role="group" aria-label="box-sizing">
+                        <button type="button" data-v="content-box" aria-pressed="true">content-box</button>
+                        <button type="button" data-v="border-box" aria-pressed="false">border-box</button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="bm-stage"><div class="bm-margin" id="bmMargin"><div class="bm-box" id="bmBox"></div></div></div>
+                <div class="legend">
+                    <span class="legend__item"><span class="legend__swatch lg-m"></span>margin</span>
+                    <span class="legend__item"><span class="legend__swatch lg-b"></span>border</span>
+                    <span class="legend__item"><span class="legend__swatch lg-p"></span>padding</span>
+                    <span class="legend__item"><span class="legend__swatch lg-c"></span>obsah</span>
+                </div>
+                <div class="formula" id="bmFormula"></div>
+                <pre class="code" id="bmCode"></pre>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Vrstva</th><th>Barva pozadí</th><th>Poznámka</th></tr></thead>
+                <tbody>
+                <tr><td><strong>obsah</strong> (content)</td><td>ano</td><td>text, obrázky; rozměr určuje <code>width</code> a <code>height</code></td></tr>
+                <tr><td><strong>padding</strong></td><td>ano — pozadí elementu sahá až sem</td><td>vzduch mezi obsahem a rámečkem</td></tr>
+                <tr><td><strong>border</strong></td><td>vlastní barva rámečku</td><td><code>border: 2px solid red</code> = tloušťka, styl, barva</td></tr>
+                <tr><td><strong>margin</strong></td><td>ne — vždy průhledný</td><td>odstup od sousedů; svislé okraje dvou bloků pod sebou se <em>slučují</em> (použije se větší z nich)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Zkrácený zápis okrajů</h3>
+        <p>Vlastnosti <code>margin</code> a <code>padding</code> přijímají 1 až 4 hodnoty. Postupuje se <strong>po směru hodinových ručiček od horní strany</strong>:</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Zápis</th><th>nahoře</th><th>vpravo</th><th>dole</th><th>vlevo</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">padding: 10px;</td><td>10</td><td>10</td><td>10</td><td>10</td></tr>
+                <tr><td class="mono">padding: 10px 20px;</td><td>10</td><td>20</td><td>10</td><td>20</td></tr>
+                <tr><td class="mono">padding: 10px 20px 30px;</td><td>10</td><td>20</td><td>30</td><td>20</td></tr>
+                <tr><td class="mono">padding: 10px 20px 30px 40px;</td><td>10</td><td>20</td><td>30</td><td>40</td></tr>
+                <tr><td class="mono">margin: 0 auto;</td><td>0</td><td colspan="3">auto vlevo i vpravo → blok s pevnou šířkou se vycentruje</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--success">
+            <p class="mb-0">Mnoho webů začíná stylem <code>*, *::before, *::after { box-sizing: border-box; }</code>. Pak <code>width</code> znamená celkovou šířku včetně paddingu a rámečku, a počítání rozměrů je mnohem jednodušší.</p>
+        </div>
+
+        <h3>Jednotky délky</h3>
+        <p>Velikosti se dají zadat absolutně v pixelech, nebo <strong>relativně</strong> vůči něčemu jinému. Relativní jednotky jsou základ webu, který se přizpůsobí velikosti displeje i nastavení písma uživatele. Měň hodnoty a sleduj, jak dlouhé budou pruhy.</p>
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="unRoot">písmo kořene <code>html</code> <output id="unRootv"></output></label><input type="range" id="unRoot" min="10" max="24" value="16"></div>
+                <div class="ctrl"><label for="unPar">písmo rodiče <output id="unParv"></output></label><input type="range" id="unPar" min="10" max="32" value="20"></div>
+                <div class="ctrl"><label for="unW">šířka rodiče <output id="unWv"></output></label><input type="range" id="unW" min="200" max="600" value="400"></div>
+                <div class="ctrl"><label for="unVw">šířka okna prohlížeče <output id="unVwv"></output></label><input type="range" id="unVw" min="320" max="1920" step="10" value="1280"></div>
+            </div>
+            <div>
+                <div class="units" id="units"></div>
+                <p class="muted text-sm">Pruhy jsou zmenšené tak, aby se vešly; hodnota vpravo je skutečná šířka v pixelech.</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Jednotka</th><th>Vůči čemu</th><th>Typické použití</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">px</td><td>pevná (1 px = 1/96 palce, na displejích s vysokým rozlišením víc fyzických bodů)</td><td>rámečky, stíny</td></tr>
+                <tr><td class="mono">em</td><td>velikost písma <strong>rodiče</strong> (u <code>font-size</code>) nebo elementu samotného</td><td>odstupy, které rostou s textem</td></tr>
+                <tr><td class="mono">rem</td><td>velikost písma <strong>kořenového</strong> elementu <code>html</code> (obvykle 16 px)</td><td>velikosti písma, odstupy</td></tr>
+                <tr><td class="mono">%</td><td>rozměr <strong>rodiče</strong></td><td>šířky sloupců</td></tr>
+                <tr><td class="mono">vw, vh</td><td>1 % šířky / výšky <strong>okna</strong> prohlížeče</td><td>úvodní plocha přes celou obrazovku (<code>height: 100vh</code>)</td></tr>
+                <tr><td class="mono">fr</td><td>podíl volného místa v mřížce</td><td>sloupce v Gridu</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         3. SELEKTORY A KASKÁDA
+         ================================================================ -->
+    <section id="selektory" class="tab-content" role="tabpanel" aria-labelledby="t-selektory">
+        <h2>Selektory</h2>
+        <p class="lead"><strong>Selektor</strong> určuje, na které elementy se pravidlo použije. Napiš selektor nebo vyber některý z nabídky — vybrané elementy se v náhledu i v kódu zvýrazní.</p>
+
+        <div class="ctrl">
+            <label for="selIn">Selektor</label>
+            <input class="input sel-input" type="text" id="selIn" value=".perex" spellcheck="false" autocomplete="off">
+        </div>
+        <div class="chips" id="selChips"></div>
+        <div class="sel-status" id="selStatus" aria-live="polite"></div>
+        <div class="two-col">
+            <div>
+                <p class="label">HTML</p>
+                <div class="lines" id="selLines" role="group" aria-label="Kód ukázky"></div>
+            </div>
+            <div style="position: sticky; top: var(--space-4);">
+                <p class="label">Náhled</p>
+                <div class="browser" style="--frame-h: 360px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">novinky.html</span></div>
+                    <div class="stage-host" id="selStage"></div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Přehled selektorů</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Selektor</th><th>Název</th><th>Vybere</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">p</td><td>typový</td><td>všechny elementy <code>p</code></td></tr>
+                <tr><td class="mono">.perex</td><td>třída</td><td>elementy s <code>class="perex"</code> (může jich být mnoho)</td></tr>
+                <tr><td class="mono">#zahlavi</td><td>identifikátor</td><td>element s <code>id="zahlavi"</code> (jen jeden)</td></tr>
+                <tr><td class="mono">*</td><td>univerzální</td><td>úplně všechno</td></tr>
+                <tr><td class="mono">p.perex</td><td>složený</td><td><code>p</code>, který má zároveň třídu <code>perex</code> (bez mezery!)</td></tr>
+                <tr><td class="mono">h1, h2</td><td>skupina</td><td>všechny <code>h1</code> a všechny <code>h2</code></td></tr>
+                <tr><td class="mono">nav a</td><td>potomek</td><td><code>a</code> kdekoli uvnitř <code>nav</code></td></tr>
+                <tr><td class="mono">ul &gt; li</td><td>přímý potomek (dítě)</td><td><code>li</code>, jejichž rodič je přímo <code>ul</code></td></tr>
+                <tr><td class="mono">h2 + p</td><td>sousední sourozenec</td><td><code>p</code> hned za <code>h2</code></td></tr>
+                <tr><td class="mono">h2 ~ p</td><td>následující sourozenci</td><td>všechny <code>p</code> za <code>h2</code> u stejného rodiče</td></tr>
+                <tr><td class="mono">[type="text"]</td><td>atributový</td><td>elementy s daným atributem; <code>^=</code> začíná na, <code>$=</code> končí na, <code>*=</code> obsahuje</td></tr>
+                <tr><td class="mono">:hover, :focus, :checked</td><td>pseudotřída (stav)</td><td>element v určitém stavu — pod myší, aktivní, zaškrtnutý</td></tr>
+                <tr><td class="mono">:first-child, :nth-child(2n)</td><td>pseudotřída (pořadí)</td><td>podle pořadí mezi sourozenci</td></tr>
+                <tr><td class="mono">:not(.perex)</td><td>negace</td><td>vše, co selektoru v závorce nevyhovuje</td></tr>
+                <tr><td class="mono">::first-letter, ::before</td><td>pseudoelement</td><td>část elementu, která v HTML není (první písmeno, obsah vložený před element)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="mt-6">Kaskáda a specificita</h2>
+        <p>Na jeden element se často vztahuje víc pravidel, která si odporují. Prohlížeč pak rozhoduje podle <strong>kaskády</strong> — v tomto pořadí:</p>
+        <ol class="steps">
+            <li><strong>Důležitost</strong> — deklarace s <code>!important</code> vyhraje nad ostatními (používej výjimečně).</li>
+            <li><strong>Atribut style</strong> — styl přímo v elementu přebije pravidla ze stylů.</li>
+            <li><strong>Specificita</strong> — konkrétnější selektor vyhraje. Počítá se jako trojice (id, třídy, typy) a porovnává se zleva: jedno id přebije libovolný počet tříd.</li>
+            <li><strong>Pořadí</strong> — při shodě vyhraje pravidlo, které je v kódu později.</li>
+        </ol>
+        <p>Zapínej a vypínej pravidla a přidávej <code>!important</code>. Odstavec v náhledu je obarvený skutečným prohlížečem, takže výsledek vždy odpovídá pravdě.</p>
+        <div class="lab lab--side-w">
+            <div id="duel"></div>
+            <div>
+                <p class="label">HTML</p>
+                <pre class="code code--wrap" id="duelHtml"></pre>
+                <div class="browser" style="--frame-h: 80px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">kaskada.html</span></div>
+                    <div class="stage-host" id="duelStage"></div>
+                </div>
+                <div class="explain" id="duelWhy"></div>
+            </div>
+        </div>
+
+        <h3>Dědičnost</h3>
+        <p>Některé vlastnosti se z rodiče <strong>dědí</strong> na potomky: když nastavíš <code>color</code> nebo <code>font-family</code> na <code>body</code>, převezme je celý text stránky. Jiné vlastnosti (<code>border</code>, <code>padding</code>, <code>background</code>, <code>width</code>) se nedědí — rámeček rodiče přece nechceš kolem každého odstavce.</p>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Dědí se</th><th>Nedědí se</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">color, font-*, line-height, text-align, letter-spacing, list-style, visibility, cursor</td><td class="mono">margin, padding, border, background, width, height, display, position, box-shadow</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>Dědění můžeš vynutit hodnotou <code>inherit</code> a vrátit vlastnost na výchozí hodnotu pomocí <code>initial</code>.</p>
+    </section>
+
+    <!-- ================================================================
+         4. FLEXBOX
+         ================================================================ -->
+    <section id="flex" class="tab-content" role="tabpanel" aria-labelledby="t-flex">
+        <h2>Flexbox</h2>
+        <p class="lead"><strong>Flexbox</strong> rozmísťuje prvky v <em>jedné řadě</em> — vedle sebe nebo pod sebou. Hodí se na menu, lišty, zarovnání na střed, řady karet. Nastavuje se na rodiči <code>display: flex</code>, jeho přímí potomci se stanou <strong>flex položkami</strong>.</p>
+        <p>Flexbox pracuje se dvěma osami: <strong class="bad">hlavní osa</strong> vede ve směru <code>flex-direction</code>, <strong style="color: var(--c-blue)">příčná osa</strong> je na ni kolmá. <code>justify-content</code> zarovnává podél hlavní osy, <code>align-items</code> podél příčné.</p>
+
+        <div class="chips" id="fxPresets" aria-label="Hotová rozložení"></div>
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="fxDir">flex-direction</label><select class="input mono" id="fxDir"><option>row</option><option>row-reverse</option><option>column</option><option>column-reverse</option></select></div>
+                <div class="ctrl"><label for="fxJc">justify-content <span class="muted">— hlavní osa</span></label><select class="input mono" id="fxJc"><option>flex-start</option><option>center</option><option>flex-end</option><option>space-between</option><option>space-around</option><option>space-evenly</option></select></div>
+                <div class="ctrl"><label for="fxAi">align-items <span class="muted">— příčná osa</span></label><select class="input mono" id="fxAi"><option>stretch</option><option>flex-start</option><option>center</option><option>flex-end</option><option>baseline</option></select></div>
+                <div class="ctrl"><label for="fxWrap">flex-wrap</label><select class="input mono" id="fxWrap"><option>nowrap</option><option>wrap</option><option>wrap-reverse</option></select></div>
+                <div class="ctrl"><label for="fxAc">align-content <span class="muted">— jen při zalamování</span></label><select class="input mono" id="fxAc"><option>normal</option><option>flex-start</option><option>center</option><option>flex-end</option><option>space-between</option><option>stretch</option></select></div>
+                <div class="ctrl"><label for="fxGap">gap <output id="fxGapv"></output></label><input type="range" id="fxGap" min="0" max="40" value="8"></div>
+                <div class="ctrl ctrl--row">
+                    <button class="btn btn--sm" type="button" id="fxAdd">+ položka</button>
+                    <button class="btn btn--sm" type="button" id="fxDel">− položka</button>
+                    <label class="row row--center text-sm"><input type="checkbox" id="fxVar" checked> různé velikosti</label>
+                </div>
+            </div>
+            <div>
+                <div class="playground">
+                    <div class="axis axis--main" id="fxAxM"></div>
+                    <div class="axis axis--cross" id="fxAxC"></div>
+                    <div class="pg-box varied" id="fxBox"></div>
+                </div>
+                <div class="item-panel" id="fxItemPanel">
+                    <h4 id="fxItemTitle">Klikni na položku a nastav její vlastnosti</h4>
+                    <div class="two-col tight mb-0" style="gap: var(--space-3)">
+                        <div class="ctrl"><label for="fxGrow">flex-grow <output id="fxGrowv"></output></label><input type="range" id="fxGrow" min="0" max="5" value="0"></div>
+                        <div class="ctrl"><label for="fxShrink">flex-shrink <output id="fxShrinkv"></output></label><input type="range" id="fxShrink" min="0" max="5" value="1"></div>
+                        <div class="ctrl"><label for="fxBasis">flex-basis</label><select class="input mono" id="fxBasis"><option>auto</option><option>0</option><option>60px</option><option>120px</option><option>200px</option><option>50%</option></select></div>
+                        <div class="ctrl"><label for="fxOrder">order <output id="fxOrderv"></output></label><input type="range" id="fxOrder" min="-3" max="3" value="0"></div>
+                        <div class="ctrl"><label for="fxSelf">align-self</label><select class="input mono" id="fxSelf"><option>auto</option><option>flex-start</option><option>center</option><option>flex-end</option><option>stretch</option></select></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="label">Výsledné CSS</p>
+        <pre class="code" id="fxCode"></pre>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Vlastnost položky</th><th>Význam</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">flex-grow</td><td>jak velký díl <strong>volného místa</strong> položka dostane. 0 = neroste. Položka s 2 dostane dvakrát víc než položka s 1.</td></tr>
+                <tr><td class="mono">flex-shrink</td><td>jak moc se položka zmenší, když se do řady nevejdou. 0 = nikdy se nezmenší.</td></tr>
+                <tr><td class="mono">flex-basis</td><td>výchozí velikost ve směru hlavní osy, ze které se růst a zmenšování počítá</td></tr>
+                <tr><td class="mono">flex: 1</td><td>zkratka pro <code>flex: 1 1 0</code> — všechny položky se <code>flex: 1</code> mají stejnou šířku</td></tr>
+                <tr><td class="mono">order</td><td>pořadí zobrazení (výchozí 0). Mění jen vzhled — čtečka i klávesa Tab jdou dál podle HTML.</td></tr>
+                <tr><td class="mono">align-self</td><td>zarovnání jedné položky na příčné ose jinak než ostatní</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--success">
+            <p class="mb-0">Slavný problém „jak vycentrovat div“ řeší tři řádky: <code>display: flex; justify-content: center; align-items: center;</code> (vyzkoušej předvolbu <strong>Na střed</strong>).</p>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         5. GRID
+         ================================================================ -->
+    <section id="grid" class="tab-content" role="tabpanel" aria-labelledby="t-grid">
+        <h2>Grid</h2>
+        <p class="lead"><strong>Grid</strong> (mřížka) rozmísťuje prvky ve <em>dvou rozměrech</em> najednou — do řádků i sloupců. Hodí se na rozložení celé stránky, galerie a formuláře. Nastavuje se na rodiči <code>display: grid</code> a určením sloupců a řádků.</p>
+        <p>Fialová čísla v náhledu jsou <strong>čísla čar</strong> mřížky. Položku pak můžeš umístit „od čáry do čáry“: <code>grid-column: 1 / 3</code> zabere sloupce mezi čarou 1 a 3, <code>span 2</code> znamená „přes dva sloupce“, <code>1 / -1</code> přes celou šířku.</p>
+
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="gdCols">grid-template-columns</label><input class="input mono" type="text" id="gdCols" value="1fr 1fr 1fr" spellcheck="false"></div>
+                <div class="chips" id="gdColChips"></div>
+                <div class="ctrl"><label for="gdRows">grid-template-rows <span class="muted">(prázdné = auto)</span></label><input class="input mono" type="text" id="gdRows" value="" spellcheck="false" placeholder="např. 80px auto"></div>
+                <div class="ctrl"><label for="gdGap">gap <output id="gdGapv"></output></label><input type="range" id="gdGap" min="0" max="40" value="10"></div>
+                <div class="ctrl"><label for="gdJi">justify-items</label><select class="input mono" id="gdJi"><option>stretch</option><option>start</option><option>center</option><option>end</option></select></div>
+                <div class="ctrl"><label for="gdAi">align-items</label><select class="input mono" id="gdAi"><option>stretch</option><option>start</option><option>center</option><option>end</option></select></div>
+                <div class="ctrl ctrl--row">
+                    <button class="btn btn--sm" type="button" id="gdAdd">+ položka</button>
+                    <button class="btn btn--sm" type="button" id="gdDel">− položka</button>
+                </div>
+            </div>
+            <div>
+                <div class="playground" style="padding: var(--space-5)">
+                    <div class="pg-box" id="gdBox" style="padding: 0; border-style: solid; border-color: transparent; background: transparent;"></div>
+                    <div class="grid-lines" id="gdLines"></div>
+                </div>
+                <p class="feedback" id="gdErr"></p>
+                <div class="item-panel">
+                    <h4 id="gdItemTitle">Klikni na položku a umísti ji</h4>
+                    <div class="two-col tight mb-0" style="gap: var(--space-3)">
+                        <div class="ctrl"><label for="gdCol">grid-column</label><input class="input mono" type="text" id="gdCol" placeholder="např. span 2" spellcheck="false"></div>
+                        <div class="ctrl"><label for="gdRow">grid-row</label><input class="input mono" type="text" id="gdRow" placeholder="např. 1 / 3" spellcheck="false"></div>
+                    </div>
+                    <div class="chips mb-0" id="gdItemChips"></div>
+                </div>
+            </div>
+        </div>
+        <p class="label">Výsledné CSS</p>
+        <pre class="code" id="gdCode"></pre>
+
+        <h3>Pojmenované oblasti</h3>
+        <p>Přehlednější způsob rozvržení stránky: oblasti mřížky pojmenuješ a „nakreslíš“ je textem. Každý řádek v uvozovkách je jeden řádek mřížky, každé slovo jedna buňka; tečka znamená prázdnou buňku. Oblast se stejným jménem musí tvořit obdélník.</p>
+        <div class="chips" id="arPresets"></div>
+        <div class="two-col">
+            <div>
+                <div class="ctrl"><label for="arCols">grid-template-columns</label><input class="input mono" type="text" id="arCols" value="1fr 3fr" spellcheck="false"></div>
+                <div class="ctrl"><label for="arTpl">grid-template-areas</label><textarea class="input mono" id="arTpl" rows="5" spellcheck="false"></textarea></div>
+                <p class="feedback" id="arErr"></p>
+                <pre class="code" id="arCode"></pre>
+            </div>
+            <div>
+                <div class="areas-box" id="arBox"></div>
+                <p class="muted text-sm">Každý blok má <code>grid-area</code> se svým jménem, např. <code>header { grid-area: hlavicka; }</code>. Na mobilu stačí v <code>@media</code> přepsat jen <code>grid-template-areas</code> — vyzkoušej předvolbu <strong>Mobil</strong>.</p>
+            </div>
+        </div>
+
+        <h3>Flexbox, nebo Grid?</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>Flexbox</th><th>Grid</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Rozměr</strong></td><td>jedna řada (řádek nebo sloupec)</td><td>řádky i sloupce současně</td></tr>
+                <tr><td><strong>Kdo určuje velikost</strong></td><td>hlavně obsah položek</td><td>hlavně mřížka na rodiči</td></tr>
+                <tr><td><strong>Typické použití</strong></td><td>menu, lišta tlačítek, zarovnání ikony a textu, centrování</td><td>rozložení stránky, galerie, tabulkové formuláře, dlaždice</td></tr>
+                <tr><td><strong>Lze kombinovat?</strong></td><td colspan="2">Ano — stránka v Gridu, uvnitř jednotlivých oblastí Flexbox.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         6. TRANSFORMACE A PŘECHODY
+         ================================================================ -->
+    <section id="prechody" class="tab-content" role="tabpanel" aria-labelledby="t-prechody">
+        <h2>Transformace</h2>
+        <p class="lead">Vlastnost <code>transform</code> element posune, otočí, zvětší nebo zkosí. Neovlivní ostatní prvky — stránka se kolem něj nepřeskupí, element se jen jinak vykreslí (přerušovaný rámeček ukazuje jeho původní místo). Proto jsou transformace ideální pro pohyb.</p>
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="tfX">translateX <output id="tfXv"></output></label><input type="range" id="tfX" min="-120" max="120" value="0"></div>
+                <div class="ctrl"><label for="tfY">translateY <output id="tfYv"></output></label><input type="range" id="tfY" min="-80" max="80" value="0"></div>
+                <div class="ctrl"><label for="tfR">rotate <output id="tfRv"></output></label><input type="range" id="tfR" min="-180" max="180" value="0"></div>
+                <div class="ctrl"><label for="tfS">scale <output id="tfSv"></output></label><input type="range" id="tfS" min="20" max="200" value="100"></div>
+                <div class="ctrl"><label for="tfK">skewX <output id="tfKv"></output></label><input type="range" id="tfK" min="-45" max="45" value="0"></div>
+                <div class="ctrl"><label for="tfO">transform-origin</label><select class="input mono" id="tfO"><option>center</option><option>top left</option><option>top right</option><option>bottom left</option><option>bottom right</option></select></div>
+                <button class="btn btn--sm" type="button" id="tfReset">Vynulovat</button>
+            </div>
+            <div>
+                <div class="tf-stage"><div class="tf-ghost" id="tfGhost"></div><div class="tf-box" id="tfBox">CSS</div><div class="tf-origin" id="tfOrig"></div></div>
+                <pre class="code" id="tfCode"></pre>
+                <p class="muted text-sm">Na pořadí funkcí záleží: <code>rotate(45deg) translateX(100px)</code> posune element ve směru, kam už je natočený.</p>
+            </div>
+        </div>
+
+        <h2 class="mt-6">Přechody</h2>
+        <p>Když se hodnota vlastnosti změní (třeba při najetí myší díky <code>:hover</code>), změní se normálně okamžitě. <code>transition</code> řekne prohlížeči, ať změnu <strong>plynule rozloží v čase</strong>. Přechod potřebuje dva stavy — začátek a konec — a spouštěč (změnu stavu).</p>
+        <div class="lab">
+            <div>
+                <div class="ctrl"><label for="trProp">transition-property</label><select class="input mono" id="trProp"><option>all</option><option>transform</option><option>background-color</option><option>width</option><option>border-radius</option><option>opacity</option></select></div>
+                <div class="ctrl"><label for="trDur">transition-duration <output id="trDurv"></output></label><input type="range" id="trDur" min="0" max="3000" step="100" value="800"></div>
+                <div class="ctrl"><label for="trDelay">transition-delay <output id="trDelayv"></output></label><input type="range" id="trDelay" min="0" max="2000" step="100" value="0"></div>
+                <div class="ctrl"><label for="trTf">transition-timing-function</label><select class="input mono" id="trTf"><option>ease</option><option>linear</option><option>ease-in</option><option>ease-out</option><option>ease-in-out</option><option>steps(5)</option><option value="custom">cubic-bezier(…)</option></select></div>
+                <div id="trBez" hidden>
+                    <div class="ctrl"><label for="bzX1">x1 <output id="bzX1v"></output></label><input type="range" id="bzX1" min="0" max="100" value="68"></div>
+                    <div class="ctrl"><label for="bzY1">y1 <output id="bzY1v"></output></label><input type="range" id="bzY1" min="-100" max="200" value="-55"></div>
+                    <div class="ctrl"><label for="bzX2">x2 <output id="bzX2v"></output></label><input type="range" id="bzX2" min="0" max="100" value="27"></div>
+                    <div class="ctrl"><label for="bzY2">y2 <output id="bzY2v"></output></label><input type="range" id="bzY2" min="-100" max="200" value="155"></div>
+                </div>
+                <div class="ctrl">
+                    <span class="ctrl__label">Spouštěč</span>
+                    <div class="seg" id="trTrig" role="group" aria-label="Spouštěč přechodu">
+                        <button type="button" data-v="click" aria-pressed="true">Tlačítko</button>
+                        <button type="button" data-v="hover" aria-pressed="false">:hover</button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="tr-stage" id="trStage"><div class="tr-box" id="trBox"></div></div>
+                <div class="toolbar">
+                    <button class="btn btn--primary" type="button" id="trGo">Přepnout stav</button>
+                    <span class="muted text-sm" id="trHint"></span>
+                </div>
+                <svg class="curve" id="trCurve" viewBox="0 0 220 220" role="img" aria-label="Průběh časové funkce"></svg>
+                <pre class="code" id="trCode"></pre>
+            </div>
+        </div>
+
+        <h3>Závod časových funkcí</h3>
+        <p>Všechny kuličky urazí stejnou dráhu za stejný čas (2 s) — liší se jen tím, jak zrychlují a zpomalují.</p>
+        <div class="race" id="race"></div>
+        <div class="toolbar"><button class="btn btn--primary" type="button" id="raceGo">Start</button></div>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Funkce</th><th>Průběh</th><th>Kdy použít</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">ease</td><td>rychlý rozjezd, pomalý dojezd (výchozí)</td><td>většina přechodů</td></tr>
+                <tr><td class="mono">linear</td><td>stále stejnou rychlostí</td><td>otáčení, nekonečné smyčky, ukazatel průběhu</td></tr>
+                <tr><td class="mono">ease-in</td><td>pomalu se rozjíždí</td><td>prvek odchází z obrazovky</td></tr>
+                <tr><td class="mono">ease-out</td><td>rychle začne, zlehka dobrzdí</td><td>prvek přichází (rozbalení menu)</td></tr>
+                <tr><td class="mono">cubic-bezier()</td><td>vlastní křivka; hodnoty y mimo 0–1 způsobí „přestřelení“</td><td>pružné, hravé efekty</td></tr>
+                <tr><td class="mono">steps(n)</td><td>skokově v n krocích</td><td>animace po snímcích, ručička hodin</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--warn">
+            <p class="mb-0">Plynule lze měnit jen vlastnosti s <strong>číselnou</strong> hodnotou (délky, barvy, průhlednost, transformace). Přechod mezi <code>display: none</code> a <code>block</code> nebo mezi <code>height: 0</code> a <code>auto</code> klasicky nefunguje. Nejplynulejší jsou <code>transform</code> a <code>opacity</code>, protože prohlížeč nemusí znovu počítat rozložení stránky.</p>
+        </div>
+    </section>
+
+    <!-- ================================================================
+         7. ANIMACE
+         ================================================================ -->
+    <section id="animace" class="tab-content" role="tabpanel" aria-labelledby="t-animace">
+        <h2>Animace</h2>
+        <p class="lead">Na rozdíl od přechodu nepotřebuje animace žádný spouštěč a může mít libovolně mnoho mezikroků. Průběh se popíše pravidlem <code>@keyframes</code> — klíčovými snímky v procentech času — a element ho přehraje vlastností <code>animation</code>.</p>
+
+        <div class="chips" id="anPresets"></div>
+        <div class="two-col">
+            <div>
+                <p class="label">@keyframes</p>
+                <div id="anKf" style="--edit-h: 230px"></div>
+                <div class="two-col tight mb-0" style="gap: var(--space-3)">
+                    <div class="ctrl"><label for="anDur">duration <output id="anDurv"></output></label><input type="range" id="anDur" min="200" max="6000" step="100" value="1500"></div>
+                    <div class="ctrl"><label for="anDelay">delay <output id="anDelayv"></output></label><input type="range" id="anDelay" min="0" max="3000" step="100" value="0"></div>
+                    <div class="ctrl"><label for="anTf">timing-function</label><select class="input mono" id="anTf"><option>ease</option><option>linear</option><option>ease-in</option><option>ease-out</option><option>ease-in-out</option><option>steps(4)</option></select></div>
+                    <div class="ctrl"><label for="anIt">iteration-count</label><select class="input mono" id="anIt"><option>1</option><option>2</option><option>3</option><option selected>infinite</option></select></div>
+                    <div class="ctrl"><label for="anDir">direction</label><select class="input mono" id="anDir"><option>normal</option><option>reverse</option><option>alternate</option><option>alternate-reverse</option></select></div>
+                    <div class="ctrl"><label for="anFill">fill-mode</label><select class="input mono" id="anFill"><option>none</option><option>forwards</option><option>backwards</option><option>both</option></select></div>
+                </div>
+            </div>
+            <div style="position: sticky; top: var(--space-4);">
+                <div class="browser" style="--frame-h: 200px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url">animace.html</span></div>
+                    <div class="stage-host" id="anStage"></div>
+                </div>
+                <div class="toolbar">
+                    <button class="btn btn--primary" type="button" id="anRestart">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                        Spustit znovu
+                    </button>
+                    <button class="btn" type="button" id="anPause" aria-pressed="false">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                        <span>Pozastavit</span>
+                    </button>
+                    <span class="muted text-sm" id="anState"></span>
+                </div>
+                <p class="label">Časová osa jednoho průběhu <span class="muted">(růžově klíčové snímky)</span></p>
+                <div class="timeline" id="anTl"></div>
+                <p class="label">Výsledné CSS</p>
+                <pre class="code" id="anCode"></pre>
+                <p class="feedback" id="anErr"></p>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th>Vlastnost</th><th>Význam</th></tr></thead>
+                <tbody>
+                <tr><td class="mono">animation-name</td><td>název pravidla <code>@keyframes</code></td></tr>
+                <tr><td class="mono">animation-duration</td><td>délka jednoho průběhu</td></tr>
+                <tr><td class="mono">animation-iteration-count</td><td>kolikrát se přehraje; <code>infinite</code> = stále dokola</td></tr>
+                <tr><td class="mono">animation-direction</td><td><code>alternate</code> = tam a zpět (každý druhý průběh pozpátku)</td></tr>
+                <tr><td class="mono">animation-fill-mode</td><td>co platí mimo animaci: <code>forwards</code> = zůstane poslední snímek, <code>backwards</code> = během zpoždění už platí první snímek</td></tr>
+                <tr><td class="mono">animation-play-state</td><td><code>paused</code> / <code>running</code> — pozastavení</td></tr>
+                <tr><td class="mono">animation</td><td>zkratka: <code>animation: posun 2s ease-in-out 0s infinite alternate;</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Přechod, nebo animace?</h3>
+        <div class="table-wrap">
+            <table class="notion-table">
+                <thead><tr><th></th><th>transition</th><th>animation</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Spuštění</strong></td><td>jen při změně hodnoty (<code>:hover</code>, přidání třídy)</td><td>sama při načtení, nebo přidáním třídy</td></tr>
+                <tr><td><strong>Počet stavů</strong></td><td>dva — začátek a konec</td><td>libovolně klíčových snímků</td></tr>
+                <tr><td><strong>Opakování</strong></td><td>ne</td><td>ano, i nekonečně</td></tr>
+                <tr><td><strong>Typicky</strong></td><td>reakce na uživatele: tlačítko, menu, odkaz</td><td>načítací kolečko, upoutání pozornosti, ilustrace</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="callout callout--info">
+            <p>Někteří lidé mají v systému zapnuté omezení pohybu (pohyb jim může způsobovat nevolnost). Slušný web to respektuje:</p>
+            <pre class="code mb-0" id="anReduce"></pre>
+        </div>
+    </section>
+
+</main>
+
+    <footer class="site-footer">
+        <div class="site-footer__line">
+            <span><strong>Ing. Viktor Vráblík</strong></span>
+            <span><a href="https://viktorvrablik.cz" target="_blank" rel="noopener">viktorvrablik.cz</a></span>
+            <span><strong>Výukové materiály:</strong> <a href="https://viktorvrablik.notion.site/V-ukov-materi-ly-989c7b813ff0494d84d5905f3e5a5e59" target="_blank" rel="noopener">bit.ly/vyukoveMaterialy</a></span>
+        </div>
+        <div class="site-footer__line">
+            <span>Vytvořeno pomocí <b>Claude</b></span>
+        </div>
+    </footer>
+
+</div>
+
+<script src="../assets/theme.js"></script>
+<script>
+'use strict';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/** Escapování textu pro innerHTML. */
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/** Segmentový přepínač: volá cb(hodnota) při změně. */
+function bindSeg(el, cb) {
+    el.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b || !el.contains(b)) return;
+        el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        cb(b.dataset.v, b);
+    });
+}
+function segValue(el) {
+    var b = el.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.v : null;
+}
+function setSeg(el, v) {
+    el.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v ? 'true' : 'false'); });
+}
+
+/** Debounce — pro živý náhled při psaní. */
+function debounce(fn, ms) {
+    var t;
+    return function () {
+        var args = arguments, self = this;
+        clearTimeout(t);
+        t = setTimeout(function () { fn.apply(self, args); }, ms);
+    };
+}
+
+/* ----------------------------------------------------------------------
+   Zvýraznění syntaxe HTML a CSS (jednoduché, pro výukové ukázky)
+   ---------------------------------------------------------------------- */
+function hlAttrs(s) {
+    var out = '';
+    var re = /(\s+)|([^\s=\/>]+)(\s*=\s*)?("[^"]*"?|'[^']*'?|[^\s"'>]+)?|([\s\S])/g, m;
+    while ((m = re.exec(s))) {
+        if (m[1]) out += m[1];
+        else if (m[2]) {
+            out += '<span class="hl-attr">' + esc(m[2]) + '</span>';
+            if (m[3] !== undefined) out += '<span class="hl-punc">' + esc(m[3]) + '</span>';
+            if (m[4] !== undefined) out += '<span class="hl-val">' + esc(m[4]) + '</span>';
+        } else out += '<span class="hl-punc">' + esc(m[5]) + '</span>';
+    }
+    return out;
+}
+
+function hlTag(t) {
+    var m = /^(<\/?)([a-zA-Z][\w-]*)([\s\S]*?)(\/?>)?$/.exec(t);
+    if (!m) return esc(t);
+    return '<span class="hl-tag">' + esc(m[1]) + esc(m[2]) + '</span>' + hlAttrs(m[3]) +
+        (m[4] ? '<span class="hl-tag">' + esc(m[4]) + '</span>' : '');
+}
+
+function hlHTML(src) {
+    var out = '', last = 0, m;
+    var re = /<\!--[\s\S]*?(?:-->|$)|<![^>]*>?|<\/?[a-zA-Z][^>]*>?|&#?\w+;/g;
+    while ((m = re.exec(src))) {
+        out += esc(src.slice(last, m.index));
+        var t = m[0];
+        if (t.indexOf('<\!--') === 0) out += '<span class="hl-com">' + esc(t) + '</span>';
+        else if (t.indexOf('<!') === 0) out += '<span class="hl-doc">' + esc(t) + '</span>';
+        else if (t.charAt(0) === '&') out += '<span class="hl-ent">' + esc(t) + '</span>';
+        else {
+            out += hlTag(t);
+            var open = /^<(style|script)\b/i.exec(t);
+            if (open && t.slice(-2) !== '/>') {
+                var endRe = new RegExp('</' + open[1] + '\\s*>', 'i');
+                var rest = src.slice(re.lastIndex);
+                var e = endRe.exec(rest);
+                var inner = e ? rest.slice(0, e.index) : rest;
+                out += open[1].toLowerCase() === 'style' ? hlCSS(inner) : esc(inner);
+                re.lastIndex += inner.length;
+            }
+        }
+        last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+}
+
+function hlValue(v) {
+    return esc(v).replace(/(&quot;.*?&quot;|&#39;.*?&#39;)|(!important)|(#[0-9a-fA-F]{3,8}\b)|(-?\d*\.?\d+(?:px|em|rem|%|s|ms|deg|vw|vh|fr|ch|turn)?)(?![\w-])|([a-zA-Z-]+(?=\())|([a-zA-Z-]+)/g,
+        function (all, str, imp, hex, num, fn, word) {
+            if (str) return '<span class="hl-val">' + str + '</span>';
+            if (imp) return '<span class="hl-at">' + imp + '</span>';
+            if (hex || num) return '<span class="hl-num">' + all + '</span>';
+            if (fn) return '<span class="hl-prop">' + fn + '</span>';
+            return '<span class="hl-val">' + word + '</span>';
+        });
+}
+
+function hlCSS(src) {
+    var out = '', i = 0, n = src.length, start = true;
+    while (i < n) {
+        if (src[i] === '/' && src[i + 1] === '*') {
+            var e = src.indexOf('*/', i + 2);
+            e = e < 0 ? n : e + 2;
+            out += '<span class="hl-com">' + esc(src.slice(i, e)) + '</span>';
+            i = e;
+            continue;
+        }
+        var ch = src[i];
+        if (ch === '{' || ch === '}' || ch === ';') {
+            out += '<span class="hl-punc">' + ch + '</span>';
+            i++;
+            start = true;
+            continue;
+        }
+        var j = i;
+        while (j < n && '{;}'.indexOf(src[j]) < 0 && !(src[j] === '/' && src[j + 1] === '*')) j++;
+        var chunk = src.slice(i, j);
+        var trimmed = chunk.trim();
+        if (trimmed.charAt(0) === '@') {
+            out += chunk.replace(/^(\s*)(@[\w-]+)([\s\S]*)$/, function (a, ws, at, rest) {
+                return ws + '<span class="hl-at">' + esc(at) + '</span>' + hlValue(rest);
+            });
+        } else if (src[j] === '{' || !start) {
+            out += '<span class="hl-sel">' + esc(chunk) + '</span>';
+        } else {
+            var c = chunk.indexOf(':');
+            if (c < 0) out += esc(chunk);
+            else out += '<span class="hl-prop">' + esc(chunk.slice(0, c)) + '</span><span class="hl-punc">:</span>' + hlValue(chunk.slice(c + 1));
+        }
+        i = j;
+    }
+    return out;
+}
+
+/* ----------------------------------------------------------------------
+   Editor kódu se zvýrazněním (průhledný textarea nad <pre>)
+   ---------------------------------------------------------------------- */
+function CodeEdit(host, lang, onChange, label) {
+    var pre = document.createElement('pre');
+    pre.setAttribute('aria-hidden', 'true');
+    var ta = document.createElement('textarea');
+    ta.spellcheck = false;
+    ta.setAttribute('autocomplete', 'off');
+    ta.setAttribute('autocapitalize', 'off');
+    ta.setAttribute('aria-label', label || 'Kód');
+    ta.wrap = 'off';
+    host.classList.add('code-edit');
+    host.appendChild(pre);
+    host.appendChild(ta);
+
+    var hl = lang === 'css' ? hlCSS : hlHTML;
+    function paint() { pre.innerHTML = hl(ta.value) + '\n'; sync(); }
+    function sync() { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; }
+
+    ta.addEventListener('input', function () { paint(); if (onChange) onChange(ta.value); });
+    ta.addEventListener('scroll', sync);
+    ta.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { ta.blur(); return; }
+        if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
+            var s = ta.selectionStart, en = ta.selectionEnd;
+            ta.value = ta.value.slice(0, s) + '    ' + ta.value.slice(en);
+            ta.selectionStart = ta.selectionEnd = s + 4;
+            paint();
+            if (onChange) onChange(ta.value);
+        }
+    });
+
+    return {
+        textarea: ta,
+        get: function () { return ta.value; },
+        set: function (v, silent) { ta.value = v; ta.scrollTop = 0; paint(); if (onChange && !silent) onChange(v); }
+    };
+}
+
+/** Vloží HTML do náhledového <iframe>. */
+function showInFrame(frame, html) {
+    frame.srcdoc = html;
+}
+
+/** Obalí kousek HTML do dokumentu pro náhled (bez vlastního <html>). */
+function wrapDoc(body, css) {
+    return '<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<style>:root{color-scheme:light}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:12px;line-height:1.45;color:#222;background:#fff}' +
+        (css || '') + '</style></head><body>' + body + '</body></html>';
+}
+
+/* ----------------------------------------------------------------------
+   Záložky: přepínání, ARIA stavy, šipky, odkaz přes #kotvu
+   ---------------------------------------------------------------------- */
+function showTab(id, focus) {
+    var panel = $(id);
+    if (!panel || !panel.classList.contains('tab-content')) return;
+    document.querySelectorAll('main > .tab-content').forEach(function (p) {
+        p.classList.toggle('active', p === panel);
+        p.hidden = (p !== panel);
+    });
+    document.querySelectorAll('.tabs[role="tablist"] .tab').forEach(function (b) {
+        var on = b.getAttribute('aria-controls') === id;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        if (on) {
+            if (focus) b.focus();
+            if (b.scrollIntoView) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    });
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* file:// v některých prohlížečích */ }
+    window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: id } }));
+}
+
+function initTabs() {
+    var bar = document.querySelector('.tabs[role="tablist"]');
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab');
+        if (b) showTab(b.getAttribute('aria-controls'));
+    });
+    bar.addEventListener('keydown', function (e) {
+        if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) === -1) return;
+        var tabs = Array.prototype.slice.call(bar.querySelectorAll('.tab'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i === -1) return;
+        e.preventDefault();
+        var next = e.key === 'Home' ? 0
+            : e.key === 'End' ? tabs.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        showTab(tabs[next].getAttribute('aria-controls'), true);
+    });
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[data-tab]');
+        if (!a) return;
+        e.preventDefault();
+        showTab(a.getAttribute('href').slice(1));
+        window.scrollTo({ top: bar.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' });
+    });
+    document.querySelectorAll('main > .tab-content:not(.active)').forEach(function (p) { p.hidden = true; });
+    var h = (location.hash || '').slice(1);
+    if (h && $(h) && $(h).classList.contains('tab-content')) showTab(h);
+}
+
+/** Klikací anatomie: termíny ↔ části kódu (data-p obsahuje seznam rolí). */
+function bindAnatomy(codeEl, termsEl, explainEl, texts) {
+    function select(role) {
+        codeEl.querySelectorAll('span[data-p]').forEach(function (s) {
+            s.classList.toggle('on', (' ' + s.dataset.p + ' ').indexOf(' ' + role + ' ') >= 0);
+        });
+        termsEl.querySelectorAll('.term').forEach(function (t) {
+            t.setAttribute('aria-pressed', t.dataset.role === role ? 'true' : 'false');
+        });
+        if (explainEl && texts[role]) explainEl.innerHTML = texts[role];
+    }
+    termsEl.addEventListener('click', function (e) {
+        var t = e.target.closest('.term');
+        if (t) select(t.dataset.role);
+    });
+    codeEl.addEventListener('click', function (e) {
+        var s = e.target.closest('span[data-p]');
+        if (s) select(s.dataset.p.split(' ')[0]);
+    });
+    return select;
+}
+
+
+/* ======================================================================
+   CSS — skripty stránky
+   ====================================================================== */
+
+var SANS = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+
+/** Náhledová plocha ve stínovém DOM — styly ukázky se nemíchají se stránkou. */
+function Stage(host, baseCss) {
+    var root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = '<style>:host{display:block;position:relative;min-height:var(--frame-h,200px);padding:12px;background:#fff;color:#222;' +
+        'font-family:' + SANS + ';font-size:16px;line-height:1.45;color-scheme:light;text-align:left;overflow:hidden}' + (baseCss || '') +
+        '</style><style class="user"></style>';
+    var user = root.querySelector('style.user');
+    root.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('a')) e.preventDefault();
+    });
+    return {
+        root: root,
+        css: function (t) { user.textContent = t; },
+        html: function (h) {
+            Array.prototype.slice.call(root.childNodes).forEach(function (n) {
+                if (n.nodeName !== 'STYLE') root.removeChild(n);
+            });
+            var tpl = document.createElement('template');
+            tpl.innerHTML = h;
+            root.appendChild(tpl.content);
+        }
+    };
+}
+
+function bindRange(id, fmt, cb) {
+    var el = $(id), out = $(id + 'v');
+    function upd() { if (out) out.textContent = fmt ? fmt(+el.value) : el.value; if (cb) cb(); }
+    el.addEventListener('input', upd);
+    upd();
+    return el;
+}
+var px = function (v) { return v + 'px'; };
+var ms = function (v) { return (v / 1000).toLocaleString('cs-CZ') + ' s'; };
+
+/* ----------------------------------------------------------------------
+   1. Základy — anatomie pravidla
+   ---------------------------------------------------------------------- */
+(function rule() {
+    var P = [['h1', 'sel rule'], [' ', 'rule'], ['{', 'block rule'], [' ', 'block rule'],
+        ['color', 'prop decl block rule'], [':', 'decl block rule'], [' ', 'decl block rule'], ['navy', 'val decl block rule'], [';', 'semi decl block rule'], [' ', 'block rule'],
+        ['font-size', 'prop decl block rule'], [':', 'decl block rule'], [' ', 'decl block rule'], ['32', 'val decl block rule'], ['px', 'unit val decl block rule'], [';', 'semi decl block rule'],
+        [' ', 'block rule'], ['}', 'block rule']];
+    $('ruleCode').innerHTML = P.map(function (p) { return '<span data-p="' + p[1] + '">' + esc(p[0]) + '</span>'; }).join('');
+    var select = bindAnatomy($('ruleCode'), $('ruleTerms'), $('ruleExplain'), {
+        rule: '<h4>Pravidlo</h4><p>Celý zápis: <em>komu</em> (selektor) a <em>co</em> (deklarace). Soubor CSS je jen seznam takových pravidel. Toto pravidlo říká: „všechny nadpisy h1 budou tmavě modré a velké 32 pixelů“.</p>',
+        sel: '<h4>Selektor</h4><p>Určuje, na které elementy se pravidlo použije. <code>h1</code> vybere všechny nadpisy první úrovně. Selektorů je mnoho druhů — viz záložka <a href="#selektory" data-tab>Selektory a kaskáda</a>.</p>',
+        block: '<h4>Deklarační blok</h4><p>Vše ve složených závorkách <code>{ }</code>. Může obsahovat libovolný počet deklarací.</p>',
+        decl: '<h4>Deklarace</h4><p>Dvojice <code>vlastnost: hodnota</code>. Pravidlo má dvě deklarace — jednu pro barvu, druhou pro velikost písma.</p>',
+        prop: '<h4>Vlastnost</h4><p>Co chceš změnit: <code>color</code>, <code>font-size</code>, <code>margin</code>… Názvy jsou anglicky a víceslovné se spojují pomlčkou. Za vlastností je dvojtečka.</p>',
+        val: '<h4>Hodnota</h4><p>Na co vlastnost nastavíš. Může to být klíčové slovo (<code>navy</code>, <code>center</code>, <code>bold</code>), číslo s jednotkou, barva, adresa <code>url(…)</code>… Neplatnou hodnotu prohlížeč tiše ignoruje.</p>',
+        unit: '<h4>Jednotka</h4><p><code>px</code> — pixely. Mezi číslem a jednotkou nesmí být mezera (<code>32 px</code> je chyba). Jedině u nuly se jednotka nepíše: <code>margin: 0</code>. Další jednotky v záložce <a href="#box" data-tab>Box model a jednotky</a>.</p>',
+        semi: '<h4>Středník</h4><p>Odděluje deklarace. Za poslední deklarací být nemusí, ale je dobrý zvyk ho psát — když pak přidáš další řádek, nezapomeneš na něj. Chybějící středník uprostřed rozbije dvě deklarace najednou.</p>'
+    });
+    select('rule');
+
+    var LINK = {
+        ext: [hlHTML('<\!-- index.html -->\n<head>\n    <link rel="stylesheet" href="styl.css">\n</head>') + '\n\n' + hlCSS('/* styl.css */\nh1 {\n    color: navy;\n}'),
+            '<h4>Externí soubor — doporučeno</h4><p>Styly jsou v samostatném souboru <code>.css</code>, který se připojí v hlavičce značkou <code>&lt;link&gt;</code>. Jeden soubor sdílí všechny stránky webu a prohlížeč si ho uloží do mezipaměti, takže se stahuje jen jednou.</p>'],
+        int: [hlHTML('<head>\n    <style>\n        h1 {\n            color: navy;\n        }\n    </style>\n</head>'),
+            '<h4>Interní styl</h4><p>Pravidla jsou přímo v HTML v elementu <code>&lt;style&gt;</code> v hlavičce. Platí jen pro tuto jednu stránku. Hodí se pro jednostránkové ukázky — takhle jsou udělané i stránky těchto výukových aplikací.</p>'],
+        inl: [hlHTML('<h1 style="color: navy;">Nadpis</h1>'),
+            '<h4>Atribut style (vložený styl)</h4><p>Deklarace se napíšou přímo do elementu, bez selektoru a závorek. Platí jen pro tento jeden element a má velkou přednost v kaskádě. Míchá obsah se vzhledem, a proto se mu vyhýbáme — používá ho hlavně JavaScript.</p>']
+    };
+    function link(v) { $('linkCode').innerHTML = LINK[v][0]; $('linkExplain').innerHTML = LINK[v][1]; }
+    bindSeg($('linkSeg'), link);
+    link('ext');
+})();
+
+/* ----------------------------------------------------------------------
+   1b. Vyzkoušej si
+   ---------------------------------------------------------------------- */
+(function tryIt() {
+    var H = '<div class="karta">\n    <h2>Výlet do Krkonoš</h2>\n    <p class="datum">sobota 14. března</p>\n    <p>Vyrážíme v 7:30 z hlavního nádraží.\n       S sebou pevnou obuv a svačinu.</p>\n    <a class="tlacitko" href="#">Přihlásit se</a>\n</div>';
+    var C = '.karta {\n    max-width: 320px;\n    margin: 0 auto;\n    padding: 20px;\n    background: #fff8e7;\n    border: 2px solid #f0c36d;\n    border-radius: 12px;\n    font-family: Georgia, serif;\n}\n\nh2 {\n    margin-top: 0;\n    color: #8a4b00;\n}\n\n.datum {\n    font-size: 14px;\n    color: gray;\n    text-transform: uppercase;\n}\n\n.tlacitko {\n    display: inline-block;\n    padding: 8px 16px;\n    color: white;\n    background: #d9731a;\n    border-radius: 999px;\n    text-decoration: none;\n}\n';
+    $('tryHtml').innerHTML = hlHTML(H);
+    var st = Stage($('tryStage'));
+    st.html(H);
+    var ed = CodeEdit($('tryCss'), 'css', function (v) { st.css(v); }, 'CSS ukázky');
+    ed.set(C);
+    $('tryReset').addEventListener('click', function () { ed.set(C); });
+})();
+
+/* ----------------------------------------------------------------------
+   1c. Barvy
+   ---------------------------------------------------------------------- */
+function hslToRgb(h, s, l) {
+    s /= 100; l /= 100;
+    var k = function (n) { return (n + h / 30) % 12; };
+    var a = s * Math.min(l, 1 - l);
+    var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); };
+    return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        h *= 60;
+    }
+    return [Math.round(h), Math.round(s * 100), Math.round(l * 100)];
+}
+var hex2 = function (n) { return n.toString(16).padStart(2, '0'); };
+
+(function colors() {
+    var H = $('colH'), S = $('colS'), L = $('colL'), A = $('colA');
+    function fromPicker() {
+        var v = $('colPick').value;
+        var hsl = rgbToHsl(parseInt(v.slice(1, 3), 16), parseInt(v.slice(3, 5), 16), parseInt(v.slice(5, 7), 16));
+        H.value = hsl[0]; S.value = hsl[1]; L.value = hsl[2];
+        render(v);
+    }
+    function render(exact) {
+        var h = +H.value, s = +S.value, l = +L.value, a = +A.value / 100;
+        $('colHv').textContent = h + '°'; $('colSv').textContent = s + ' %'; $('colLv').textContent = l + ' %';
+        $('colAv').textContent = a.toLocaleString('cs-CZ');
+        var rgb = exact ? [1, 3, 5].map(function (k) { return parseInt(exact.slice(k, k + 2), 16); }) : hslToRgb(h, s, l);
+        var hex = '#' + rgb.map(hex2).join('');
+        if (!exact) $('colPick').value = hex;
+        var al = a < 1;
+        var aStr = String(Math.round(a * 100) / 100);
+        $('colSwatch').style.background = 'rgba(' + rgb.join(',') + ',' + a + ')';
+        var codes = [
+            ['šestnáctkově', al ? hex + hex2(Math.round(a * 255)) : hex],
+            ['rgb()', al ? 'rgb(' + rgb.join(' ') + ' / ' + aStr + ')' : 'rgb(' + rgb.join(', ') + ')'],
+            ['hsl()', al ? 'hsl(' + h + ' ' + s + '% ' + l + '% / ' + aStr + ')' : 'hsl(' + h + ', ' + s + '%, ' + l + '%)']
+        ];
+        $('colCodes').innerHTML = codes.map(function (c) { return '<div><span>' + c[0] + '</span>' + esc(c[1]) + '</div>'; }).join('');
+        H.style.background = 'linear-gradient(to right,' + [0, 60, 120, 180, 240, 300, 360].map(function (x) { return 'hsl(' + x + ',' + s + '%,' + l + '%)'; }).join(',') + ')';
+    }
+    $('colPick').addEventListener('input', fromPicker);
+    [H, S, L, A].forEach(function (el) { el.addEventListener('input', function () { render(); }); });
+    fromPicker();
+})();
+
+/* ----------------------------------------------------------------------
+   2. Box model a jednotky
+   ---------------------------------------------------------------------- */
+(function boxModel() {
+    var seg = $('bmSeg');
+    function render() {
+        var w = +$('bmW').value, p = +$('bmP').value, b = +$('bmB').value, m = +$('bmM').value;
+        var bs = segValue(seg), h = 70;
+        var box = $('bmBox');
+        box.style.boxSizing = bs;
+        box.style.width = w + 'px';
+        box.style.height = (bs === 'border-box' ? h + 2 * p + 2 * b : h) + 'px';
+        box.style.padding = p + 'px';
+        box.style.borderWidth = b + 'px';
+        box.style.margin = m + 'px';
+        var content = bs === 'border-box' ? Math.max(0, w - 2 * p - 2 * b) : w;
+        var total = bs === 'border-box' ? w : w + 2 * p + 2 * b;
+        box.textContent = content + ' × ' + h;
+        var f = bs === 'content-box'
+            ? 'viditelná šířka = width + 2 × padding + 2 × border<br>= ' + w + ' + 2 × ' + p + ' + 2 × ' + b + ' = <b>' + total + ' px</b><br>místo i s okraji = ' + total + ' + 2 × ' + m + ' = <b>' + (total + 2 * m) + ' px</b>'
+            : 'viditelná šířka = width = <b>' + w + ' px</b><br>šířka obsahu = ' + w + ' − 2 × ' + p + ' − 2 × ' + b + ' = <b>' + content + ' px</b>' +
+              (w - 2 * p - 2 * b < 0 ? ' <span class="warn">(padding a rámeček se nevejdou)</span>' : '') +
+              '<br>místo i s okraji = ' + w + ' + 2 × ' + m + ' = <b>' + (w + 2 * m) + ' px</b>';
+        $('bmFormula').innerHTML = f;
+        $('bmCode').innerHTML = hlCSS('.krabice {\n    box-sizing: ' + bs + ';\n    width: ' + w + 'px;\n    padding: ' + p + 'px;\n    border: ' + b + 'px solid #f3c84a;\n    margin: ' + m + 'px;\n}');
+    }
+    ['bmW', 'bmP', 'bmB', 'bmM'].forEach(function (id) { bindRange(id, px, render); });
+    bindSeg(seg, render);
+    render();
+})();
+
+(function units() {
+    function render() {
+        var root = +$('unRoot').value, par = +$('unPar').value, pw = +$('unW').value, vw = +$('unVw').value;
+        var rows = [
+            ['200px', 200, 'vždy 200 px'],
+            ['10em', 10 * par, '10 × ' + par + ' px (písmo rodiče)'],
+            ['10rem', 10 * root, '10 × ' + root + ' px (písmo html)'],
+            ['50%', pw / 2, '50 % z ' + pw + ' px'],
+            ['30vw', vw * 0.3, '30 % z ' + vw + ' px'],
+            ['20ch', 20 * par * 0.55, 'šířka 20 znaků „0“ (přibližně)']
+        ];
+        var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
+        var scale = Math.max(max, 400);
+        $('units').innerHTML = rows.map(function (r) {
+            return '<div class="unit-row"><code>' + r[0] + '</code><div class="unit-track" title="' + esc(r[2]) + '"><div class="unit-bar" style="width:' + (r[1] / scale * 100) + '%"></div></div><span class="val">' + Math.round(r[1]) + ' px</span></div>';
+        }).join('');
+    }
+    ['unRoot', 'unPar', 'unW', 'unVw'].forEach(function (id) { bindRange(id, px, render); });
+    render();
+})();
+
+/* ----------------------------------------------------------------------
+   3. Selektory
+   ---------------------------------------------------------------------- */
+/** Specificita jednoho selektoru jako [id, třídy, typy]. */
+function specificity(sel) {
+    var a = 0, b = 0, c = 0;
+    function cmp(x, y) { return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; }
+    var s = sel;
+    var re = /:(is|not|has|where)\(([^()]*)\)/;
+    var m;
+    while ((m = re.exec(s))) {
+        if (m[1] !== 'where') {
+            var best = [0, 0, 0];
+            m[2].split(',').forEach(function (x) { var r = specificity(x); if (cmp(r, best) > 0) best = r; });
+            a += best[0]; b += best[1]; c += best[2];
+        }
+        s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length);
+    }
+    s = s.replace(/"[^"]*"|'[^']*'/g, '');
+    s = s.replace(/\[[^\]]*\]/g, function () { b++; return ' '; });
+    s = s.replace(/::[\w-]+(\([^)]*\))?/g, function () { c++; return ' '; });
+    s = s.replace(/:(before|after|first-line|first-letter)\b/g, function () { c++; return ' '; });
+    s = s.replace(/#[\w-]+/g, function () { a++; return ' '; });
+    s = s.replace(/\.[\w-]+/g, function () { b++; return ' '; });
+    s = s.replace(/:[\w-]+(\([^)]*\))?/g, function () { b++; return ' '; });
+    (s.match(/[a-zA-Z][\w-]*/g) || []).forEach(function () { c++; });
+    return [a, b, c];
+}
+function specHTML(sp) {
+    return '<span class="spec" title="id, třídy, typy"><span class="sa">' + sp[0] + '</span><span class="sb">' + sp[1] + '</span><span class="sc">' + sp[2] + '</span></span>';
+}
+/** Rozdělí seznam selektorů podle čárek mimo závorky. */
+function splitSelectors(s) {
+    var out = [], depth = 0, cur = '';
+    for (var i = 0; i < s.length; i++) {
+        var ch = s[i];
+        if (ch === '(' || ch === '[') depth++;
+        if (ch === ')' || ch === ']') depth--;
+        if (ch === ',' && depth === 0) { out.push(cur); cur = ''; } else cur += ch;
+    }
+    out.push(cur);
+    return out.map(function (x) { return x.trim(); }).filter(Boolean);
+}
+
+(function selectors() {
+    var SRC = [
+        '<header id="zahlavi">',
+        '    <h1 class="titulek">Školní web</h1>',
+        '    <nav>',
+        '        <a href="/" class="aktivni">Úvod</a>',
+        '        <a href="/rozvrh">Rozvrh</a>',
+        '        <a href="https://www.skola.cz" target="_blank">Externí</a>',
+        '    </nav>',
+        '</header>',
+        '<main>',
+        '    <h2>Novinky</h2>',
+        '    <p class="perex">Zítra <strong>odpadá</strong> šestá hodina.</p>',
+        '    <p>Výlet bude <em>v pátek</em>.</p>',
+        '    <ul class="seznam">',
+        '        <li>Matematika</li>',
+        '        <li class="dulezite">Informatika</li>',
+        '        <li>Fyzika</li>',
+        '        <li>Chemie</li>',
+        '    </ul>',
+        '    <p class="perex dulezite">Přihlášky do <strong>15. 1.</strong></p>',
+        '    <label><input type="checkbox" checked> obědy</label>',
+        '    <input type="text" placeholder="Jméno">',
+        '</main>',
+        '<footer>',
+        '    <p>Kontakt: <a href="mailto:info@skola.cz">info@skola.cz</a></p>',
+        '</footer>'
+    ];
+    var CHIPS = [
+        ['p', 'Typový selektor: všechny odstavce.'],
+        ['.perex', 'Třída: elementy, které mají v atributu class slovo „perex“.'],
+        ['#zahlavi', 'Identifikátor: jediný element s id="zahlavi".'],
+        ['*', 'Univerzální selektor: všechno.'],
+        ['p.dulezite', 'Odstavec, který má zároveň třídu dulezite (bez mezery!).'],
+        ['p .dulezite', 'S mezerou je to něco jiného: element se třídou dulezite UVNITŘ odstavce — takový tu není.'],
+        ['.perex.dulezite', 'Element, který má obě třídy současně.'],
+        ['h1, h2', 'Skupina: všechny h1 a všechny h2.'],
+        ['nav a', 'Potomek: odkazy kdekoli uvnitř nav.'],
+        ['main > p', 'Přímý potomek: odstavce, jejichž rodič je přímo main (odstavec v patičce ne).'],
+        ['h2 + p', 'Sousední sourozenec: první odstavec hned za h2.'],
+        ['h2 ~ p', 'Všichni následující sourozenci: každý p za h2 u stejného rodiče.'],
+        ['a[target="_blank"]', 'Atributový selektor: odkazy otevírané v nové záložce.'],
+        ['a[href^="https"]', '^= „začíná na“: odkazy na zabezpečené weby.'],
+        ['a[href^="mailto"]', 'Odkazy na e-mail.'],
+        ['li:first-child', 'První položka mezi sourozenci.'],
+        ['li:last-child', 'Poslední položka.'],
+        ['li:nth-child(2n)', 'Každá druhá položka (2., 4., …). Totéž je :nth-child(even).'],
+        ['li:nth-child(odd)', 'Liché položky.'],
+        ['p:not(.perex)', 'Negace: odstavce bez třídy perex.'],
+        ['input:checked', 'Zaškrtnuté políčko — zkus ho v náhledu odškrtnout.'],
+        ['a:hover', 'Dynamická pseudotřída: odkaz, nad kterým je právě myš. Najeď na odkaz v náhledu.'],
+        ['p::first-letter', 'Pseudoelement: první písmeno každého odstavce — v HTML žádný takový element není.']
+    ];
+    var BASE = 'h1{font-size:22px;margin:0 0 6px}h2{font-size:18px;margin:8px 0 4px}p{margin:4px 0}ul{margin:4px 0;padding-left:22px}' +
+        'nav a{margin-right:10px}header{border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:6px}footer{border-top:1px solid #ddd;margin-top:8px;padding-top:4px;font-size:14px}' +
+        'a{color:#1a5fb4}input[type=text]{display:block;margin-top:6px}';
+    var st = Stage($('selStage'), BASE);
+    st.html(SRC.join('\n'));
+    // čísla řádků pro elementy (pořadí počátečních značek v kódu = pořadí v dokumentu)
+    var opens = [];
+    SRC.forEach(function (l, i) { var re = /<([a-z][\w]*)/g, m; while ((m = re.exec(l))) opens.push(i); });
+    var all = st.root.querySelectorAll('*:not(style)');
+    Array.prototype.forEach.call(all, function (el, k) { el.setAttribute('data-ln', opens[k]); });
+
+    renderLinesCss($('selLines'), SRC);
+    $('selChips').innerHTML = CHIPS.map(function (c, i) { return '<button class="chip" type="button" data-i="' + i + '">' + esc(c[0]) + '</button>'; }).join('');
+
+    function run() {
+        var sel = $('selIn').value.trim();
+        var note = '';
+        CHIPS.forEach(function (c) { if (c[0] === sel) note = c[1]; });
+        $('selChips').querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', CHIPS[+c.dataset.i][0] === sel ? 'true' : 'false'); });
+        var lines = $('selLines').querySelectorAll('button');
+        lines.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+        if (!sel) { st.css(''); $('selStatus').innerHTML = '<span class="muted">Napiš selektor.</span>'; return; }
+        var ok = true;
+        try { ok = CSS.supports('selector(' + sel + ')'); } catch (e) { ok = false; }
+        if (!ok || /[{};]/.test(sel)) {
+            st.css('');
+            $('selStatus').innerHTML = '<span class="bad">Neplatný selektor.</span> <span class="muted">Prohlížeč by celé pravidlo ignoroval.</span>';
+            return;
+        }
+        st.css(sel + '{outline:3px solid #e0a800 !important;outline-offset:1px;background-color:rgba(255,214,0,.4) !important}');
+        var base = splitSelectors(sel).map(function (s) { return s.replace(/::?(before|after|first-letter|first-line|marker|placeholder|selection)\b/g, ''); }).join(',');
+        var hits = [];
+        try { hits = Array.prototype.filter.call(st.root.querySelectorAll(base), function (el) { return el.hasAttribute('data-ln'); }); } catch (e) { hits = []; }
+        hits.forEach(function (el) { var b = lines[+el.getAttribute('data-ln')]; if (b) b.setAttribute('aria-pressed', 'true'); });
+        var specs = splitSelectors(sel).map(function (s) { return '<code>' + esc(s) + '</code> ' + specHTML(specificity(s)); }).join(' &nbsp; ');
+        var dyn = /:(hover|focus|active)/.test(sel);
+        var pe = /::/.test(sel);
+        $('selStatus').innerHTML = '<strong>' + (dyn ? 'Záleží na stavu' : hits.length + ' ' + (hits.length === 1 ? 'element' : hits.length >= 2 && hits.length <= 4 ? 'elementy' : 'elementů')) + '</strong>' +
+            (pe ? ' (zvýrazněna je jen část elementu)' : '') + ' &nbsp;·&nbsp; specificita ' + specs + (note ? '<br><span class="muted">' + esc(note) + '</span>' : '');
+    }
+    $('selIn').addEventListener('input', run);
+    $('selChips').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (!c) return;
+        $('selIn').value = CHIPS[+c.dataset.i][0];
+        run();
+    });
+    st.root.addEventListener('change', function () { setTimeout(run, 0); });
+    run();
+})();
+
+function renderLinesCss(el, lines) {
+    el.innerHTML = lines.map(function (t, i) {
+        return '<button type="button" tabindex="-1" data-i="' + i + '" aria-pressed="false"><span class="ln">' + (i + 1) + '</span><span>' + (hlHTML(t) || ' ') + '</span></button>';
+    }).join('');
+}
+
+/* ----------------------------------------------------------------------
+   3b. Kaskáda — souboj pravidel
+   ---------------------------------------------------------------------- */
+(function cascade() {
+    var RULES = [
+        { sel: 'p', color: 'green', on: true, imp: false },
+        { sel: '.info', color: 'blue', on: true, imp: false },
+        { sel: '#zprava', color: 'red', on: true, imp: false },
+        { sel: 'p.info', color: 'purple', on: true, imp: false },
+        { sel: 'p', color: 'orange', on: true, imp: false },
+        { sel: 'style=""', color: 'deeppink', on: false, imp: false, inline: true }
+    ];
+    var CZ = { green: 'zelená', blue: 'modrá', red: 'červená', purple: 'fialová', orange: 'oranžová', deeppink: 'růžová' };
+    var st = Stage($('duelStage'), 'p{margin:0;font-size:22px;font-weight:700}');
+    $('duelHtml').innerHTML = hlHTML('<p id="zprava" class="info">Kdo vyhraje?</p>');
+
+    $('duel').innerHTML = RULES.map(function (r, i) {
+        var code = r.inline ? '<span class="hl-attr">style</span>=<span class="hl-val">"color: ' + r.color + '"</span>'
+            : hlCSS(r.sel + ' { color: ' + r.color + '; }');
+        return '<div class="duel-rule" id="dr' + i + '">' +
+            '<input type="checkbox" aria-label="Zapnout pravidlo ' + (i + 1) + '"' + (r.on ? ' checked' : '') + ' data-k="on" data-i="' + i + '">' +
+            '<code>' + code + '</code>' +
+            (r.inline ? '<span class="tag tag-pink">vložený styl</span>' : specHTML(specificity(r.sel))) +
+            '<label class="imp"><input type="checkbox" data-k="imp" data-i="' + i + '"> !important</label></div>';
+    }).join('') + '<p class="muted text-sm">Pořadí v kódu shora dolů. Specificita: <span class="spec"><span class="sa">id</span><span class="sb">třídy</span><span class="sc">typy</span></span></p>';
+
+    function key(r, i) { return [r.imp ? 1 : 0, r.inline ? 1 : 0].concat(r.inline ? [0, 0, 0] : specificity(r.sel)).concat([i]); }
+    function cmp(a, b) { for (var k = 0; k < a.length; k++) if (a[k] !== b[k]) return a[k] - b[k]; return 0; }
+    function reason(w, l) {
+        var a = key(w.r, w.i), b = key(l.r, l.i);
+        if (a[0] !== b[0]) return 'má <code>!important</code>, které přebije všechno ostatní';
+        if (a[1] !== b[1]) return 'je zapsané přímo v atributu <code>style</code>';
+        for (var k = 2; k < 5; k++) if (a[k] !== b[k]) {
+            return 'má vyšší specificitu (' + ['id', 'třídy', 'typy'][k - 2] + ': ' + a[k] + ' &gt; ' + b[k] + ')';
+        }
+        return 'má stejnou váhu, ale je v kódu později';
+    }
+    function label(x) { return x.r.inline ? 'atribut style' : '<code>' + esc(x.r.sel) + '</code> (' + (x.i + 1) + '. pravidlo)'; }
+    function render() {
+        var css = '';
+        RULES.forEach(function (r) { if (r.on && !r.inline) css += r.sel + '{color:' + r.color + (r.imp ? ' !important' : '') + '}'; });
+        st.css(css);
+        var inl = RULES[5];
+        st.html('<p id="zprava" class="info"' + (inl.on ? ' style="color: deeppink' + (inl.imp ? ' !important' : '') + '"' : '') + '>Kdo vyhraje?</p>');
+        var act = RULES.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) { return x.r.on; });
+        act.sort(function (x, y) { return cmp(key(y.r, y.i), key(x.r, x.i)); });
+        RULES.forEach(function (r, i) {
+            var el = $('dr' + i);
+            el.classList.toggle('off', !r.on);
+            el.classList.toggle('win', act.length > 0 && act[0].i === i);
+        });
+        if (!act.length) {
+            $('duelWhy').innerHTML = '<p class="mb-0">Žádné pravidlo neplatí — text má výchozí barvu (zděděnou od rodiče).</p>';
+        } else if (act.length === 1) {
+            $('duelWhy').innerHTML = '<p class="mb-0">Platí jediné pravidlo: ' + label(act[0]) + ' → ' + CZ[act[0].r.color] + '.</p>';
+        } else {
+            $('duelWhy').innerHTML = '<p class="mb-0">Vyhrává ' + label(act[0]) + ' → <strong>' + CZ[act[0].r.color] + '</strong>, protože nad ' + label(act[1]) + ' ' + reason(act[0], act[1]) + '.</p>';
+        }
+        window.__duelExpected = act.length ? act[0].r.color : null;
+    }
+    $('duel').addEventListener('change', function (e) {
+        var t = e.target;
+        if (!t.dataset.k) return;
+        RULES[+t.dataset.i][t.dataset.k] = t.checked;
+        render();
+    });
+    render();
+})();
+
+/* ----------------------------------------------------------------------
+   4. Flexbox
+   ---------------------------------------------------------------------- */
+(function flexbox() {
+    var box = $('fxBox');
+    var items = [];
+    var sel = -1;
+    var DEF = { grow: 0, shrink: 1, basis: 'auto', order: 0, self: 'auto' };
+    function mk() { return Object.assign({}, DEF); }
+    for (var i = 0; i < 4; i++) items.push(mk());
+
+    var PRESETS = [
+        ['Výchozí', { dir: 'row', jc: 'flex-start', ai: 'stretch', wrap: 'nowrap', ac: 'normal', gap: 8, n: 4, varied: true }],
+        ['Na střed', { dir: 'row', jc: 'center', ai: 'center', wrap: 'nowrap', ac: 'normal', gap: 8, n: 1, varied: false }],
+        ['Menu', { dir: 'row', jc: 'flex-end', ai: 'center', wrap: 'nowrap', ac: 'normal', gap: 16, n: 4, varied: false }],
+        ['Rozprostřít', { dir: 'row', jc: 'space-between', ai: 'center', wrap: 'nowrap', ac: 'normal', gap: 0, n: 3, varied: true }],
+        ['Sloupec', { dir: 'column', jc: 'flex-start', ai: 'stretch', wrap: 'nowrap', ac: 'normal', gap: 8, n: 3, varied: false }],
+        ['Karty se zalamováním', { dir: 'row', jc: 'flex-start', ai: 'stretch', wrap: 'wrap', ac: 'flex-start', gap: 8, n: 8, varied: true, item: { grow: 1, basis: '120px' } }],
+        ['Jedna roste', { dir: 'row', jc: 'flex-start', ai: 'center', wrap: 'nowrap', ac: 'normal', gap: 8, n: 3, varied: false, first: { grow: 1 } }]
+    ];
+    $('fxPresets').innerHTML = PRESETS.map(function (p, i) { return '<button class="chip" type="button" data-i="' + i + '">' + p[0] + '</button>'; }).join('');
+    $('fxPresets').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (!c) return;
+        var p = PRESETS[+c.dataset.i][1];
+        $('fxDir').value = p.dir; $('fxJc').value = p.jc; $('fxAi').value = p.ai; $('fxWrap').value = p.wrap; $('fxAc').value = p.ac;
+        $('fxGap').value = p.gap; $('fxGapv').textContent = p.gap + 'px';
+        $('fxVar').checked = p.varied;
+        items = [];
+        for (var k = 0; k < p.n; k++) items.push(Object.assign(mk(), p.item || {}, k === 0 ? p.first || {} : {}));
+        sel = -1;
+        build();
+    });
+
+    function build() {
+        box.innerHTML = items.map(function (it, k) {
+            return '<div class="pg-item" tabindex="0" role="button" aria-label="Položka ' + (k + 1) + '" data-i="' + k + '">' + (k + 1) + '</div>';
+        }).join('');
+        render();
+    }
+    function itemCss(it) {
+        var d = [];
+        if (it.grow !== DEF.grow) d.push('flex-grow: ' + it.grow);
+        if (it.shrink !== DEF.shrink) d.push('flex-shrink: ' + it.shrink);
+        if (it.basis !== DEF.basis) d.push('flex-basis: ' + it.basis);
+        if (it.order !== DEF.order) d.push('order: ' + it.order);
+        if (it.self !== DEF.self) d.push('align-self: ' + it.self);
+        return d;
+    }
+    function axis(el, horizontal, forward, text, cls) {
+        el.className = 'axis ' + cls + ' ' + (horizontal ? 'axis--h' : 'axis--v');
+        el.innerHTML = forward ? '<b>' + text + '</b><i></i><span class="arr fw"></span>' : '<span class="arr bw"></span><i></i><b>' + text + '</b>';
+    }
+    function render() {
+        var dir = $('fxDir').value, jc = $('fxJc').value, ai = $('fxAi').value, wrap = $('fxWrap').value, ac = $('fxAc').value, gap = +$('fxGap').value;
+        box.style.display = 'flex';
+        box.style.flexDirection = dir;
+        box.style.justifyContent = jc;
+        box.style.alignItems = ai;
+        box.style.flexWrap = wrap;
+        box.style.alignContent = ac;
+        box.style.gap = gap + 'px';
+        box.classList.toggle('varied', $('fxVar').checked);
+        var row = dir.indexOf('row') === 0;
+        axis($('fxAxM'), row, dir.indexOf('reverse') < 0, 'hlavní osa', 'axis--main');
+        axis($('fxAxC'), !row, wrap !== 'wrap-reverse', 'příčná osa', 'axis--cross');
+        box.querySelectorAll('.pg-item').forEach(function (el, k) {
+            var it = items[k];
+            el.style.flexGrow = it.grow;
+            el.style.flexShrink = it.shrink;
+            el.style.flexBasis = it.basis;
+            el.style.order = it.order;
+            el.style.alignSelf = it.self;
+            el.classList.toggle('sel', k === sel);
+            var d = itemCss(it);
+            el.title = d.join('; ');
+        });
+        var c = '.kontejner {\n    display: flex;\n    flex-direction: ' + dir + ';\n    justify-content: ' + jc + ';\n    align-items: ' + ai + ';\n    flex-wrap: ' + wrap + ';\n' +
+            (ac !== 'normal' ? '    align-content: ' + ac + ';\n' : '') + '    gap: ' + gap + 'px;\n}';
+        items.forEach(function (it, k) {
+            var d = itemCss(it);
+            if (d.length) c += '\n.polozka:nth-child(' + (k + 1) + ') {\n    ' + d.join(';\n    ') + ';\n}';
+        });
+        $('fxCode').innerHTML = hlCSS(c);
+        var p = $('fxItemPanel');
+        var dis = sel < 0;
+        p.querySelectorAll('input, select').forEach(function (x) { x.disabled = dis; });
+        $('fxItemTitle').textContent = dis ? 'Klikni na položku a nastav její vlastnosti' : 'Položka ' + (sel + 1);
+        $('fxDel').disabled = items.length <= 1;
+        $('fxAdd').disabled = items.length >= 12;
+    }
+    function pick(k) {
+        sel = k;
+        var it = items[k];
+        $('fxGrow').value = it.grow; $('fxGrowv').textContent = it.grow;
+        $('fxShrink').value = it.shrink; $('fxShrinkv').textContent = it.shrink;
+        $('fxBasis').value = it.basis;
+        $('fxOrder').value = it.order; $('fxOrderv').textContent = it.order;
+        $('fxSelf').value = it.self;
+        render();
+    }
+    box.addEventListener('click', function (e) { var el = e.target.closest('.pg-item'); if (el) pick(+el.dataset.i); });
+    box.addEventListener('keydown', function (e) {
+        var el = e.target.closest('.pg-item');
+        if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(+el.dataset.i); }
+    });
+    ['fxDir', 'fxJc', 'fxAi', 'fxWrap', 'fxAc', 'fxVar'].forEach(function (id) { $(id).addEventListener('change', render); });
+    bindRange('fxGap', px, render);
+    [['fxGrow', 'grow', true], ['fxShrink', 'shrink', true], ['fxOrder', 'order', true], ['fxBasis', 'basis'], ['fxSelf', 'self']].forEach(function (d) {
+        var el = $(d[0]);
+        el.addEventListener(d[2] ? 'input' : 'change', function () {
+            if (sel < 0) return;
+            items[sel][d[1]] = d[2] ? +el.value : el.value;
+            if ($(d[0] + 'v')) $(d[0] + 'v').textContent = el.value;
+            render();
+        });
+    });
+    $('fxAdd').addEventListener('click', function () { if (items.length < 12) { items.push(mk()); build(); } });
+    $('fxDel').addEventListener('click', function () { if (items.length > 1) { items.pop(); if (sel >= items.length) sel = -1; build(); } });
+    $('fxGrowv').textContent = 0; $('fxShrinkv').textContent = 1; $('fxOrderv').textContent = 0;
+    build();
+})();
+
+/* ----------------------------------------------------------------------
+   5. Grid
+   ---------------------------------------------------------------------- */
+(function grid() {
+    var box = $('gdBox');
+    var items = [];
+    var sel = -1;
+    for (var i = 0; i < 6; i++) items.push({ col: '', row: '' });
+    var COLS = ['1fr 1fr 1fr', '1fr 2fr', '200px 1fr', 'repeat(4, 1fr)', '100px auto 100px', 'repeat(auto-fill, minmax(90px, 1fr))'];
+    $('gdColChips').innerHTML = COLS.map(function (c) { return '<button class="chip" type="button">' + esc(c) + '</button>'; }).join('');
+    $('gdColChips').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (!c) return;
+        $('gdCols').value = c.textContent;
+        render();
+    });
+    var ICH = [['col', 'span 2'], ['col', '1 / -1'], ['col', '2 / 4'], ['row', 'span 2'], ['row', '1 / 3'], ['', 'zrušit umístění']];
+    $('gdItemChips').innerHTML = ICH.map(function (c, k) {
+        return '<button class="chip" type="button" data-k="' + k + '">' + (c[0] ? (c[0] === 'col' ? 'grid-column: ' : 'grid-row: ') : '') + esc(c[1]) + '</button>';
+    }).join('');
+    $('gdItemChips').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (!c || sel < 0) return;
+        var d = ICH[+c.dataset.k];
+        if (!d[0]) { items[sel].col = ''; items[sel].row = ''; } else items[sel][d[0]] = d[1];
+        $('gdCol').value = items[sel].col; $('gdRow').value = items[sel].row;
+        render();
+    });
+
+    function build() {
+        box.innerHTML = items.map(function (it, k) {
+            return '<div class="pg-item" tabindex="0" role="button" aria-label="Položka ' + (k + 1) + '" data-i="' + k + '">' + (k + 1) + '</div>';
+        }).join('');
+        render();
+    }
+    function tracks(str) {
+        return (str || '').split(/\s+/).map(parseFloat).filter(function (x) { return !isNaN(x); });
+    }
+    function drawLines() {
+        var L = $('gdLines');
+        if (!box.offsetWidth) return;
+        var cs = getComputedStyle(box);
+        var cols = tracks(cs.gridTemplateColumns), rows = tracks(cs.gridTemplateRows);
+        var cg = parseFloat(cs.columnGap) || 0, rg = parseFloat(cs.rowGap) || 0;
+        var x0 = box.offsetLeft + box.clientLeft, y0 = box.offsetTop + box.clientTop;
+        var h = box.clientHeight, w = box.clientWidth;
+        var html = '';
+        function pos(list, gap, start) {
+            var res = [start], p = start;
+            list.forEach(function (t, k) {
+                p += t;
+                res.push(k < list.length - 1 ? p + gap / 2 : p);
+                p += gap;
+            });
+            return res;
+        }
+        pos(cols, cg, x0).forEach(function (x, k) {
+            html += '<div class="gl gl--v" style="left:' + x + 'px;top:' + y0 + 'px;height:' + h + 'px"></div>' +
+                '<span class="gn" style="left:' + x + 'px;top:' + (y0 - 10) + 'px">' + (k + 1) + '</span>';
+        });
+        pos(rows, rg, y0).forEach(function (y, k) {
+            html += '<div class="gl gl--h" style="top:' + y + 'px;left:' + x0 + 'px;width:' + w + 'px"></div>' +
+                '<span class="gn" style="top:' + y + 'px;left:' + (x0 - 10) + 'px">' + (k + 1) + '</span>';
+        });
+        L.innerHTML = html;
+    }
+    function render() {
+        var cols = $('gdCols').value.trim(), rows = $('gdRows').value.trim(), gap = +$('gdGap').value;
+        var err = [];
+        box.style.display = 'grid';
+        box.style.gridTemplateColumns = '';
+        box.style.gridTemplateColumns = cols;
+        if (cols && !box.style.gridTemplateColumns) err.push('Hodnota grid-template-columns „' + cols + '“ je neplatná.');
+        box.style.gridTemplateRows = '';
+        box.style.gridTemplateRows = rows;
+        if (rows && !box.style.gridTemplateRows) err.push('Hodnota grid-template-rows „' + rows + '“ je neplatná.');
+        box.style.gap = gap + 'px';
+        box.style.justifyItems = $('gdJi').value;
+        box.style.alignItems = $('gdAi').value;
+        box.style.minHeight = '180px';
+        box.querySelectorAll('.pg-item').forEach(function (el, k) {
+            var it = items[k];
+            el.style.gridColumn = ''; el.style.gridColumn = it.col;
+            if (it.col && !el.style.gridColumn) err.push('Položka ' + (k + 1) + ': neplatné grid-column „' + it.col + '“.');
+            el.style.gridRow = ''; el.style.gridRow = it.row;
+            if (it.row && !el.style.gridRow) err.push('Položka ' + (k + 1) + ': neplatné grid-row „' + it.row + '“.');
+            el.classList.toggle('sel', k === sel);
+        });
+        $('gdErr').className = 'feedback' + (err.length ? ' error' : '');
+        $('gdErr').textContent = err.join(' ');
+        var c = '.kontejner {\n    display: grid;\n    grid-template-columns: ' + (cols || 'none') + ';\n' + (rows ? '    grid-template-rows: ' + rows + ';\n' : '') +
+            '    gap: ' + gap + 'px;\n' + ($('gdJi').value !== 'stretch' ? '    justify-items: ' + $('gdJi').value + ';\n' : '') +
+            ($('gdAi').value !== 'stretch' ? '    align-items: ' + $('gdAi').value + ';\n' : '') + '}';
+        items.forEach(function (it, k) {
+            var d = [];
+            if (it.col) d.push('grid-column: ' + it.col);
+            if (it.row) d.push('grid-row: ' + it.row);
+            if (d.length) c += '\n.polozka:nth-child(' + (k + 1) + ') {\n    ' + d.join(';\n    ') + ';\n}';
+        });
+        $('gdCode').innerHTML = hlCSS(c);
+        var dis = sel < 0;
+        $('gdCol').disabled = dis; $('gdRow').disabled = dis;
+        $('gdItemChips').querySelectorAll('.chip').forEach(function (x) { x.disabled = dis; });
+        $('gdItemTitle').textContent = dis ? 'Klikni na položku a umísti ji' : 'Položka ' + (sel + 1);
+        $('gdDel').disabled = items.length <= 1;
+        $('gdAdd').disabled = items.length >= 16;
+        drawLines();
+    }
+    function pick(k) {
+        sel = k;
+        $('gdCol').value = items[k].col; $('gdRow').value = items[k].row;
+        render();
+    }
+    box.addEventListener('click', function (e) { var el = e.target.closest('.pg-item'); if (el) pick(+el.dataset.i); });
+    box.addEventListener('keydown', function (e) {
+        var el = e.target.closest('.pg-item');
+        if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(+el.dataset.i); }
+    });
+    $('gdCols').addEventListener('input', render);
+    $('gdRows').addEventListener('input', render);
+    $('gdJi').addEventListener('change', render);
+    $('gdAi').addEventListener('change', render);
+    bindRange('gdGap', px, render);
+    $('gdCol').addEventListener('input', function () { if (sel >= 0) { items[sel].col = this.value.trim(); render(); } });
+    $('gdRow').addEventListener('input', function () { if (sel >= 0) { items[sel].row = this.value.trim(); render(); } });
+    $('gdAdd').addEventListener('click', function () { if (items.length < 16) { items.push({ col: '', row: '' }); build(); } });
+    $('gdDel').addEventListener('click', function () { if (items.length > 1) { items.pop(); if (sel >= items.length) sel = -1; build(); } });
+    if (window.ResizeObserver) new ResizeObserver(drawLines).observe(box);
+    window.addEventListener('tabshown', function (e) { if (e.detail.id === 'grid') { drawLines(); areas(); } });
+    build();
+
+    /* Pojmenované oblasti */
+    var AREAS = [
+        ['Klasika', '1fr 3fr 1fr', '"hlavicka hlavicka hlavicka"\n"menu     obsah    bocni"\n"paticka  paticka  paticka"'],
+        ['Dva sloupce', '1fr 3fr', '"hlavicka hlavicka"\n"menu     obsah"\n"menu     bocni"\n"paticka  paticka"'],
+        ['Mobil', '1fr', '"hlavicka"\n"menu"\n"obsah"\n"bocni"\n"paticka"'],
+        ['Prázdná buňka', '1fr 2fr 1fr', '"hlavicka hlavicka hlavicka"\n".        obsah    bocni"\n"menu     paticka  paticka"'],
+        ['Chyba: není obdélník', '1fr 1fr', '"hlavicka obsah"\n"obsah    hlavicka"\n"paticka  paticka"']
+    ];
+    var EL = [['header', 'hlavicka', 'var(--c-blue-bg)'], ['nav', 'menu', 'var(--c-orange-bg)'], ['main', 'obsah', 'var(--c-green-bg)'],
+        ['aside', 'bocni', 'var(--c-purple-bg)'], ['footer', 'paticka', 'var(--c-pink-bg)']];
+    var ab = $('arBox');
+    ab.innerHTML = EL.map(function (e) {
+        return '<div style="grid-area:' + e[1] + ';background:' + e[2] + (e[0] === 'main' ? ';min-height:110px' : '') + '">&lt;' + e[0] + '&gt; ' + e[1] + '</div>';
+    }).join('');
+    $('arPresets').innerHTML = AREAS.map(function (a, k) { return '<button class="chip" type="button" data-k="' + k + '">' + a[0] + '</button>'; }).join('');
+    $('arPresets').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (!c) return;
+        var a = AREAS[+c.dataset.k];
+        $('arCols').value = a[1]; $('arTpl').value = a[2];
+        areas();
+    });
+    function areas() {
+        var tpl = $('arTpl').value.trim(), cols = $('arCols').value.trim();
+        var err = [];
+        ab.style.gridTemplateColumns = '';
+        ab.style.gridTemplateColumns = cols;
+        if (cols && !ab.style.gridTemplateColumns) err.push('Neplatné grid-template-columns.');
+        ab.style.gridTemplateAreas = '';
+        ab.style.gridTemplateAreas = tpl.replace(/\s*\n\s*/g, ' ');
+        if (tpl && !ab.style.gridTemplateAreas) err.push('Neplatné grid-template-areas: každý řádek musí mít stejný počet buněk, každý v uvozovkách, a oblasti se stejným jménem musí tvořit souvislý obdélník. Prohlížeč takovou hodnotu celou zahodí.');
+        var names = tpl.match(/[a-zA-Z_][\w-]*/g) || [];
+        var missing = EL.filter(function (e) { return names.indexOf(e[1]) < 0; }).map(function (e) { return e[1]; });
+        if (!err.length && missing.length) err.push('V šabloně chybí: ' + missing.join(', ') + ' — tyto bloky prohlížeč umístí automaticky do dalších buněk.');
+        $('arErr').className = 'feedback' + (err.length ? ' error' : '');
+        $('arErr').textContent = err.join(' ');
+        var lines = tpl.split('\n').map(function (l) { return '        ' + l.trim(); }).join('\n');
+        $('arCode').innerHTML = hlCSS('.stranka {\n    display: grid;\n    grid-template-columns: ' + cols + ';\n    grid-template-areas:\n' + lines + ';\n    gap: 8px;\n}\nheader { grid-area: hlavicka; }\nnav    { grid-area: menu; }\nmain   { grid-area: obsah; }\naside  { grid-area: bocni; }\nfooter { grid-area: paticka; }');
+    }
+    $('arTpl').addEventListener('input', areas);
+    $('arCols').addEventListener('input', areas);
+    $('arCols').value = AREAS[0][1]; $('arTpl').value = AREAS[0][2];
+    areas();
+})();
+
+/* ----------------------------------------------------------------------
+   6. Transformace
+   ---------------------------------------------------------------------- */
+(function transforms() {
+    var ids = ['tfX', 'tfY', 'tfR', 'tfS', 'tfK'];
+    var fm = { tfX: px, tfY: px, tfR: function (v) { return v + 'deg'; }, tfS: function (v) { return (v / 100).toLocaleString('cs-CZ'); }, tfK: function (v) { return v + 'deg'; } };
+    function render() {
+        var x = +$('tfX').value, y = +$('tfY').value, r = +$('tfR').value, s = +$('tfS').value / 100, k = +$('tfK').value, o = $('tfO').value;
+        var parts = [];
+        if (x || y) parts.push('translate(' + x + 'px, ' + y + 'px)');
+        if (r) parts.push('rotate(' + r + 'deg)');
+        if (s !== 1) parts.push('scale(' + s + ')');
+        if (k) parts.push('skewX(' + k + 'deg)');
+        var t = parts.join(' ') || 'none';
+        var b = $('tfBox');
+        b.style.transform = t;
+        b.style.transformOrigin = o;
+        var g = $('tfGhost');
+        var ox = o.indexOf('left') >= 0 ? 0 : o.indexOf('right') >= 0 ? 90 : 45;
+        var oy = o.indexOf('top') >= 0 ? 0 : o.indexOf('bottom') >= 0 ? 90 : 45;
+        $('tfOrig').style.left = (g.offsetLeft + ox) + 'px';
+        $('tfOrig').style.top = (g.offsetTop + oy) + 'px';
+        $('tfCode').innerHTML = hlCSS('.krabice {\n    transform: ' + t + ';\n' + (o !== 'center' ? '    transform-origin: ' + o + ';\n' : '') + '}');
+    }
+    ids.forEach(function (id) { bindRange(id, fm[id], render); });
+    $('tfO').addEventListener('change', render);
+    $('tfReset').addEventListener('click', function () {
+        $('tfX').value = 0; $('tfY').value = 0; $('tfR').value = 0; $('tfS').value = 100; $('tfK').value = 0; $('tfO').value = 'center';
+        ids.forEach(function (id) { $(id).dispatchEvent(new Event('input')); });
+    });
+    window.addEventListener('tabshown', function (e) { if (e.detail.id === 'prechody') render(); });
+    window.addEventListener('resize', render);
+    render();
+})();
+
+/* ----------------------------------------------------------------------
+   6b. Přechody
+   ---------------------------------------------------------------------- */
+var BEZ = { 'ease': [0.25, 0.1, 0.25, 1], 'linear': [0, 0, 1, 1], 'ease-in': [0.42, 0, 1, 1], 'ease-out': [0, 0, 0.58, 1], 'ease-in-out': [0.42, 0, 0.58, 1] };
+
+function drawCurve(svg, tf) {
+    var X = function (t) { return 44 + t * 160; };
+    var Y = function (v) { return 160 - v * 100; };
+    var h = '<line class="grid" x1="' + X(0) + '" y1="' + Y(1) + '" x2="' + X(1) + '" y2="' + Y(1) + '"/>' +
+        '<line class="grid" x1="' + X(1) + '" y1="' + Y(0) + '" x2="' + X(1) + '" y2="' + Y(1) + '"/>' +
+        '<line class="axis-l" x1="' + X(0) + '" y1="' + Y(-0.5) + '" x2="' + X(0) + '" y2="' + Y(1.5) + '"/>' +
+        '<line class="axis-l" x1="' + X(0) + '" y1="' + Y(0) + '" x2="' + X(1) + '" y2="' + Y(0) + '"/>' +
+        '<text x="' + X(1) + '" y="' + (Y(0) + 14) + '" text-anchor="end">čas →</text>' +
+        '<text x="' + (X(0) - 4) + '" y="' + (Y(1) + 3) + '" text-anchor="end">100 %</text>' +
+        '<text x="' + (X(0) - 4) + '" y="' + (Y(0) + 3) + '" text-anchor="end">0</text>';
+    var st = /^steps\((\d+)\)$/.exec(tf);
+    if (st) {
+        var n = +st[1], d = 'M' + X(0) + ' ' + Y(0);
+        for (var i = 0; i < n; i++) d += ' H' + X((i + 1) / n) + ' V' + Y((i + 1) / n);
+        h += '<path class="path" d="' + d + '"/>';
+    } else {
+        var b = BEZ[tf] || (/cubic-bezier\(([^)]+)\)/.exec(tf) || [0, '0,0,1,1'])[1].split(',').map(parseFloat);
+        h += '<line class="handle" x1="' + X(0) + '" y1="' + Y(0) + '" x2="' + X(b[0]) + '" y2="' + Y(b[1]) + '"/>' +
+            '<line class="handle" x1="' + X(1) + '" y1="' + Y(1) + '" x2="' + X(b[2]) + '" y2="' + Y(b[3]) + '"/>' +
+            '<path class="path" d="M' + X(0) + ' ' + Y(0) + ' C' + X(b[0]) + ' ' + Y(b[1]) + ' ' + X(b[2]) + ' ' + Y(b[3]) + ' ' + X(1) + ' ' + Y(1) + '"/>' +
+            '<circle class="knob" cx="' + X(b[0]) + '" cy="' + Y(b[1]) + '" r="4"/><circle class="knob" cx="' + X(b[2]) + '" cy="' + Y(b[3]) + '" r="4"/>';
+    }
+    svg.innerHTML = h;
+}
+
+(function transitions() {
+    var box = $('trBox'), stage = $('trStage');
+    var fmt2 = function (v) { return (v / 100).toLocaleString('cs-CZ'); };
+    function tf() {
+        var v = $('trTf').value;
+        if (v !== 'custom') return v;
+        return 'cubic-bezier(' + [$('bzX1').value, $('bzY1').value, $('bzX2').value, $('bzY2').value].map(function (x) { return +x / 100; }).join(', ') + ')';
+    }
+    function render() {
+        var f = tf();
+        $('trBez').hidden = $('trTf').value !== 'custom';
+        var tr = $('trProp').value + ' ' + ms(+$('trDur').value).replace(',', '.').replace(' ', '') + ' ' + f + ($('trDelay').value > 0 ? ' ' + ms(+$('trDelay').value).replace(',', '.').replace(' ', '') : '');
+        box.style.transition = tr;
+        stage.style.setProperty('--tr-dist', Math.max(60, stage.clientWidth - 48 - 110) + 'px');
+        drawCurve($('trCurve'), f);
+        var hover = segValue($('trTrig')) === 'hover';
+        $('trGo').hidden = hover;
+        $('trHint').textContent = hover ? 'Najeď myší na šedou plochu.' : '';
+        $('trCode').innerHTML = hlCSS('.krabice {\n    background-color: #1a6dc4;\n    border-radius: 10px;\n    width: 70px;\n    opacity: 1;\n    transition: ' + tr + ';\n}\n.krabice' + (hover ? ':hover' : '.zapnuto') + ' {\n    background-color: #e8890c;\n    border-radius: 50%;\n    width: 110px;\n    opacity: 0.5;\n    transform: translateX(200px) rotate(180deg);\n}');
+    }
+    $('trGo').addEventListener('click', function () { box.classList.toggle('b'); });
+    stage.addEventListener('mouseenter', function () { if (segValue($('trTrig')) === 'hover') box.classList.add('b'); });
+    stage.addEventListener('mouseleave', function () { if (segValue($('trTrig')) === 'hover') box.classList.remove('b'); });
+    bindSeg($('trTrig'), function () { box.classList.remove('b'); render(); });
+    ['trProp', 'trTf'].forEach(function (id) { $(id).addEventListener('change', render); });
+    bindRange('trDur', ms, render);
+    bindRange('trDelay', ms, render);
+    ['bzX1', 'bzY1', 'bzX2', 'bzY2'].forEach(function (id) { bindRange(id, fmt2, render); });
+    window.addEventListener('tabshown', function (e) { if (e.detail.id === 'prechody') render(); });
+    render();
+
+    var RACE = ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'cubic-bezier(.68,-.55,.27,1.55)', 'steps(5)'];
+    $('race').innerHTML = RACE.map(function (f) {
+        return '<div class="lane"><code>' + esc(f.replace('cubic-bezier(.68,-.55,.27,1.55)', 'cubic-bezier(…)')) + '</code><div class="lane__track"><div class="lane__dot" style="transition: left 2s ' + f + '"></div></div></div>';
+    }).join('');
+    $('raceGo').addEventListener('click', function () {
+        var r = $('race');
+        r.classList.toggle('go');
+        this.textContent = r.classList.contains('go') ? 'Zpět na start' : 'Start';
+    });
+})();
+
+/* ----------------------------------------------------------------------
+   7. Animace
+   ---------------------------------------------------------------------- */
+(function animations() {
+    var PRESETS = [
+        ['posun', '@keyframes posun {\n    from { transform: translateX(0); }\n    to   { transform: translateX(220px); }\n}'],
+        ['poskakování', '@keyframes poskok {\n    0%, 100% { transform: translateY(0); }\n    50%      { transform: translateY(-60px); }\n}'],
+        ['pulzování', '@keyframes pulz {\n    0%   { transform: scale(1); }\n    50%  { transform: scale(1.4); }\n    100% { transform: scale(1); }\n}'],
+        ['rotace', '@keyframes rotace {\n    to { transform: rotate(360deg); }\n}'],
+        ['barvy', '@keyframes barvy {\n    0%   { background-color: #1a6dc4; }\n    33%  { background-color: #e0a800; }\n    66%  { background-color: #b8302a; }\n    100% { background-color: #146b58; }\n}'],
+        ['zatřesení', '@keyframes tres {\n    0%, 100% { transform: translateX(0); }\n    20%, 60% { transform: translateX(-12px); }\n    40%, 80% { transform: translateX(12px); }\n}'],
+        ['dokola', '@keyframes dokola {\n    0%   { transform: translate(0, 0); }\n    25%  { transform: translate(220px, 0) rotate(90deg); }\n    50%  { transform: translate(220px, 80px) rotate(180deg); border-radius: 50%; }\n    75%  { transform: translate(0, 80px) rotate(270deg); }\n    100% { transform: translate(0, 0) rotate(360deg); }\n}'],
+        ['objevení', '@keyframes objeveni {\n    from { opacity: 0; transform: translateY(40px); }\n    to   { opacity: 1; transform: translateY(0); }\n}']
+    ];
+    var st = Stage($('anStage'), ':host{min-height:200px}.box{position:absolute;left:24px;top:70px;width:60px;height:60px;border-radius:10px;background:#1a6dc4}');
+    st.html('<div class="box"></div>');
+    var box = st.root.querySelector('.box');
+    var name = null, paused = false;
+    $('anPresets').innerHTML = PRESETS.map(function (p, k) { return '<button class="chip" type="button" data-k="' + k + '">' + p[0] + '</button>'; }).join('');
+
+    function marks(text) {
+        var body = text.slice(text.indexOf('{') + 1);
+        var res = [];
+        var re = /([^{}]+)\{[^{}]*\}/g, m;
+        while ((m = re.exec(body))) {
+            m[1].split(',').forEach(function (s) {
+                s = s.trim();
+                var v = s === 'from' ? 0 : s === 'to' ? 100 : parseFloat(s);
+                if (!isNaN(v) && res.indexOf(v) < 0) res.push(v);
+            });
+        }
+        return res.sort(function (a, b) { return a - b; });
+    }
+    function shorthand() {
+        return [name || 'none', ms(+$('anDur').value).replace(',', '.').replace(' ', ''), $('anTf').value,
+            ms(+$('anDelay').value).replace(',', '.').replace(' ', ''), $('anIt').value, $('anDir').value, $('anFill').value].join(' ');
+    }
+    function apply(restart) {
+        var kf = ed.get();
+        var m = /@keyframes\s+([\w-]+)/.exec(kf);
+        name = m ? m[1] : null;
+        $('anErr').className = 'feedback' + (name ? '' : ' error');
+        $('anErr').textContent = name ? '' : 'Chybí @keyframes s názvem (např. @keyframes posun { … }).';
+        st.css(kf.replace(/<\//g, '<\\/'));
+        var a = shorthand();
+        if (restart) { box.style.animation = 'none'; void box.offsetWidth; }
+        box.style.animation = a;
+        box.style.animationPlayState = paused ? 'paused' : 'running';
+        $('anCode').innerHTML = hlCSS('.box {\n    animation: ' + a + ';\n}');
+        var mk = marks(kf);
+        $('anTl').innerHTML = '<div class="timeline__bar"></div><div class="timeline__fill" id="anFillBar"></div>' +
+            mk.map(function (v) { return '<div class="timeline__mark" style="left:' + v + '%"></div><span class="timeline__lbl" style="left:' + v + '%">' + v + '%</span>'; }).join('') +
+            '<div class="timeline__head" id="anHead"></div>';
+    }
+    var ed = CodeEdit($('anKf'), 'css', debounce(function () { apply(true); }, 300), '@keyframes animace');
+    $('anPresets').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (!c) return;
+        ed.set(PRESETS[+c.dataset.k][1], true);
+        $('anPresets').querySelectorAll('.chip').forEach(function (x) { x.setAttribute('aria-pressed', x === c ? 'true' : 'false'); });
+        apply(true);
+    });
+    ['anTf', 'anIt', 'anDir', 'anFill'].forEach(function (id) { $(id).addEventListener('change', function () { apply(true); }); });
+    bindRange('anDur', ms, function () { if (ed) apply(true); });
+    bindRange('anDelay', ms, function () { if (ed) apply(true); });
+    $('anRestart').addEventListener('click', function () { apply(true); });
+    $('anPause').addEventListener('click', function () {
+        paused = !paused;
+        this.setAttribute('aria-pressed', paused ? 'true' : 'false');
+        this.querySelector('span').textContent = paused ? 'Pokračovat' : 'Pozastavit';
+        box.style.animationPlayState = paused ? 'paused' : 'running';
+        $('anCode').innerHTML = hlCSS('.box {\n    animation: ' + shorthand() + ';\n' + (paused ? '    animation-play-state: paused;\n' : '') + '}');
+    });
+
+    var running = false;
+    function tick() {
+        if (!running) return;
+        var anims = box.getAnimations ? box.getAnimations() : [];
+        var head = $('anHead'), fill = $('anFillBar');
+        var txt = '';
+        if (anims.length && head) {
+            var t = anims[0].effect.getComputedTiming();
+            if (t.progress === null) {
+                txt = (anims[0].currentTime < +$('anDelay').value) ? 'čeká (delay)' : 'skončila';
+                head.style.display = 'none'; fill.style.width = '0';
+            } else {
+                var p = t.progress * 100;
+                head.style.display = ''; head.style.left = p + '%'; fill.style.width = p + '%';
+                var it = $('anIt').value;
+                txt = 'průběh ' + (t.currentIteration + 1) + ' z ' + (it === 'infinite' ? '∞' : it) + ', ' + Math.round(p) + ' %';
+            }
+        } else if (head) {
+            txt = 'skončila'; head.style.display = 'none';
+        }
+        $('anState').textContent = txt + (paused ? ' — pozastaveno' : '');
+        requestAnimationFrame(tick);
+    }
+    window.addEventListener('tabshown', function (e) {
+        var on = e.detail.id === 'animace';
+        if (on && !running) { running = true; apply(true); requestAnimationFrame(tick); }
+        if (!on) running = false;
+    });
+    ed.set(PRESETS[0][1], true);
+    $('anPresets').querySelector('.chip').setAttribute('aria-pressed', 'true');
+    apply(true);
+    $('anReduce').innerHTML = hlCSS('@media (prefers-reduced-motion: reduce) {\n    * {\n        animation: none !important;\n        transition: none !important;\n    }\n}');
+})();
+
+initTabs();
+if ($('animace').classList.contains('active')) window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: 'animace' } }));
+</script>
+
+</body>
+</html>
