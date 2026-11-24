@@ -388,6 +388,20 @@
 
         .two-col.tight { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
 
+        /* Běžné vlastnosti */
+        .vp-side { position: sticky; top: var(--space-4); }
+        @media (max-width: 760px) { .vp-side { position: static; } }
+        .vp-ctrl { padding: var(--space-2) 0 var(--space-3); border-bottom: 1px solid var(--border); }
+        .vp-ctrl:last-child { border-bottom: 0; }
+        .vp-ctrl label { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); margin-bottom: 2px; }
+        .vp-ctrl label code { font-size: var(--fs-sm); }
+        .vp-ctrl .vp-sel { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--c-purple); }
+        .vp-ctrl .vp-desc { display: block; margin-bottom: var(--space-2); font-size: var(--fs-xs); color: var(--text-muted); }
+        .vp-ctrl.set label code { background: var(--c-yellow-bg); color: var(--c-yellow); }
+        .vp-ctrl select, .vp-ctrl input[type="range"] { width: 100%; }
+        .vp-row { display: flex; align-items: center; gap: var(--space-2); }
+        .vp-row output { min-width: 4.5em; text-align: right; font-family: var(--font-mono); font-size: var(--fs-sm); }
+
         /* Barvy */
         .swatch {
             height: 110px;
@@ -734,6 +748,7 @@
 
     <div class="tabs" role="tablist" aria-label="Kapitoly">
         <button class="tab active" type="button" role="tab" id="t-zaklady" aria-controls="zaklady" aria-selected="true" tabindex="0">Základy</button>
+        <button class="tab" type="button" role="tab" id="t-vlastnosti" aria-controls="vlastnosti" aria-selected="false" tabindex="-1">Běžné vlastnosti</button>
         <button class="tab" type="button" role="tab" id="t-box" aria-controls="box" aria-selected="false" tabindex="-1">Box model a jednotky</button>
         <button class="tab" type="button" role="tab" id="t-selektory" aria-controls="selektory" aria-selected="false" tabindex="-1">Selektory a kaskáda</button>
         <button class="tab" type="button" role="tab" id="t-flex" aria-controls="flex" aria-selected="false" tabindex="-1">Flexbox</button>
@@ -822,6 +837,7 @@
         </div>
 
         <h3>Základní vlastnosti</h3>
+        <p>Stručný přehled. Vyzkoušet si je — rozdělené do skupin podle toho, na co působí — můžeš v záložce <a href="#vlastnosti" data-tab>Běžné vlastnosti</a>.</p>
         <div class="table-wrap">
             <table class="notion-table">
                 <thead><tr><th>Vlastnost</th><th>Příklad</th><th>Co dělá</th></tr></thead>
@@ -842,6 +858,35 @@
         </div>
         <div class="callout callout--info">
             <p class="mb-0"><strong>Komentář</strong> se v CSS píše mezi <code>/*</code> a <code>*/</code>. Pozor — dvojité lomítko <code>//</code> v CSS komentář <em>není</em> a pokazí následující pravidlo.</p>
+        </div>
+    </section>
+
+
+    <!-- ================================================================
+         1b. BĚŽNÉ VLASTNOSTI
+         ================================================================ -->
+    <section id="vlastnosti" class="tab-content" role="tabpanel" aria-labelledby="t-vlastnosti">
+        <h2>Běžné vlastnosti</h2>
+        <p class="lead">CSS má stovky vlastností, ale v praxi si vystačíš s několika desítkami. Vyber skupinu, měň hodnoty vlevo a sleduj náhled i výsledné CSS vpravo. Hodnota „výchozí“ znamená, že vlastnost v CSS vůbec není a platí nastavení prohlížeče.</p>
+
+        <div class="chips" id="vpGroups" role="group" aria-label="Skupina vlastností"></div>
+        <div class="lab">
+            <div>
+                <p id="vpIntro" class="text-sm"></p>
+                <div class="toolbar" id="vpTools"></div>
+                <div id="vpCtrls"></div>
+            </div>
+            <div class="vp-side">
+                <div class="browser" style="--frame-h: 300px">
+                    <div class="browser__bar"><span class="browser__dots"><span></span><span></span><span></span></span><span class="browser__url" id="vpUrl">ukazka.html</span></div>
+                    <div class="stage-host" id="vpStage"></div>
+                </div>
+                <p class="label">HTML ukázky</p>
+                <pre class="code code--wrap" id="vpHtml"></pre>
+                <p class="label">Výsledné CSS</p>
+                <pre class="code" id="vpCode"></pre>
+                <div id="vpNote"></div>
+            </div>
         </div>
     </section>
 
@@ -1752,14 +1797,16 @@ var hex2 = function (n) { return n.toString(16).padStart(2, '0'); };
         box.style.padding = p + 'px';
         box.style.borderWidth = b + 'px';
         box.style.margin = m + 'px';
-        var content = bs === 'border-box' ? Math.max(0, w - 2 * p - 2 * b) : w;
-        var total = bs === 'border-box' ? w : w + 2 * p + 2 * b;
+        var minW = 2 * p + 2 * b;
+        var vis = bs === 'border-box' ? Math.max(w, minW) : w + minW;
+        var content = bs === 'border-box' ? Math.max(0, w - minW) : w;
         box.textContent = content + ' × ' + h;
         var f = bs === 'content-box'
-            ? 'viditelná šířka = width + 2 × padding + 2 × border<br>= ' + w + ' + 2 × ' + p + ' + 2 × ' + b + ' = <b>' + total + ' px</b><br>místo i s okraji = ' + total + ' + 2 × ' + m + ' = <b>' + (total + 2 * m) + ' px</b>'
-            : 'viditelná šířka = width = <b>' + w + ' px</b><br>šířka obsahu = ' + w + ' − 2 × ' + p + ' − 2 × ' + b + ' = <b>' + content + ' px</b>' +
-              (w - 2 * p - 2 * b < 0 ? ' <span class="warn">(padding a rámeček se nevejdou)</span>' : '') +
-              '<br>místo i s okraji = ' + w + ' + 2 × ' + m + ' = <b>' + (w + 2 * m) + ' px</b>';
+            ? 'viditelná šířka = width + 2 × padding + 2 × border<br>= ' + w + ' + 2 × ' + p + ' + 2 × ' + b + ' = <b>' + vis + ' px</b><br>místo i s okraji = ' + vis + ' + 2 × ' + m + ' = <b>' + (vis + 2 * m) + ' px</b>'
+            : (w >= minW
+                ? 'viditelná šířka = width = <b>' + w + ' px</b><br>šířka obsahu = ' + w + ' − 2 × ' + p + ' − 2 × ' + b + ' = <b>' + content + ' px</b>'
+                : 'width = ' + w + ' px, ale padding a rámeček zaberou 2 × ' + p + ' + 2 × ' + b + ' = ' + minW + ' px<br><span class="warn">nevejdou se → obsah má 0 px a prohlížeč šířku zvětší na</span> <b>' + vis + ' px</b>') +
+              '<br>místo i s okraji = ' + vis + ' + 2 × ' + m + ' = <b>' + (vis + 2 * m) + ' px</b>';
         $('bmFormula').innerHTML = f;
         $('bmCode').innerHTML = hlCSS('.krabice {\n    box-sizing: ' + bs + ';\n    width: ' + w + 'px;\n    padding: ' + p + 'px;\n    border: ' + b + 'px solid #f3c84a;\n    margin: ' + m + 'px;\n}');
     }
@@ -1831,6 +1878,16 @@ function splitSelectors(s) {
     }
     out.push(cur);
     return out.map(function (x) { return x.trim(); }).filter(Boolean);
+}
+
+/** Platný seznam selektorů? Zkusí ho vložit do pomocné šablony stylů (zvládne skupiny i pseudoelementy). */
+var VAL_SHEET = (function () { var st = document.createElement('style'); st.media = 'not all'; document.head.appendChild(st); return st.sheet; })();
+function isValidSelector(sel) {
+    if (!sel || /[{};]/.test(sel)) return false;
+    try { VAL_SHEET.insertRule(sel + '{}', 0); } catch (e) { return false; }
+    var ok = VAL_SHEET.cssRules.length > 0 && VAL_SHEET.cssRules[0].selectorText !== undefined;
+    while (VAL_SHEET.cssRules.length) VAL_SHEET.deleteRule(0);
+    return ok;
 }
 
 (function selectors() {
@@ -1909,8 +1966,8 @@ function splitSelectors(s) {
         lines.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
         if (!sel) { st.css(''); $('selStatus').innerHTML = '<span class="muted">Napiš selektor.</span>'; return; }
         var ok = true;
-        try { ok = CSS.supports('selector(' + sel + ')'); } catch (e) { ok = false; }
-        if (!ok || /[{};]/.test(sel)) {
+        ok = isValidSelector(sel);
+        if (!ok) {
             st.css('');
             $('selStatus').innerHTML = '<span class="bad">Neplatný selektor.</span> <span class="muted">Prohlížeč by celé pravidlo ignoroval.</span>';
             return;
@@ -2500,7 +2557,11 @@ function drawCurve(svg, tf) {
         var txt = '';
         if (anims.length && head) {
             var t = anims[0].effect.getComputedTiming();
-            if (t.progress === null) {
+            if (anims[0].playState === 'finished') {
+                var pf = (t.progress || 0) * 100;
+                txt = 'skončila — díky fill-mode zůstal stav z ' + Math.round(pf) + ' %';
+                head.style.display = ''; head.style.left = pf + '%'; fill.style.width = pf + '%';
+            } else if (t.progress === null) {
                 txt = (anims[0].currentTime < +$('anDelay').value) ? 'čeká (delay)' : 'skončila';
                 head.style.display = 'none'; fill.style.width = '0';
             } else {
@@ -2525,6 +2586,359 @@ function drawCurve(svg, tf) {
     apply(true);
     $('anReduce').innerHTML = hlCSS('@media (prefers-reduced-motion: reduce) {\n    * {\n        animation: none !important;\n        transition: none !important;\n    }\n}');
 })();
+
+
+/* ----------------------------------------------------------------------
+   1b. Běžné vlastnosti po skupinách
+   Každá vlastnost: k = název, s = selektor (jinak cíl skupiny), d = popis,
+   o = možnosti (řetězec, nebo [skutečná hodnota, jak ji ukázat v kódu]),
+   nebo r = [min, max, krok, výchozí, jednotka] pro posuvník.
+   ---------------------------------------------------------------------- */
+var IMG_LANDSCAPE = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">' +
+    '<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb7ff"/><stop offset="1" stop-color="#d8eeff"/></linearGradient></defs>' +
+    '<rect width="300" height="200" fill="url(#s)"/><circle cx="230" cy="55" r="26" fill="#ffd34d"/>' +
+    '<path d="M0 150 L70 80 L130 140 L190 70 L300 160 V200 H0Z" fill="#3d7a4f"/>' +
+    '<path d="M0 170 Q80 140 160 170 T300 165 V200 H0Z" fill="#5fa463"/></svg>');
+var IMG_ICON = '../assets/favicon.svg';
+var URL_LAND = ['url("' + IMG_LANDSCAPE + '")', 'url("krajina.svg")'];
+var URL_ICON = ['url("' + IMG_ICON + '")', 'url("ikona.svg")'];
+var LOREM = 'Krkonoše jsou nejvyšší pohoří v Česku. Nejvyšší horou je Sněžka (1 603 m). Pramení tu Labe, které teče přes Čechy a Německo až do Severního moře. Na hřebenech roste kosodřevina a v zimě tu bývá sněhu i přes dva metry.';
+
+var VP_GROUPS = [
+    {
+        id: 'text', name: 'Text a písmo', target: '.ukazka',
+        intro: 'Vlastnosti textu se <strong>dědí</strong> — nastavíš-li je na <code>body</code>, platí pro celou stránku. Vlastní písma se připojují pravidlem <code>@font-face</code> nebo ze služby Google Fonts.',
+        html: '<h3>Krkonoše</h3>\n<p class="ukazka">' + LOREM + '</p>',
+        props: [
+            { k: 'font-family', d: 'písmo; za čárkou náhradní, když první v počítači není', o: ['Georgia, serif', 'Arial, sans-serif', '"Courier New", monospace', '"Comic Sans MS", cursive', 'system-ui, sans-serif'] },
+            { k: 'font-size', d: 'velikost písma', r: [10, 40, 1, 16, 'px'] },
+            { k: 'font-weight', d: 'tloušťka: 400 = normal, 700 = bold', o: ['300', 'bold', '900'] },
+            { k: 'font-style', d: 'kurzíva', o: ['italic'] },
+            { k: 'font-variant', d: 'kapitálky — malá písmena jako zmenšená velká', o: ['small-caps'] },
+            { k: 'color', d: 'barva textu', o: ['#1a6dc4', 'crimson', '#777', 'rgb(20, 107, 88)'] },
+            { k: 'line-height', d: 'výška řádku jako násobek velikosti písma', r: [1, 3, 0.1, 1.45, ''] },
+            { k: 'letter-spacing', d: 'mezery mezi písmeny', r: [-2, 10, 0.5, 0, 'px'] },
+            { k: 'word-spacing', d: 'mezery mezi slovy', r: [0, 20, 1, 0, 'px'] },
+            { k: 'text-align', d: 'zarovnání v řádku', o: ['center', 'right', 'justify'] },
+            { k: 'text-indent', d: 'odsazení prvního řádku', r: [0, 60, 2, 0, 'px'] },
+            { k: 'text-decoration', d: 'čára pod, přes nebo nad textem', o: ['underline', 'line-through', 'overline', 'underline wavy crimson'] },
+            { k: 'text-transform', d: 'velikost písmen bez změny HTML', o: ['uppercase', 'lowercase', 'capitalize'] },
+            { k: 'text-shadow', d: 'stín: posun x, posun y, rozmazání, barva', o: ['2px 2px 3px rgba(0, 0, 0, 0.35)', '0 0 6px #1a6dc4', '1px 1px 0 #fff, 2px 2px 0 #999'] }
+        ],
+        presets: [['Novinový sloupec', { 'font-family': 'Georgia, serif', 'font-size': 20, 'line-height': 1.6, 'text-align': 'justify', 'text-indent': 24 }],
+            ['Výrazné heslo', { 'font-family': 'Arial, sans-serif', 'font-weight': '900', 'text-transform': 'uppercase', 'letter-spacing': 3, 'color': 'crimson' }]]
+    },
+    {
+        id: 'pozadi', name: 'Barvy a pozadí', target: '.box',
+        intro: 'Pozadí může být barva, obrázek i barevný přechod. Pozadí sahá až po rámeček (vyplní i padding). Text na pozadí musí mít dostatečný kontrast.',
+        html: '<div class="box">\n    <h3>Pozadí</h3>\n    <p>Text na pozadí musí zůstat dobře čitelný.</p>\n</div>',
+        base: '.box{min-height:230px;padding:16px;border:1px solid #ccc;border-radius:8px}h3{margin-top:0}',
+        props: [
+            { k: 'background-color', d: 'barva pozadí', o: ['#fff8e7', '#1a6dc4', 'rgba(26, 109, 196, 0.2)', 'transparent'] },
+            { k: 'background-image', d: 'obrázek nebo barevný přechod (gradient)', o: [URL_LAND, URL_ICON, 'linear-gradient(135deg, #1a6dc4, #6b3fa8)', 'linear-gradient(to right, #ffd34d, #e8890c)', 'radial-gradient(circle, #fff, #9cc6f0)', 'repeating-linear-gradient(45deg, #eee 0 10px, #ddd 10px 20px)'] },
+            { k: 'background-size', d: 'cover = vyplní celou plochu (něco ořízne), contain = vejde se celý', o: ['cover', 'contain', '60px', '100% 100%'] },
+            { k: 'background-repeat', d: 'opakování obrázku (výchozí: dlaždice)', o: ['no-repeat', 'repeat-x', 'repeat-y', 'space'] },
+            { k: 'background-position', d: 'umístění obrázku', o: ['center', 'top right', 'bottom left'] },
+            { k: 'color', d: 'barva textu — přizpůsob ji pozadí', o: ['white', '#222'] },
+            { k: 'opacity', d: 'průhlednost celého elementu i s obsahem (0 až 1)', r: [0, 1, 0.05, 1, ''] }
+        ],
+        presets: [['Úvodní banner', { 'background-image': 0, 'background-size': 'cover', 'background-position': 'center', 'color': 'white' }],
+            ['Tapeta z ikon', { 'background-image': 1, 'background-size': '60px', 'background-color': '#fff8e7' }],
+            ['Přechod', { 'background-image': 2, 'color': 'white' }]]
+    },
+    {
+        id: 'obrazky', name: 'Obrázky', target: '.obr',
+        intro: 'Obrázek je řádkový element. Bez nastavení se zobrazí ve své skutečné velikosti (tady 300 × 200 px). Když zadáš jen šířku, výška se dopočítá podle poměru stran.',
+        html: '<img class="obr" src="krajina.svg" alt="Hory se sluncem">\n<p>' + LOREM + '</p>',
+        htmlReal: '<img class="obr" src="' + IMG_LANDSCAPE + '" alt="Hory se sluncem"><p>' + LOREM + '</p>',
+        base: 'p{margin:8px 0 0}',
+        props: [
+            { k: 'width', d: 'šířka; % = z šířky rodiče', o: ['150px', '240px', '100%', '50%'] },
+            { k: 'height', d: 'výška — s pevnou šířkou i výškou se obrázek může zdeformovat', o: ['100px', '160px', '240px'] },
+            { k: 'object-fit', d: 'jak obrázek vyplní zadaný rozměr: cover ořízne, contain zmenší', o: ['contain', 'cover', 'none', 'scale-down'] },
+            { k: 'object-position', d: 'která část zůstane vidět při ořezu', o: ['top', 'left bottom', 'right'] },
+            { k: 'aspect-ratio', d: 'pevný poměr stran (s object-fit: cover)', o: ['1 / 1', '16 / 9', '3 / 4'] },
+            { k: 'border-radius', d: 'zaoblení; 50 % u čtverce = kruh', o: ['8px', '24px', '50%'] },
+            { k: 'border', d: 'rámeček', o: ['4px solid #fff', '3px solid #1a6dc4', '6px double #999'] },
+            { k: 'box-shadow', d: 'stín kolem obrázku', o: ['0 4px 12px rgba(0, 0, 0, 0.3)', '8px 8px 0 #e8890c'] },
+            { k: 'filter', d: 'grafické filtry jako ve fotoeditoru', o: ['grayscale(1)', 'sepia(1)', 'blur(3px)', 'brightness(1.4)', 'contrast(1.8)', 'saturate(3)', 'hue-rotate(120deg)', 'drop-shadow(4px 4px 4px rgba(0, 0, 0, 0.5))'] },
+            { k: 'opacity', d: 'průhlednost', r: [0, 1, 0.05, 1, ''] },
+            { k: 'float', d: 'obtékání — text plyne vedle obrázku', o: ['left', 'right'] },
+            { k: 'margin', d: 'odstup od textu při obtékání', o: ['0 16px 8px 0', '0 0 8px 16px'] },
+            { k: 'display', d: 'block odstraní mezeru pod obrázkem a dovolí margin: auto', o: ['block'] }
+        ],
+        presets: [['Avatar', { 'width': '150px', 'aspect-ratio': '1 / 1', 'object-fit': 'cover', 'border-radius': '50%', 'border': '4px solid #fff', 'box-shadow': '0 4px 12px rgba(0, 0, 0, 0.3)' }],
+            ['Obtékání textem', { 'width': '150px', 'float': 'left', 'margin': '0 16px 8px 0' }],
+            ['Pruh přes šířku', { 'width': '100%', 'height': '100px', 'object-fit': 'cover', 'display': 'block' }],
+            ['Deformace', { 'width': '240px', 'height': '100px' }]]
+    },
+    {
+        id: 'odkazy', name: 'Odkazy', target: 'a',
+        intro: 'Odkazy mají několik stavů, které se stylují pseudotřídami: <code>:hover</code> (myš nad odkazem), <code>:focus-visible</code> (vybraný klávesou Tab), <code>:active</code> (při kliknutí) a <code>:visited</code> (navštívený). Najeď myší na odkazy v náhledu.',
+        html: '<p>Více najdeš na <a href="#">stránce školy</a>,\n   v <a href="#">rozvrhu</a> nebo v <a href="#">přihlášce</a>.</p>',
+        base: 'p{font-size:18px;line-height:2}',
+        props: [
+            { k: 'color', d: 'barva odkazu (výchozí modrá)', o: ['#1a6dc4', 'crimson', 'inherit', 'white'] },
+            { k: 'text-decoration', d: 'podtržení — odkaz v textu by měl být poznat i bez barvy', o: ['none', 'underline dotted', 'underline 2px'] },
+            { k: 'text-underline-offset', d: 'odsazení podtržení od textu; bez zadání = auto', r: [0, 10, 1, null, 'px', 3] },
+            { k: 'font-weight', d: 'tučný odkaz', o: ['bold'] },
+            { k: 'display', d: 'inline-block dovolí odkazu padding a rozměry jako tlačítku', o: ['inline-block'] },
+            { k: 'padding', d: 'vnitřní okraj', o: ['2px 4px', '6px 14px'] },
+            { k: 'background-color', d: 'pozadí odkazu', o: ['#1a6dc4', '#fff3c4'] },
+            { k: 'border-radius', d: 'zaoblení', o: ['4px', '999px'] },
+            { k: 'transition', d: 'plynulá změna při najetí myší', o: ['color 0.3s, background-color 0.3s'] },
+            { k: 'color', s: 'a:hover', d: 'barva pod myší', o: ['crimson', 'white', '#e8890c'] },
+            { k: 'background-color', s: 'a:hover', d: 'pozadí pod myší', o: ['#fff3c4', '#155ba6', '#1a6dc4'] },
+            { k: 'text-decoration', s: 'a:hover', d: 'podtržení pod myší', o: ['none', 'underline'] },
+            { k: 'outline', s: 'a:focus-visible', d: 'zvýraznění při ovládání klávesnicí (zkus Tab) — nikdy ho jen nevypínej', o: ['3px solid #e8890c', 'none'] },
+            { k: 'cursor', d: 'tvar kurzoru', o: ['default', 'help', 'not-allowed'] }
+        ],
+        presets: [['Jemné podtržení', { 'text-decoration': 'underline dotted', 'text-underline-offset': 4, 'a:hover|text-decoration': 'underline', 'a:hover|color': 'crimson' }],
+            ['Tlačítko', { 'display': 'inline-block', 'padding': '6px 14px', 'background-color': '#1a6dc4', 'color': 'white', 'text-decoration': 'none', 'border-radius': '999px', 'transition': 'color 0.3s, background-color 0.3s', 'a:hover|background-color': '#155ba6', 'a:hover|color': 'white' }],
+            ['Zvýrazňovač', { 'color': 'inherit', 'background-color': '#fff3c4', 'text-decoration': 'none', 'padding': '2px 4px', 'transition': 'color 0.3s, background-color 0.3s', 'a:hover|background-color': '#1a6dc4', 'a:hover|color': 'white' }]],
+        note: '<p class="muted text-sm">Pořadí pravidel pro stavy odkazu si zapamatuj jako <strong>LoVe HAte</strong>: <code>:link</code>, <code>:visited</code>, <code>:hover</code>, <code>:active</code> — jinak se mohou kvůli kaskádě přebíjet. Navštíveným odkazům lze z bezpečnostních důvodů měnit jen barvu.</p>'
+    },
+    {
+        id: 'seznamy', name: 'Seznamy', target: '.sez',
+        intro: 'Seznamy mají odrážky (<em>markery</em>) a výchozí odsazení zleva 40 px. Seznam s vypnutými odrážkami se často používá jako základ menu.',
+        html: '<ul class="sez">\n    <li>Matematika</li>\n    <li>Informatika</li>\n    <li>Fyzika</li>\n    <li>Chemie</li>\n</ul>',
+        props: [
+            { k: 'list-style-type', d: 'druh odrážky nebo číslování', o: ['circle', 'square', 'decimal', 'lower-alpha', 'upper-roman', ['"→ "', '"→ "'], 'none'] },
+            { k: 'list-style-position', d: 'odrážka uvnitř, nebo vně textu', o: ['inside'] },
+            { k: 'padding-left', d: 'odsazení seznamu (výchozí 40 px)', r: [0, 60, 2, 40, 'px'] },
+            { k: 'color', s: '.sez li::marker', d: 'barva odrážky — pseudoelement ::marker', o: ['crimson', '#1a6dc4'] },
+            { k: 'margin-bottom', s: '.sez li', d: 'mezera mezi položkami', r: [0, 20, 1, 0, 'px'] },
+            { k: 'display', d: 'flex = položky vedle sebe (menu)', o: ['flex'] },
+            { k: 'gap', d: 'mezera mezi položkami ve flexu', r: [0, 40, 2, 0, 'px'] },
+            { k: 'background-color', s: '.sez li', d: 'pozadí položky', o: ['#eef4ff'] },
+            { k: 'padding', s: '.sez li', d: 'vnitřní okraj položky', o: ['4px 10px'] }
+        ],
+        presets: [['Vodorovné menu', { 'list-style-type': 'none', 'padding-left': 0, 'display': 'flex', 'gap': 8, '.sez li|background-color': '#eef4ff', '.sez li|padding': '4px 10px' }],
+            ['Číslovaný postup', { 'list-style-type': 'decimal', '.sez li::marker|color': 'crimson', '.sez li|margin-bottom': 6 }]]
+    },
+    {
+        id: 'tabulky', name: 'Tabulky', target: 'table',
+        intro: 'Bez CSS nemá tabulka žádné čáry. Rámečky se nastavují buňkám (<code>th, td</code>) a <code>border-collapse: collapse</code> sloučí dvojité čáry do jedné.',
+        html: '<table>\n    <caption>Rozvrh 2.A</caption>\n    <thead>\n        <tr><th>Den</th><th>1.</th><th>2.</th><th>3.</th></tr>\n    </thead>\n    <tbody>\n        <tr><td>Po</td><td>M</td><td>ČJ</td><td>INF</td></tr>\n        <tr><td>Út</td><td>AJ</td><td>F</td><td>D</td></tr>\n        <tr><td>St</td><td>CH</td><td>TV</td><td>Z</td></tr>\n        <tr><td>Čt</td><td>M</td><td>INF</td><td>ČJ</td></tr>\n    </tbody>\n</table>',
+        props: [
+            { k: 'border', s: 'th, td', d: 'rámeček každé buňky', o: ['1px solid #999', '2px solid #333', '1px dashed #999'] },
+            { k: 'border-collapse', d: 'sloučení rámečků sousedních buněk', o: ['collapse'] },
+            { k: 'border-spacing', d: 'mezera mezi buňkami (jen bez collapse)', r: [0, 12, 1, 2, 'px'] },
+            { k: 'width', d: 'šířka tabulky', o: ['100%', '300px'] },
+            { k: 'padding', s: 'th, td', d: 'vnitřní okraj buněk', r: [0, 20, 1, 1, 'px'] },
+            { k: 'text-align', s: 'th, td', d: 'zarovnání obsahu buněk (th je výchozí na střed)', o: ['left', 'center', 'right'] },
+            { k: 'background-color', s: 'th', d: 'pozadí záhlaví', o: ['#1a6dc4', '#eee'] },
+            { k: 'color', s: 'th', d: 'barva textu záhlaví', o: ['white'] },
+            { k: 'background-color', s: 'tbody tr:nth-child(even)', d: '„zebra“ — každý druhý řádek', o: ['#f2f6fb', '#eee'] },
+            { k: 'background-color', s: 'tbody tr:hover', d: 'zvýraznění řádku pod myší', o: ['#fff3c4'] },
+            { k: 'caption-side', d: 'kde je titulek tabulky', o: ['bottom'] }
+        ],
+        presets: [['Přehledná tabulka', { 'border-collapse': 'collapse', 'width': '100%', 'th, td|border': '1px solid #999', 'th, td|padding': 8, 'th, td|text-align': 'left', 'th|background-color': '#1a6dc4', 'th|color': 'white', 'tbody tr:nth-child(even)|background-color': '#f2f6fb', 'tbody tr:hover|background-color': '#fff3c4' }]]
+    },
+    {
+        id: 'zobrazeni', name: 'Zobrazení a umístění', target: '.b',
+        intro: 'Element B je <code>span</code> — řádkový. Vyzkoušej, jak se změní s <code>display</code>, a jak ho <code>position</code> posune: <code>relative</code> vůči jeho původnímu místu (místo zůstane volné), <code>absolute</code> vůči rodiči s <code>position: relative</code> (ostatní se zachovají, jako by tam nebyl).',
+        html: '<div class="rodic">\n    <span class="a">A</span>\n    <span class="b">B</span>\n    <span class="c">C</span>\n    <p>Odstavec pod nimi. Text, text, text.</p>\n</div>',
+        base: ':host{contain:paint}.rodic{position:relative;height:200px;padding:8px;border:2px dashed #aaa}.a,.b,.c{padding:8px 14px;border-radius:6px;font-weight:700}' +
+            '.a{background:#ddedea}.b{background:#fbecdd;border:2px solid #e8890c}.c{background:#f2eefa}',
+        props: [
+            { k: 'display', d: 'block = vlastní řádek, inline-block = v řádku, ale s rozměry, none = zmizí i s místem', o: ['block', 'inline-block', 'none'] },
+            { k: 'width', d: 'u řádkových elementů se neprojeví', o: ['120px', '50%'] },
+            { k: 'height', d: 'u řádkových elementů se neprojeví', o: ['60px'] },
+            { k: 'visibility', d: 'hidden = neviditelný, ale místo zůstane', o: ['hidden'] },
+            { k: 'position', d: 'způsob umístění', o: ['relative', 'absolute', 'sticky', 'fixed'] },
+            { k: 'top', d: 'posun od horního okraje (jen s position); bez zadání = auto', r: [-40, 120, 2, null, 'px', 0] },
+            { k: 'left', d: 'posun od levého okraje (jen s position); bez zadání = auto', r: [-40, 400, 4, null, 'px', 0] },
+            { k: 'z-index', d: 'co je navrchu, když se elementy překrývají (jen s position)', r: [-1, 3, 1, null, '', 1] },
+            { k: 'overflow', s: '.rodic', d: 'co s obsahem, který přeteče rodiče', o: ['hidden', 'auto', 'scroll'] }
+        ],
+        presets: [['Relativní posun', { 'position': 'relative', 'top': 20, 'left': 20 }],
+            ['Absolutně v rohu', { 'position': 'absolute', 'top': 0, 'left': 0 }],
+            ['Přetečení', { 'position': 'absolute', 'top': 120, 'left': 340, '.rodic|overflow': 'hidden' }]],
+        note: '<p class="muted text-sm"><code>fixed</code> se normálně drží okna prohlížeče (lišta, která neodjede). V náhledu je kvůli izolaci ukázky omezený na rámeček.</p>'
+    },
+    {
+        id: 'formulare', name: 'Formuláře', target: 'input[type="text"]',
+        intro: 'Formulářové prvky si prohlížeč kreslí po svém, ale většinu jde nastylovat. Klikni do pole — uvidíš stav <code>:focus</code>.',
+        html: '<label for="jm">Jméno</label>\n<input type="text" id="jm" placeholder="Jan Novák">\n<label><input type="checkbox" checked> Odebírat novinky</label>\n<button>Odeslat</button>',
+        base: 'label,input,button{display:block;margin:6px 0}label input{display:inline;margin:0 6px 0 0}',
+        props: [
+            { k: 'width', d: 'šířka pole', o: ['100%', '200px'] },
+            { k: 'padding', d: 'vnitřní okraj — větší pole se lépe trefuje prstem', o: ['8px 10px', '12px 14px'] },
+            { k: 'font-size', d: 'velikost písma v poli (pod 16 px mobil při psaní přiblíží stránku)', o: ['16px', 'inherit'] },
+            { k: 'border', d: 'rámeček', o: ['1px solid #999', '2px solid #1a6dc4', 'none'] },
+            { k: 'border-radius', d: 'zaoblení', o: ['6px', '999px'] },
+            { k: 'border-color', s: 'input[type="text"]:focus', d: 'barva rámečku při psaní', o: ['#e8890c', '#146b58'] },
+            { k: 'outline', s: 'input[type="text"]:focus', d: 'obrys při psaní', o: ['3px solid rgba(26, 109, 196, 0.3)', 'none'] },
+            { k: 'accent-color', s: 'input[type="checkbox"]', d: 'barva zaškrtávacího políčka', o: ['#e8890c', '#146b58'] },
+            { k: 'padding', s: 'button', d: 'velikost tlačítka', o: ['8px 18px'] },
+            { k: 'color', s: 'button', d: 'barva textu tlačítka', o: ['white'] },
+            { k: 'background-color', s: 'button', d: 'pozadí tlačítka', o: ['#1a6dc4', '#146b58'] },
+            { k: 'border', s: 'button', d: 'rámeček tlačítka', o: ['none'] },
+            { k: 'border-radius', s: 'button', d: 'zaoblení tlačítka', o: ['6px', '999px'] },
+            { k: 'cursor', s: 'button', d: 'kurzor nad tlačítkem', o: ['pointer'] },
+            { k: 'background-color', s: 'button:hover', d: 'pozadí tlačítka pod myší', o: ['#155ba6', '#0e4d40'] }
+        ],
+        presets: [['Moderní formulář', { 'width': '100%', 'padding': '8px 10px', 'font-size': '16px', 'border': '1px solid #999', 'border-radius': '6px',
+            'input[type="text"]:focus|border-color': '#e8890c', 'input[type="text"]:focus|outline': '3px solid rgba(26, 109, 196, 0.3)', 'input[type="checkbox"]|accent-color': '#e8890c',
+            'button|padding': '8px 18px', 'button|color': 'white', 'button|background-color': '#1a6dc4', 'button|border': 'none', 'button|border-radius': '6px', 'button|cursor': 'pointer', 'button:hover|background-color': '#155ba6' }]]
+    },
+    {
+        id: 'efekty', name: 'Efekty a kurzor', target: '.karta',
+        intro: 'Stíny, průhlednost, filtry a ořezové tvary. Najeď na kartu myší — uvidíš nastavený kurzor.',
+        html: '<div class="karta">\n    <h3>Karta</h3>\n    <p>Najeď na mě myší.</p>\n</div>',
+        base: ':host{padding:24px}.karta{width:220px;padding:16px;background:#fff8e7;border:1px solid #f0c36d;border-radius:8px}h3{margin-top:0}',
+        props: [
+            { k: 'box-shadow', d: 'stín: posun x, y, rozmazání, roztažení, barva; inset = dovnitř', o: ['0 2px 8px rgba(0, 0, 0, 0.2)', '0 12px 32px rgba(0, 0, 0, 0.25)', '6px 6px 0 #e8890c', 'inset 0 0 12px rgba(0, 0, 0, 0.3)'] },
+            { k: 'border-radius', d: 'zaoblení rohů', o: ['0', '24px', '50%'] },
+            { k: 'opacity', d: 'průhlednost', r: [0, 1, 0.05, 1, ''] },
+            { k: 'filter', d: 'filtr na celý element', o: ['blur(2px)', 'grayscale(1)', 'hue-rotate(180deg)', 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4))'] },
+            { k: 'transform', d: 'otočení, posun, zvětšení (víc v záložce Transformace)', o: ['rotate(-4deg)', 'scale(1.1)', 'skewX(-8deg)'] },
+            { k: 'clip-path', d: 'ořez do tvaru', o: ['circle(45%)', 'polygon(50% 0, 100% 100%, 0 100%)', 'inset(10px round 20px)'] },
+            { k: 'outline', d: 'obrys — na rozdíl od border nezabírá místo', o: ['3px dashed #1a6dc4'] },
+            { k: 'outline-offset', d: 'odsazení obrysu (s nastaveným outline)', r: [-10, 20, 1, 0, 'px'] },
+            { k: 'cursor', d: 'kurzor myši nad elementem', o: ['pointer', 'help', 'not-allowed', 'move', 'text', 'wait', 'crosshair', 'grab', 'zoom-in'] },
+            { k: 'user-select', d: 'none = text nejde označit', o: ['none', 'all'] }
+        ],
+        presets: [['Plovoucí karta', { 'box-shadow': '0 12px 32px rgba(0, 0, 0, 0.25)', 'border-radius': '24px', 'transform': 'rotate(-4deg)', 'cursor': 'pointer' }]]
+    }
+];
+
+(function commonProps() {
+    var st = Stage($('vpStage'));
+    var g = null, state = [];
+
+    function optVal(o) { return Array.isArray(o) ? o[0] : o; }
+    function optShow(o) { return Array.isArray(o) ? o[1] : o; }
+    function keyOf(p) { return (p.s ? p.s + '|' : '') + p.k; }
+    /** Posuvník bez výchozí hodnoty (auto) má zaškrtávátko „nastavit“. */
+    function nullable(p) { return p.r && p.r[3] === null; }
+    function defOf(p) { return p.r ? (nullable(p) ? '' : p.r[3]) : ''; }
+    function isSet(p, v) { return p.r && !nullable(p) ? +v !== p.r[3] : v !== ''; }
+
+    $('vpGroups').innerHTML = VP_GROUPS.map(function (x, i) { return '<button class="chip" type="button" data-i="' + i + '">' + x.name + '</button>'; }).join('');
+
+    function ctrlHTML(p, i) {
+        var sel = p.s || g.target;
+        var head = '<label for="vp' + i + '"><code>' + esc(p.k) + '</code>' + (p.s ? '<span class="vp-sel">' + esc(p.s) + '</span>' : '') + '</label>' +
+            '<span class="vp-desc">' + esc(p.d) + '</span>';
+        var c;
+        if (p.r) {
+            c = '<div class="vp-row">' + (nullable(p) ? '<input type="checkbox" id="vp' + i + 'on" data-on="' + i + '" aria-label="Nastavit ' + esc(p.k) + '" title="nastavit">' : '') +
+                '<input type="range" id="vp' + i + '" data-i="' + i + '" min="' + p.r[0] + '" max="' + p.r[1] + '" step="' + p.r[2] + '" value="' + (nullable(p) ? p.r[5] : p.r[3]) + '">' +
+                '<output id="vp' + i + 'v"></output></div>';
+        } else {
+            c = '<select class="input mono" id="vp' + i + '" data-i="' + i + '"><option value="">výchozí</option>' +
+                p.o.map(function (o, k) { return '<option value="' + k + '">' + esc(optShow(o)) + '</option>'; }).join('') + '</select>';
+        }
+        return '<div class="vp-ctrl" id="vpc' + i + '" data-sel="' + esc(sel) + '">' + head + c + '</div>';
+    }
+
+    function load(i) {
+        g = VP_GROUPS[i];
+        state = g.props.map(defOf);
+        $('vpGroups').querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', +c.dataset.i === i ? 'true' : 'false'); });
+        $('vpIntro').innerHTML = g.intro;
+        $('vpCtrls').innerHTML = g.props.map(ctrlHTML).join('');
+        $('vpTools').innerHTML = (g.presets || []).map(function (p, k) { return '<button class="btn btn--sm" type="button" data-p="' + k + '">' + esc(p[0]) + '</button>'; }).join('') +
+            '<button class="btn btn--sm btn--ghost" type="button" data-p="reset">Vynulovat</button>';
+        $('vpHtml').innerHTML = hlHTML(g.html);
+        $('vpNote').innerHTML = g.note || '';
+        st.html(g.htmlReal || g.html);
+        sync();
+        apply();
+    }
+
+    /** Přenese stav do ovládacích prvků. */
+    function sync() {
+        g.props.forEach(function (p, i) {
+            var el = $('vp' + i);
+            if (nullable(p)) {
+                var on = state[i] !== '';
+                $('vp' + i + 'on').checked = on;
+                el.disabled = !on;
+                el.value = on ? state[i] : p.r[5];
+                $('vp' + i + 'v').textContent = on ? (+state[i]).toLocaleString('cs-CZ') + p.r[4] : 'auto';
+                return;
+            }
+            el.value = state[i];
+            if (p.r) $('vp' + i + 'v').textContent = (+state[i]).toLocaleString('cs-CZ') + p.r[4];
+        });
+    }
+
+    function apply() {
+        var real = {}, shown = {}, order = [];
+        g.props.forEach(function (p, i) {
+            var v = state[i], rv, sv;
+            if (!isSet(p, v)) return;
+            if (p.r) {
+                rv = sv = (+v) + p.r[4];
+            } else {
+                rv = optVal(p.o[+v]); sv = optShow(p.o[+v]);
+            }
+            var sel = p.s || g.target;
+            if (!real[sel]) { real[sel] = []; shown[sel] = []; order.push(sel); }
+            real[sel].push(p.k + ': ' + rv + ';');
+            shown[sel].push(p.k + ': ' + sv + ';');
+        });
+        g.props.forEach(function (p, i) {
+            $('vpc' + i).classList.toggle('set', isSet(p, state[i]));
+        });
+        st.css((g.base || '') + order.map(function (s) { return s + ' {' + real[s].join('') + '}'; }).join(''));
+        $('vpCode').innerHTML = order.length
+            ? hlCSS(order.map(function (s) { return s + ' {\n    ' + shown[s].join('\n    ') + '\n}'; }).join('\n'))
+            : '<span class="muted">/* zatím nic — vše je výchozí */</span>';
+    }
+
+    $('vpCtrls').addEventListener('input', function (e) {
+        var el = e.target;
+        if (el.dataset.on !== undefined) {
+            var j = +el.dataset.on;
+            state[j] = el.checked ? +$('vp' + j).value : '';
+            sync();
+            apply();
+            return;
+        }
+        if (el.dataset.i === undefined) return;
+        var i = +el.dataset.i, p = g.props[i];
+        state[i] = p.r ? +el.value : el.value;
+        if (p.r) $('vp' + i + 'v').textContent = (+el.value).toLocaleString('cs-CZ') + p.r[4];
+        apply();
+    });
+    $('vpCtrls').addEventListener('change', function (e) {
+        if (e.target.tagName === 'SELECT' || e.target.type === 'checkbox') e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    $('vpTools').addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        state = g.props.map(defOf);
+        if (b.dataset.p !== 'reset') {
+            var pre = g.presets[+b.dataset.p][1];
+            Object.keys(pre).forEach(function (key) {
+                var val = pre[key];
+                var i = -1;
+                g.props.forEach(function (p, k) { if (i < 0 && keyOf(p) === key) i = k; });
+                if (i < 0) g.props.forEach(function (p, k) { if (i < 0 && !p.s && p.k === key) i = k; });
+                if (i < 0) return;
+                var p = g.props[i];
+                if (p.r) { state[i] = val; return; }
+                var idx = typeof val === 'number' ? val : Array.isArray(val) ? val[1]
+                    : p.o.map(optVal).indexOf(val) >= 0 ? p.o.map(optVal).indexOf(val) : p.o.map(optShow).indexOf(val);
+                state[i] = idx >= 0 ? String(idx) : '';
+            });
+        }
+        sync();
+        apply();
+    });
+    $('vpGroups').addEventListener('click', function (e) {
+        var c = e.target.closest('.chip');
+        if (c) load(+c.dataset.i);
+    });
+    window.__vp = { groups: VP_GROUPS, load: load, root: st.root };
+    load(0);
+})();
+
 
 initTabs();
 if ($('animace').classList.contains('active')) window.dispatchEvent(new CustomEvent('tabshown', { detail: { id: 'animace' } }));
